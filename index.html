@@ -540,6 +540,8 @@ function topBadge(p){
 let photos=[], sortMode='top', curId=null, curPhoto=null;
 let myRating=0, myBadgeSet=new Set();
 const $=id=>document.getElementById(id);
+/* تعقيم النصوص — يمنع حقن أي كود في الصفحة */
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const starsTxt=v=>{let f=Math.round(v);return "★".repeat(f)+"☆".repeat(5-f)};
 function toast(m,err){const t=$('toast');t.textContent=m;t.className='toast'+(err?' err':'');t.style.display='block';setTimeout(()=>t.style.display='none',2600)}
 function imgUrl(path){return sb.storage.from('photos').getPublicUrl(path).data.publicUrl}
@@ -581,23 +583,23 @@ function render(){
   list.sort((a,b)=>sortMode==='top'
     ?(b.avg_stars-a.avg_stars)||(b.ratings_count-a.ratings_count)
     :new Date(b.created_at)-new Date(a.created_at));
-  $('totalPill').textContent=`${photos.length} صورة · ن23`;
+  $('totalPill').textContent=`${photos.length} صورة · ن24`;
   const feed=$('feed');
   if(!list.length){feed.innerHTML=`<div class="empty"><span class="big">🏜️</span>ما فيه صور بعد..<br>كن أول من يصوّر ديرته! اضغط + وشارك</div>`;return}
   feed.innerHTML=list.map((p,i)=>{
     const medal=sortMode==='top'&&i<3&&p.ratings_count>0?['🥇','🥈','🥉'][i]+' ':'';
     const tb=topBadge(p);
     return `<div class="card" onclick="openSheet(${p.id})">
-      <div class="ph"><img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="${p.title}">
+      <div class="ph"><img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="${esc(p.title)}">
         <div class="medal">${medal}${Number(p.avg_stars).toFixed(1)} ★</div>
         ${tb?`<div class="badge-tag">${tb.label}</div>`:''}
-        <div class="loc-chip">📍 ${p.village||p.city}</div>
+        <div class="loc-chip">📍 ${esc(p.village||p.city)}</div>
       </div>
       <div class="card-body">
-        <div class="card-title">${p.title}</div>
+        <div class="card-title">${esc(p.title)}</div>
         <div class="card-meta">
           <span class="stars-mini">${starsTxt(p.avg_stars)} (${p.ratings_count})</span>
-          <span class="who">📷 ${p.photographer}</span>
+          <span class="who">📷 ${esc(p.photographer)}</span>
         </div>
       </div>
     </div>`;
@@ -608,11 +610,11 @@ function render(){
 async function openSheet(id){
   curId=id;curPhoto=photos.find(x=>x.id===id);
   const p=curPhoto;
-  $('sPh').innerHTML=`<img src="${imgUrl(p.image_path)}" alt="${p.title}">
+  $('sPh').innerHTML=`<img src="${imgUrl(p.image_path)}" alt="${esc(p.title)}">
     <button class="zoombtn" id="zoomBtn" onclick="togglePhotoZoom()">⤢ عرض كامل</button>`;
   $('sPh').classList.remove('full');
   $('sTitle').textContent=p.title;
-  $('sLoc').innerHTML=`📍 ${p.region} · ${p.city}${p.village?' · '+p.village:''} — عدسة ${p.photographer}`
+  $('sLoc').innerHTML=`📍 ${esc(p.region)} · ${esc(p.city)}${p.village?' · '+esc(p.village):''} — عدسة ${esc(p.photographer)}`
     +(p.lat?`<br><a href="https://maps.google.com/?q=${p.lat},${p.lng}" target="_blank" style="color:var(--palm);text-decoration:none">🗺️ الموقع الدقيق على الخريطة</a>`:'');
   $('overlay').classList.add('show');
   document.body.style.overflow='hidden';
@@ -672,7 +674,7 @@ function renderComments(){
   const list=curPhoto._comments||[];
   $('cCount').textContent=`(${list.length})`;
   $('cList').innerHTML=list.length
-    ?list.map(c=>`<div class="comment"><b>${c.profiles?.display_name||'زائر'}</b>${c.body}</div>`).join('')
+    ?list.map(c=>`<div class="comment"><b>${esc(c.profiles?.display_name||'زائر')}</b>${esc(c.body)}</div>`).join('')
     :`<div style="color:var(--txt-dim);font-size:13px;padding:6px 2px">كن أول من يعلق ✍️</div>`;
 }
 async function reportPhoto(){
@@ -797,7 +799,7 @@ async function addPhoto(){
     toast('نُشرت صورتك 🎉');
     await loadPhotos();go('feed');setSort('new');
   }catch(e){
-    toast('تعذر النشر: '+(e.message||''),true);
+    toast(e.message&&e.message.includes('row-level')?'وصلت حد النشر اليومي (10 صور) — كمّل بكرة 🌙':'تعذر النشر: '+(e.message||''),true);
   }finally{
     btn.disabled=false;btn.textContent='انشر الصورة 🚀';
   }
@@ -929,9 +931,9 @@ async function loadFb(){
     <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:10px;${f.status==='done'?'opacity:.55':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:10px;background:var(--card2);border:1px solid var(--line)">${FB_AR[f.kind]||f.kind}</span>
-        <span style="font-size:11px;color:var(--txt-dim)">${f.profiles?.display_name||'زائر'} · ${new Date(f.created_at).toLocaleDateString('ar-SA')}</span>
+        <span style="font-size:11px;color:var(--txt-dim)">${esc(f.profiles?.display_name||'زائر')} · ${new Date(f.created_at).toLocaleDateString('ar-SA')}</span>
       </div>
-      <div style="font-size:14px;line-height:1.8;margin-bottom:10px">${f.body}</div>
+      <div style="font-size:14px;line-height:1.8;margin-bottom:10px">${esc(f.body)}</div>
       <div style="display:flex;gap:8px">
         ${f.status==='new'
           ?`<button class="btn" style="font-size:12px;padding:7px 14px;background:var(--palm)" onclick="fbDone(${f.id})">✓ تم التعامل</button>`
@@ -966,10 +968,10 @@ function renderPlaces(){
     ?customPlaces.map(c=>`
       <div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px">
         <div style="flex:1">
-          <b style="font-size:14px">${c.name}</b>
-          <div style="font-size:11px;color:var(--txt-dim)">${KIND_AR[c.kind]}${c.city?' · '+c.city:''} · ${c.region}</div>
+          <b style="font-size:14px">${esc(c.name)}</b>
+          <div style="font-size:11px;color:var(--txt-dim)">${KIND_AR[c.kind]}${c.city?' · '+esc(c.city):''} · ${esc(c.region)}</div>
         </div>
-        <button class="btn" style="font-size:12px;padding:7px 12px" onclick="admDelPlace(${c.id},'${c.name}')">🗑️ حذف</button>
+        <button class="btn" style="font-size:12px;padding:7px 12px" onclick="admDelPlace(${c.id},'${esc(c.name).replace(/'/g,"\\'")}')">🗑️ حذف</button>
       </div>`).join('')
     :`<div class="empty">ما فيه أماكن مضافة بعد — كل اللي تضيفه هنا يظهر فوراً بقوائم التطبيق</div>`;
 }
@@ -1001,7 +1003,7 @@ function admRender(){
     return `<div class="card" style="margin-bottom:12px;cursor:default">
       <div class="ph" style="height:150px"><img src="${imgUrl(p.image_path)}" loading="lazy"></div>
       <div class="card-body">
-        <div class="card-title">${p.title}</div>
+        <div class="card-title">${esc(p.title)}</div>
         <div class="card-meta" style="margin-bottom:8px"><span>📷 ${p.profiles?.display_name||'?'} · 📍 ${p.city}</span></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
           ${rc?`<span style="font-size:11px;padding:3px 9px;border-radius:10px;font-weight:700;background:rgba(242,179,61,.15);color:var(--star);border:1px solid var(--star)">🚩 ${rc} بلاغ</span>`:''}
