@@ -56,6 +56,20 @@ header{padding:18px 18px 12px;display:flex;align-items:center;justify-content:sp
 .logo span{font-size:13px;display:block;font-family:'Tajawal';font-weight:500;color:var(--txt-dim);margin-top:3px}
 .count-pill{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--sand-dim)}
 .filters{padding:6px 18px 14px;display:flex;flex-direction:column;gap:10px}
+/* ====== بنر التعريف ====== */
+.hero{
+  position:relative;margin:4px 18px 14px;padding:18px 18px 16px;
+  background:var(--card);border:1.5px solid var(--ink);border-radius:18px;
+  box-shadow:0 3px 10px rgba(36,31,28,.08);text-align:center;
+}
+.hero-x{position:absolute;top:10px;left:10px;width:28px;height:28px;border-radius:50%;background:var(--card2);border:1px solid var(--line);color:var(--txt-dim);font-size:13px;cursor:pointer}
+.hero-title{font-family:'Reem Kufi',sans-serif;font-size:21px;color:var(--sand);margin-bottom:4px}
+.hero-sub{font-size:13px;color:var(--txt-dim);margin-bottom:14px;line-height:1.8}
+.hero-steps{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.hstep{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:700;color:var(--txt)}
+.hstep span{font-size:22px;background:var(--card2);border:1px solid var(--line);border-radius:12px;width:44px;height:44px;display:flex;align-items:center;justify-content:center}
+.harrow{color:var(--sadu);font-weight:700;font-size:14px;margin-top:-14px}
+.hero-cta{padding:11px 26px;font-size:14px}
 .search-box{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px}
 .search-box input{flex:1;background:none;border:none;outline:none;color:var(--txt);font-family:'Tajawal';font-size:14px}
 .search-box input::placeholder{color:var(--txt-dim)}
@@ -165,6 +179,21 @@ nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-w
 </header>
 
 <div class="page on" id="page-feed">
+  <div class="hero" id="hero">
+    <button class="hero-x" onclick="$('hero').style.display='none'">✕</button>
+    <div class="hero-title">شارك جمال ديرتك 🇸🇦</div>
+    <div class="hero-sub">منصة أهل الديار — صوّر أجمل ما في منطقتك، والجمهور يقيّم، والأجمل يتصدر</div>
+    <div class="hero-steps">
+      <div class="hstep"><span>📸</span>صوّر مكانك</div>
+      <div class="harrow">←</div>
+      <div class="hstep"><span>📍</span>الموقع تلقائي</div>
+      <div class="harrow">←</div>
+      <div class="hstep"><span>⭐</span>الناس تقيّم</div>
+      <div class="harrow">←</div>
+      <div class="hstep"><span>🏆</span>صورتك تتصدر</div>
+    </div>
+    <button class="btn hero-cta" onclick="go('add')">📷 انشر أول صورة لك</button>
+  </div>
   <div class="filters">
     <div class="search-box">🔎<input id="q" placeholder="ابحث باسم القرية أو المكان..." oninput="render()"></div>
     <div class="sel-row">
@@ -552,7 +581,7 @@ function render(){
   list.sort((a,b)=>sortMode==='top'
     ?(b.avg_stars-a.avg_stars)||(b.ratings_count-a.ratings_count)
     :new Date(b.created_at)-new Date(a.created_at));
-  $('totalPill').textContent=`${photos.length} صورة · ن22`;
+  $('totalPill').textContent=`${photos.length} صورة · ن23`;
   const feed=$('feed');
   if(!list.length){feed.innerHTML=`<div class="empty"><span class="big">🏜️</span>ما فيه صور بعد..<br>كن أول من يصوّر ديرته! اضغط + وشارك</div>`;return}
   feed.innerHTML=list.map((p,i)=>{
