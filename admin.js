@@ -228,6 +228,7 @@ async function loadAdmWeek(){
         ${CW&&!CW.ended_at?`<button class="btn" style="flex:1;${CW.active?'background:var(--card2);border:1px solid var(--line);color:var(--txt)':'background:var(--palm)'}" onclick="admWeekToggle()">${CW.active?'⏸️ إيقاف':'▶️ تفعيل للجمهور'}</button>`:''}
         ${CW&&CW.active?`<button class="btn" style="flex:1;background:var(--star);color:var(--ink)" onclick="admWeekEnd()">🏁 إنهاء وإعلان الفائز</button>`:''}
         ${CW&&CW.ended_at?`<button class="btn" style="flex:1;background:var(--palm)" onclick="admWeekNew()">➕ مسابقة جديدة</button>`:''}
+        ${CW?`<button class="btn" style="flex:0 0 auto;background:var(--sadu)" onclick="admWeekDelete()">🗑️</button>`:''}
       </div>
     </div>
     <div style="font-weight:700;font-size:14px;margin-bottom:8px">اللقطات المرشحة (${entries.length}/5) <span style="font-size:11px;color:var(--txt-dim);font-weight:400">— رشّح من تبويب 🗂️ بزر 🏆</span></div>
@@ -334,4 +335,12 @@ async function admSpDelete(){
   if(error){toast('فشل الحذف',true);return}
   toast('انحذف البنر نهائياً 🗑️');
   await loadAdmWeek();loadSponsor();
+}
+
+async function admWeekDelete(){
+  if(!confirm(`حذف مسابقة «${CW.week_label||'بلا وسم'}» نهائياً؟ تنمسح بترشيحاتها وأصواتها، ويختفي أي تتويج مرتبط بها من الرئيسية.`))return;
+  const {error}=await sb.from('weekly_contest').delete().eq('id',CW.id);
+  if(error){toast('فشل الحذف: '+error.message,true);return}
+  toast('انحذفت المسابقة 🗑️');
+  await loadAdmWeek();await loadWeek();
 }
