@@ -87,11 +87,19 @@ async function loadFb(){
       <div style="font-size:14px;line-height:1.8;margin-bottom:10px">${esc(f.body)}</div>
       <div style="display:flex;gap:8px">
         ${f.status==='new'
-          ?`<button class="btn" style="font-size:12px;padding:7px 14px;background:var(--palm)" onclick="fbDone(${f.id})">✓ تم التعامل</button>`
+          ?`<button class="btn" style="font-size:12px;padding:7px 14px;background:var(--qblue)" onclick="fbReply(${f.id})">💬 رد</button>
+           <button class="btn" style="font-size:12px;padding:7px 14px;background:var(--palm)" onclick="fbDone(${f.id})">✓ تم التعامل</button>`
           :`<span style="font-size:12px;color:var(--palm);font-weight:700;padding:7px 0">✓ منتهية</span>`}
         <button class="btn" style="font-size:12px;padding:7px 14px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="fbDel(${f.id})">🗑️ حذف</button>
       </div>
     </div>`).join('');
+}
+async function fbReply(id){
+  const t=prompt('اكتب رد الإدارة على الرسالة:');
+  if(t===null||!t.trim())return;
+  const {error}=await sb.from('feedback').update({reply:t.trim(),status:'done'}).eq('id',id);
+  if(error){toast('فشل الرد: '+error.message,true);return}
+  toast('انرسل الرد 💬');loadFb();
 }
 async function fbDone(id){
   const { error } = await sb.from('feedback').update({status:'done'}).eq('id',id);
@@ -165,6 +173,7 @@ function admRender(){
           <button class="btn" style="font-size:12px;padding:8px 12px;${p.hidden?'background:var(--palm)':'background:var(--card2);border:1px solid var(--line)'}" onclick="admHide(${p.id},${!p.hidden})">${p.hidden?'👁️ إظهار':'🙈 إخفاء'}</button>
           <button class="btn" style="font-size:12px;padding:8px 12px" onclick="admDel(${p.id},'${p.image_path}')">🗑️ حذف نهائي</button>
           <button class="btn" style="font-size:12px;padding:8px 12px;background:var(--star);color:var(--ink)" onclick="admWeekAdd(${p.id})">🏆 رشّح</button>
+          <button class="btn" style="font-size:12px;padding:8px 12px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admClearBadges(${p.id})">🗳️ مسح الأوسمة</button>
           <button class="btn" style="font-size:12px;padding:8px 12px;${p.profiles?.banned?'background:var(--palm)':'background:var(--card2);border:1px solid var(--line)'}" onclick="admBan('${p.user_id}',${!(p.profiles?.banned)})">${p.profiles?.banned?'فك الحظر':'⛔ حظر المصور'}</button>
           ${rc?`<button class="btn" style="font-size:12px;padding:8px 12px;background:var(--card2);border:1px solid var(--line)" onclick="admClear(${p.id})">مسح البلاغات</button>`:''}
         </div>
@@ -236,7 +245,7 @@ async function loadAdmWeek(){
       <div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px">
         <div style="flex:1"><b style="font-size:13px">#${p.id} · ${esc(p.title)}</b></div>
         <button class="btn" style="font-size:12px;padding:7px 12px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admWeekRemove(${p.id})">إزالة</button>
-      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + await admSpBlock();
+      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + await admSpBlock() + admMaintBlock();
 }
 /* ====== بنر الراعي ====== */
 async function admSpBlock(){
@@ -343,4 +352,55 @@ async function admWeekDelete(){
   if(error){toast('فشل الحذف: '+error.message,true);return}
   toast('انحذفت المسابقة 🗑️');
   await loadAdmWeek();await loadWeek();
+}
+
+async function admClearBadges(pid){
+  const pick=prompt(
+'مسح أوسمة الصورة #'+pid+' — اكتب الرقم:\n\n'+
+'0 = الكل (تصفير شامل)\n'+
+'1 = 📱 تصلح خلفية شاشة\n'+
+'2 = ❤️ بحطها خلفية جوالي\n'+
+'3 = 🌍 مسابقات عالمية\n'+
+'4 = 🇸🇦 واجهة تشرّف السعودية\n'+
+'5 = 🖼️ تستاهل تنطبع لوحة','0');
+  if(pick===null)return;
+  const keys={1:'wall',2:'mine',3:'global',4:'face',5:'print'};
+  let q=sb.from('badge_votes').delete().eq('photo_id',pid);
+  const k=keys[pick.trim()];
+  if(pick.trim()!=='0'&&!k){toast('اكتب رقماً من 0 إلى 5',true);return}
+  if(k)q=q.eq('badge_key',k);
+  const {error}=await q;
+  if(error){toast('فشل المسح: '+error.message,true);return}
+  toast(k?'انمسح الوسام المحدد 🗳️':'انصفرت كل أوسمة الصورة 🗳️');
+  await loadPhotos();openAdmin();
+}
+
+/* ====== وضع الصيانة ====== */
+function admMaintBlock(){
+  const b=window.__SPB||{};
+  const on=!!b.maintenance;
+  return `
+  <div style="background:var(--card);border:1.5px solid ${on?'var(--star)':'var(--line)'};border-radius:14px;padding:14px;margin-top:16px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🚧 وضع الصيانة (تحت الإنشاء) ${on?'<span style="font-size:11px;color:#A87500;font-weight:700">● مفعل — الزوار محجوبون</span>':'<span style="font-size:11px;color:var(--txt-dim)">○ مطفأ</span>'}</div>
+    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px;line-height:1.8">عند التفعيل: الزوار يشوفون صفحة «تحت التطوير» — وأنت كمشرف تتصفح وتشتغل عادي.</div>
+    <input id="mtMsg" placeholder="رسالة اختيارية للزوار (مثال: نرجع لكم الساعة 9)" value="${esc(b.maintenance_msg||'')}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:10px">
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admMaintSaveMsg()">💾 حفظ الرسالة</button>
+      <button class="btn" style="flex:1;${on?'background:var(--palm)':'background:var(--star);color:var(--ink)'}" onclick="admMaintToggle()">${on?'▶️ إعادة فتح الموقع':'🚧 تفعيل الصيانة'}</button>
+    </div>
+  </div>`;
+}
+async function admMaintToggle(){
+  const b=window.__SPB||{};
+  const to=!b.maintenance;
+  if(to&&!confirm('تفعيل وضع الصيانة؟ كل الزوار (عدا المشرفين) بيشوفون صفحة تحت التطوير.'))return;
+  const {error}=await sb.from('site_banner').update({maintenance:to,maintenance_msg:$('mtMsg').value.trim()}).eq('id',1);
+  if(error){toast('فشلت العملية: '+error.message,true);return}
+  toast(to?'الموقع دخل وضع الصيانة 🚧':'الموقع رجع مفتوحاً للجميع 🎉');
+  await loadAdmWeek();
+}
+async function admMaintSaveMsg(){
+  const {error}=await sb.from('site_banner').update({maintenance_msg:$('mtMsg').value.trim()}).eq('id',1);
+  if(error){toast('فشل الحفظ',true);return}
+  toast('انحفظت الرسالة ✅');
 }

@@ -59,12 +59,16 @@ function setSort(m){
   $('tabTop').classList.toggle('on',m==='top');
   $('tabNew').classList.toggle('on',m==='new');
   $('tabAbroad').classList.toggle('on',m==='abroad');
+  $('tabMap').classList.toggle('on',m==='map');
   $('abroadHint').style.display=m==='abroad'?'block':'none';
   render();
 }
 
 function render(){
   const q=$('q').value.trim(), r=$('fRegion').value, c=$('fCity').value;
+  if(sortMode==='map'){renderMap();return}
+  const mw=$('mapWrap');if(mw)mw.style.display='none';
+  $('feed').style.display='';
   const abroadView=sortMode==='abroad';
   let list=photos.filter(p=>!!p.abroad===abroadView);
   if(catFilter!=='all')list=list.filter(p=>(p.category||'other')===catFilter);
@@ -80,7 +84,7 @@ function render(){
       ?(b.avg_stars-a.avg_stars)||(b.ratings_count-a.ratings_count)
       :new Date(b.created_at)-new Date(a.created_at));
   }
-  $('totalPill').textContent=`${photos.length} صورة · ن28`;
+  $('totalPill').textContent=`${photos.length} صورة · م16`;
   const feed=$('feed');
   if(!list.length){feed.innerHTML=`<div class="empty"><span class="big">🏜️</span>ما فيه صور بعد..<br>كن أول من يصوّر ديرته! اضغط + وشارك</div>`;return}
   feed.innerHTML=list.map((p,i)=>{
@@ -139,6 +143,48 @@ function rankOf(p){
   return{ic:'🌱',t:'مستكشف',c:'bronze'};
 }
 const seenViews=new Set();
+/* ====== المفضلة ====== */
+let favSet=new Set();
+async function loadFavs(){
+  if(!USER)return;
+  try{
+    const r=await sb.from('favorites').select('photo_id').eq('user_id',USER.id);
+    favSet=new Set((r.data||[]).map(x=>x.photo_id));
+  }catch(e){}
+}
+async function toggleFav(pid){
+  if(!USER){toast('تعذر الحفظ — أعد تحميل الصفحة',true);return}
+  if(favSet.has(pid)){
+    favSet.delete(pid);
+    await sb.from('favorites').delete().eq('user_id',USER.id).eq('photo_id',pid);
+    toast('انشالت من مفضلتك');
+  }else{
+    favSet.add(pid);
+    const {error}=await sb.from('favorites').insert({user_id:USER.id,photo_id:pid});
+    if(error){favSet.delete(pid);toast('تعذر الحفظ — نفّذ سكربت v15',true);return}
+    toast('انحفظت بمفضلتك ❤️');
+  }
+  if(curPhoto)renderFollow(curPhoto);
+  if($('page-favs').classList.contains('on'))renderFavs();
+}
+function openFavs(){
+  go('favs');
+  renderFavs();
+}
+function renderFavs(){
+  const list=photos.filter(p=>favSet.has(p.id));
+  $('favFeed').innerHTML=list.length?list.map(p=>`
+    <div class="card" onclick="openSheet(${p.id})">
+      <div class="ph"><img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" alt="${esc(p.title)}" loading="lazy">
+        <div class="loc-chip">${p.abroad?'🌍 '+esc(p.country||p.city):'📍 '+esc(p.village||p.city)}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${esc(p.title)}</div>
+        <div class="card-meta"><span class="who">${rankOf(p).ic} ${esc(p.photographer)}</span><span>⭐ ${Number(p.avg_stars).toFixed(1)}</span></div>
+      </div>
+    </div>`).join('')
+  :'<div class="empty" style="grid-column:1/-1"><span class="big">🤍</span>مفضلتك فاضية — افتح أي صورة واضغط «حفظ»</div>';
+}
 async function renderFollow(p){
   const el=$('sFollow');if(!el)return;
   const mine=USER&&p.user_id===USER.id;
@@ -149,7 +195,8 @@ async function renderFollow(p){
   }
   const rk=rankOf(p);
   el.innerHTML=`<span class="rankchip r-${rk.c}">${rk.ic} ${rk.t}</span><span class="fcount">👥 ${p.followers_count||0} متابع</span>`
-    +(mine?'':`<button class="fbtn ${following?'on':''}" onclick="toggleFollow('${p.user_id}',${following})">${following?'✓ متابَع':'＋ متابعة'}</button>`);
+    +(mine?'':`<button class="fbtn ${following?'on':''}" onclick="toggleFollow('${p.user_id}',${following})">${following?'✓ متابَع':'＋ متابعة'}</button>`)
+    +`<button class="fbtn fav ${favSet.has(p.id)?'on':''}" onclick="toggleFav(${p.id})">${favSet.has(p.id)?'❤️ بالمفضلة':'🤍 حفظ'}</button>`;
 }
 async function toggleFollow(uid,isF){
   if(!USER||USER.is_anonymous){toast('سجّل أول عشان تتابع المصورين 👥');closeSheet();openAcc();return}
@@ -255,3 +302,33 @@ function lbScaleBy(f){
   $('lbImg').style.width=lbW+'%';
 }
 function lbDbl(){lbW=lbW>100?100:250;$('lbImg').style.width=lbW+'%';}
+
+/* ====== الخريطة التفاعلية ====== */
+let MAP=null,MARKS=null;
+function renderMap(){
+  const wrap=$('mapWrap');
+  wrap.style.display='block';$('feed').style.display='none';
+  if(typeof L==='undefined'){wrap.innerHTML='<div class="empty">⚠️ تعذر تحميل الخريطة — تأكد من رفع leaflet.js وleaflet.css</div>';return}
+  if(!MAP){
+    MAP=L.map('map',{zoomControl:true,attributionControl:true}).setView([23.9,45.1],5);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(MAP);
+    MARKS=L.layerGroup().addTo(MAP);
+  }
+  MARKS.clearLayers();
+  const q=($('q').value||'').trim();
+  const list=photos.filter(p=>p.lat&&p.lng
+    &&(catFilter==='all'||(p.category||'other')===catFilter)
+    &&(!q||p.title.includes(q)||(p.village||'').includes(q)||(p.city||'').includes(q)||(p.country||'').includes(q)));
+  const pts=[];
+  list.forEach(p=>{
+    const ic=L.divIcon({className:'',html:`<div class="pmark"><img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'"></div>`,iconSize:[46,46],iconAnchor:[23,23]});
+    L.marker([p.lat,p.lng],{icon:ic}).addTo(MARKS).on('click',()=>openSheet(p.id));
+    pts.push([p.lat,p.lng]);
+  });
+  if(pts.length)MAP.fitBounds(pts,{padding:[46,46],maxZoom:12});
+  setTimeout(()=>MAP.invalidateSize(),120);
+  const sp=window.__SPDATA;
+  $('mapSponsor').innerHTML=(sp&&sp.active&&sp.image_path)
+    ?((sp.link_url?`<a href="${esc(sp.link_url)}" target="_blank" rel="noopener">`:'')+`<img src="${imgUrl(sp.image_path)}" alt="راعي المنصة">`+(sp.link_url?'</a>':''))
+    :'';
+}
