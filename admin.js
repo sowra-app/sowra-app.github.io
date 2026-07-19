@@ -245,7 +245,7 @@ async function loadAdmWeek(){
       <div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px">
         <div style="flex:1"><b style="font-size:13px">#${p.id} · ${esc(p.title)}</b></div>
         <button class="btn" style="font-size:12px;padding:7px 12px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admWeekRemove(${p.id})">إزالة</button>
-      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + await admSpBlock() + admMaintBlock();
+      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + await admSpBlock() + admSponsorsBtn() + admSponsorSideBlock() + admMaintBlock();
 }
 /* ====== بنر الراعي ====== */
 async function admSpBlock(){
@@ -258,6 +258,14 @@ async function admSpBlock(){
     <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px;line-height:1.8">📐 مقاس التصميم: <b>1600 × 400 بكسل</b> (نسبة 4:1) · JPG أو PNG · يفضل أقل من 300KB</div>
     ${b.image_path?`<img src="${imgUrl(b.image_path)}" style="width:100%;aspect-ratio:4/1;object-fit:cover;border-radius:10px;border:1px solid var(--line);margin-bottom:10px">`:''}
     <input type="file" id="spFile" accept="image/*" style="display:none" onchange="admSpUpload(this.files[0])">
+    <input id="spName" placeholder="اسم الراعي (مثال: متجر عدسة)" value="${esc(b.sponsor_name||'')}"/>
+    <input id="spCat" placeholder="النشاط (مثال: معدات تصوير)" value="${esc(b.sponsor_cat||'')}"/>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <input id="spLat" placeholder="خط العرض (اختياري)" type="number" step="any" value="${b.sponsor_lat||''}" style="flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;direction:ltr">
+      <input id="spLng" placeholder="خط الطول (اختياري)" type="number" step="any" value="${b.sponsor_lng||''}" style="flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;direction:ltr">
+    </div>
+    <textarea id="spDeal" placeholder="عرض الراعي (اختياري — مثال: خصم 15% على معدات التصوير)" rows="2" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;resize:none;margin-bottom:8px">${esc(b.sponsor_deal||'')}</textarea>
+    <input id="spCode" placeholder="كود الخصم (اختياري — مثال: SOWRA15)" value="${esc(b.sponsor_code||'')}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px;direction:ltr;text-align:left;letter-spacing:1px">
     <input id="spLink" placeholder="رابط الراعي عند الضغط (اختياري)" value="${esc(b.link_url)}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:10px;direction:ltr;text-align:left">
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn" style="flex:1" onclick="$('spFile').click()">📤 ${b.image_path?'تغيير الصورة':'رفع صورة البنر'}</button>
@@ -274,13 +282,13 @@ async function admSpUpload(f){
   const path=`banners/sponsor_${Date.now()}.jpg`;
   const up=await sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',cacheControl:'31536000'});
   if(up.error){toast('فشل الرفع: '+up.error.message,true);return}
-  const {error}=await sb.from('site_banner').update({image_path:path,updated_at:new Date().toISOString()}).eq('id',1);
+  const {error}=await sb.from('site_banner').update({image_path:path,sponsor_name:$('spName').value.trim(),sponsor_cat:$('spCat').value.trim(),sponsor_lat:parseFloat($('spLat').value)||null,sponsor_lng:parseFloat($('spLng').value)||null,sponsor_deal:$('spDeal').value.trim(),sponsor_code:$('spCode').value.trim(),updated_at:new Date().toISOString()}).eq('id',1);
   if(error){toast('فشل الحفظ',true);return}
   toast('ارتفع البنر ✅ — فعّله متى ما جهزت');
   await loadAdmWeek();loadSponsor();
 }
 async function admSpSaveLink(){
-  const {error}=await sb.from('site_banner').update({link_url:$('spLink').value.trim()}).eq('id',1);
+  const {error}=await sb.from('site_banner').update({link_url:$('spLink').value.trim(),sponsor_name:$('spName').value.trim(),sponsor_cat:$('spCat').value.trim(),sponsor_lat:parseFloat($('spLat').value)||null,sponsor_lng:parseFloat($('spLng').value)||null,sponsor_deal:$('spDeal').value.trim(),sponsor_code:$('spCode').value.trim()}).eq('id',1);
   if(error){toast('فشل الحفظ',true);return}
   toast('انحفظ الرابط ✅');loadSponsor();
 }
@@ -376,6 +384,39 @@ async function admClearBadges(pid){
 }
 
 /* ====== وضع الصيانة ====== */
+function admSponsorsBtn(){
+  const b=window.__SPB||{};
+  const on=!!b.sponsors_btn;
+  return `<div style="background:var(--card);border:1.5px solid ${on?'var(--qblue)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🤝 زر الرعاة بالرئيسية <span style="font-size:11px;font-weight:700;color:${on?'var(--qblue)':'var(--txt-dim)'}">${on?'● ظاهر':'○ مخفي'}</span></div>
+    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">زر «🤝 الرعاة» في قائمة الفلتر.</div>
+    <button class="btn" style="width:100%;${on?'background:var(--sadu)':'background:var(--qblue)'}" onclick="admSponsorsBtnToggle()">${on?'🙈 إخفاء زر الرعاة':'👁️ إظهار زر الرعاة'}</button>
+  </div>`;
+}
+async function admSponsorsBtnToggle(){
+  const b=window.__SPB||{};
+  const{error}=await sb.from('site_banner').update({sponsors_btn:!b.sponsors_btn}).eq('id',1);
+  if(error){toast('فشلت العملية',true);return}
+  toast(!b.sponsors_btn?'زر الرعاة ظاهر 🤝':'اختفى الزر');
+  await loadAdmWeek();await loadSponsor();
+}
+function admSponsorSideBlock(){
+  const b=window.__SPB||{};
+  const on=!!b.side_active;
+  return `
+  <div style="background:var(--card);border:1.5px solid ${on?'var(--palm)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px">📌 بطاقة الراعي بالرئيسية ${on?'<span style="font-size:11px;color:var(--palm);font-weight:700">● ظاهرة</span>':'<span style="font-size:11px;color:var(--txt-dim)">○ مخفية</span>'}</div>
+    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">البطاقة الصغيرة (الاسم + النشاط) التي تظهر فوق الصور بالرئيسية.</div>
+    <button class="btn" style="width:100%;${on?'background:var(--sadu)':'background:var(--palm)'}" onclick="admSideBannerToggle()">${on?'🙈 إخفاء البطاقة':'👁️ إظهار البطاقة بالرئيسية'}</button>
+  </div>`;
+}
+async function admSideBannerToggle(){
+  const b=window.__SPB||{};
+  const {error}=await sb.from('site_banner').update({side_active:!b.side_active}).eq('id',1);
+  if(error){toast('فشلت العملية: '+error.message,true);return}
+  toast(!b.side_active?'البطاقة ظاهرة بالرئيسية 📌':'اختفت البطاقة');
+  await loadSponsor();await loadAdmWeek();
+}
 function admMaintBlock(){
   const b=window.__SPB||{};
   const on=!!b.maintenance;

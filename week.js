@@ -77,26 +77,51 @@ async function voteWeek(pid){
 
 /* ====== بنر الراعي ====== */
 async function loadSponsor(){
-  const el=$('sponsorBar');if(!el)return;
   try{
     const r=await sb.from('site_banner').select('*').eq('id',1).maybeSingle();
-    const b=r.data;
-    window.__SPDATA=b||null;
-    if(!b||!b.active||!b.image_path){el.style.display='none';return}
-    const src=imgUrl(b.image_path);
-    el.innerHTML=(b.link_url?`<a href="${esc(b.link_url)}" target="_blank" rel="noopener">`:'')
-      +`<img src="${src}" alt="راعي المنصة">`
-      +(b.link_url?'</a>':'')
-      +`<span class="sp-tag">راعي المنصة</span>`;
-    el.style.display='block';
-  }catch(e){el.style.display='none'}
+    const b=r.data||null;
+    window.__SPDATA=b;
+    window.__SPB=b||{};
+    // البطاقة الجانبية
+    if(typeof renderSponsorSide==='function')renderSponsorSide();
+    // زر الرعاة
+    renderSponsorsBtn();
+  }catch(e){}
 }
 
 /* ====== صفحة الرعاة ====== */
 function openSponsorsPage(){
   go('sponsors');
+  const SP=window.__SPDATA;
+  // البنر الكبير برأس الصفحة
+  const el=$('spBannerPage');
+  if(el&&SP&&SP.active&&SP.image_path){
+    el.innerHTML=(SP.link_url?`<a href="${esc(SP.link_url)}" target="_blank" rel="noopener">`:'')
+      +`<img src="${imgUrl(SP.image_path)}" style="width:100%;aspect-ratio:4/1;object-fit:cover;border-radius:14px;border:1.5px solid var(--line);display:block" alt="راعي المنصة">`
+      +(SP.link_url?'</a>':'');
+  } else if(el){ el.innerHTML=''; }
+  // البطاقة التفصيلية
+  if(SP&&SP.active&&SP.image_path){
+    const logo=imgUrl(SP.image_path);
+    $('spListPage').innerHTML=`
+      <div class="sp-card">
+        <div class="sp-card-head">
+          ${SP.link_url?`<a href="${esc(SP.link_url)}" target="_blank" rel="noopener"><img src="${logo}" alt="${esc(SP.sponsor_name||'')}"></a>`:`<img src="${logo}" alt="${esc(SP.sponsor_name||'')}">`}
+          <div class="sp-card-info">
+            <div class="sp-card-name">${esc(SP.sponsor_name||'الراعي الرسمي')}</div>
+            <div class="sp-card-cat">${esc(SP.sponsor_cat||'')}</div>
+          </div>
+          <span class="sp-tag">⭐ الراعي الرسمي</span>
+        </div>
+        ${SP.sponsor_deal?`<div class="sp-card-body"><div class="sp-deal">${esc(SP.sponsor_deal)}${SP.sponsor_code?`<br><span class="sp-code">${esc(SP.sponsor_code)}</span>`:''}</div></div>`:''}
+      </div>`;
+  } else {
+    $('spListPage').innerHTML=`<div class="empty" style="padding:26px 14px">🌟 مقعد الراعي الرسمي بانتظار علامتك</div>`;
+  }
+}
+
+function renderSponsorsBtn(){
+  const btn=$('fdSponsorsBtn');if(!btn)return;
   const sp=window.__SPDATA;
-  $('spListPage').innerHTML=(sp&&sp.active&&sp.image_path)
-    ?`<div class="sp-main">${sp.link_url?`<a href="${esc(sp.link_url)}" target="_blank" rel="noopener">`:''}<img src="${imgUrl(sp.image_path)}" alt="الراعي الرسمي">${sp.link_url?'</a>':''}<div class="t">⭐ الراعي الرسمي للمنصة</div></div>`
-    :`<div class="empty" style="padding:26px 14px">🌟 مقعد الراعي الرسمي بانتظار علامتك</div>`;
+  btn.style.display=(sp&&sp.sponsors_btn)?'inline-block':'none';
 }
