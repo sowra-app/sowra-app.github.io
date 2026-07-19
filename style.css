@@ -17,7 +17,7 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{font-family:'Tajawal',sans-serif;background:var(--night);color:var(--txt);max-width:1100px;margin:0 auto;padding:0 14px 190px;min-height:100vh}
+body{font-family:'Tajawal',sans-serif;background:var(--night);color:var(--txt);max-width:1600px;margin:0 auto;padding:0 14px 190px;min-height:100vh}
 ::-webkit-scrollbar{width:10px}
 ::-webkit-scrollbar-track{background:var(--night)}
 ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
@@ -57,9 +57,8 @@ select{flex:1;background:var(--card);border:1px solid var(--line);border-radius:
 .sort-tabs{display:flex;gap:8px}
 .sort-tab{flex:1;text-align:center;padding:9px;border-radius:12px;font-size:13px;font-weight:500;background:var(--card);border:1px solid var(--line);color:var(--txt-dim);cursor:pointer;transition:.2s}
 .sort-tab.on{background:var(--sadu);border-color:var(--sadu);color:#fff;font-weight:700}
-.feed{padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
 .feed .empty,.feed .loader{grid-column:1/-1}
-.card{background:var(--card);border:1.5px solid var(--line);box-shadow:0 2px 8px rgba(36,31,28,.07);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .15s}
+/* .card legacy */
 .card:hover{transform:translateY(-3px);border-color:var(--sand-dim)}
 .card:active{transform:scale(.97)}
 .ph{position:relative;height:150px;overflow:hidden;background:var(--card2)}
@@ -122,7 +121,6 @@ select{flex:1;background:var(--card);border:1px solid var(--line);border-radius:
 .rules summary{cursor:pointer;font-weight:700;font-size:13.5px;padding:12px 14px;background:var(--card2);list-style:none;user-select:none}
 .rules summary::-webkit-details-marker{display:none}
 .rules[open] summary{border-bottom:1px solid var(--line)}
-.rules-cols{display:grid;grid-template-columns:1fr 1fr;gap:0}
 .rules-col{padding:12px 13px;display:flex;flex-direction:column;gap:7px;font-size:12px;line-height:1.7}
 .rules-col b{font-size:13px;margin-bottom:2px}
 .rules-col.ok{border-left:1px dashed var(--line)}
@@ -130,7 +128,6 @@ select{flex:1;background:var(--card);border:1px solid var(--line);border-radius:
 .rules-col.no b{color:var(--sadu)}
 .rules-foot{font-size:11px;color:var(--txt-dim);padding:9px 13px;border-top:1px dashed var(--line);text-align:center}
 .rules-foot a{color:var(--sadu);font-weight:700}
-@media (max-width:430px){.rules-cols{grid-template-columns:1fr}.rules-col.ok{border-left:none;border-bottom:1px dashed var(--line)}}
 .cap-row{display:flex;gap:10px;margin-bottom:14px}
 .cap-btn{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 10px;color:var(--txt);font-family:'Tajawal';cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:22px;transition:.15s}
 .cap-btn b{font-size:14px}
@@ -193,7 +190,6 @@ nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-w
 /* ====== إحصائياتي ====== */
 .mst-row{display:flex;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:7px;font-size:13.5px}
 .mst-row b{color:var(--sand)}
-.mst-photo{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:6px;font-size:12px;align-items:center}
 .mst-photo .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
 /* ====== عارض الزوم ====== */
 #lightbox{display:none;position:fixed;inset:0;background:rgba(10,8,6,.96);z-index:200}
@@ -271,7 +267,6 @@ nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-w
 .fd-chip.on{background:var(--sadu);border-color:var(--sadu);color:#fff}
 /* ====== الأقرب إليك ====== */
 .nearby-title{font-size:14px;font-weight:700;padding:6px 2px 8px;color:var(--ink)}
-.nearby-feed{grid-template-columns:repeat(2,1fr);gap:10px}
 /* ====== البنر الجانبي ====== */
 .sponsor-side{background:var(--card);border:1.5px solid var(--star);border-radius:14px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
 .sponsor-side img{width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid var(--line);flex-shrink:0}
@@ -299,3 +294,42 @@ nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-w
 .sp-code{display:inline-block;background:var(--ink);color:#F7F1E3;border-radius:8px;padding:3px 12px;font-weight:700;font-size:13px;letter-spacing:1px;margin-top:4px;direction:ltr}
 
 .sp-side-btn{background:var(--sadu);color:#fff;border:none;border-radius:10px;padding:5px 12px;font-family:'Tajawal';font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0}
+
+
+
+/* ====== البار الموحد ====== */
+.search-unified{display:flex;align-items:center;gap:0;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:4px 6px;width:100%;box-sizing:border-box}
+.su-view{background:none;border:none;border-radius:10px;width:34px;height:34px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--txt-dim);flex-shrink:0;transition:background .15s}
+.su-view.on{background:var(--sadu);color:#fff}
+.su-sep{width:1px;height:22px;background:var(--line);margin:0 4px;flex-shrink:0}
+.su-input{flex:1;border:none;background:none;font-family:'Tajawal';font-size:13.5px;color:var(--txt);outline:none;padding:0 6px;direction:rtl;min-width:0}
+.su-input::placeholder{color:var(--txt-dim)}
+.su-filter{background:none;border:none;display:flex;align-items:center;gap:5px;font-family:'Tajawal';font-size:13px;font-weight:700;color:var(--txt);cursor:pointer;padding:4px 8px;border-radius:10px;flex-shrink:0;transition:background .15s}
+.su-filter:hover{background:var(--card2)}
+.su-filter svg{stroke:var(--txt)}
+.f-badge{color:var(--sadu);font-size:10px;margin-right:1px}
+@media(max-width:360px){.su-filter span:last-of-type{display:none}}
+
+/* ====== Masonry Grid ====== */
+.mcard{break-inside:avoid;margin-bottom:8px;border-radius:14px;overflow:hidden;cursor:pointer;position:relative;display:block}
+.mcard img{width:100%;display:block;transition:transform .3s}
+.mcard:active img{transform:scale(1.02)}
+.mc-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,8,6,.8) 0%,rgba(10,8,6,.3) 40%,transparent 70%);opacity:0;transition:opacity .25s;display:flex;flex-direction:column;justify-content:flex-end;padding:10px 10px 8px}
+.mcard:hover .mc-overlay,.mcard.tapped .mc-overlay{opacity:1}
+.mc-title{color:#fff;font-size:12px;font-weight:700;line-height:1.4;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.mc-sub{color:rgba(255,255,255,.75);font-size:10.5px;margin-top:2px;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.mc-medal{position:absolute;top:8px;right:8px;font-size:16px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
+@media(hover:none){.mc-overlay{opacity:0}.mcard.tapped .mc-overlay{opacity:1}}
+
+
+
+
+
+
+#feed{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:600px){#feed{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:900px){#feed{grid-template-columns:repeat(4,1fr)}}
+.mcard{margin-bottom:0}
+
+.view-toggle-pair{display:flex;gap:2px;background:var(--card2);border:1.5px solid var(--line);border-radius:10px;padding:3px}
+.view-toggle-pair .su-view{width:36px;height:36px}

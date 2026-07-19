@@ -1,3 +1,4 @@
+let _viewMode='grid';
 
 /* ====== الفلتر الموحد ====== */
 let _cat='all', _sort='top';
@@ -21,9 +22,9 @@ function applyFilter(){
   $('filterDrawer').style.display='none';
   $('filterBtn').classList.remove('active');
   const badge=$('filterBadge');
-  badge.style.display=(catFilter!=='all'||sortMode!=='top')?'inline':'none';
+  badge.style.display=(catFilter!=='all'||_sort!=='top')?'inline':'none';
   $('abroadHint').style.display=sortMode==='abroad'?'block':'none';
-  render();
+  if(_viewMode==='map'){renderMap();}else{render();}
 }
 function clearFilter(){
   _cat='all';_sort='top';
@@ -120,7 +121,8 @@ async function loadPhotos(){
   const { data, error } = await sb.from('photos_ranked').select('*');
   if(error){$('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${error.message}</div>`;return}
   photos = data || [];
-  render();
+  if(typeof _viewMode!=='undefined'&&_viewMode==='map'){renderMap();}
+  else{render();}
 }
 
 /* ============ الفلاتر والعرض ============ */
@@ -144,8 +146,8 @@ function fillAddCities(){
 
 
 function render(){
+  if(_viewMode==='map')return;
   const q=$('q').value.trim(), r=$('fRegion').value, c=$('fCity').value;
-  if(sortMode==='map'){renderMap();return}
   const mw=$('mapWrap');if(mw)mw.style.display='none';
   $('feed').style.display='';
   const abroadView=sortMode==='abroad';
@@ -163,24 +165,17 @@ function render(){
       ?(b.avg_stars-a.avg_stars)||(b.ratings_count-a.ratings_count)
       :new Date(b.created_at)-new Date(a.created_at));
   }
-  $('totalPill').textContent=`${photos.length} صورة · ن29`;
+  $('totalPill').textContent=`${photos.length} صورة · م73`;
   const feed=$('feed');
   if(!list.length){feed.innerHTML=`<div class="empty"><span class="big">🏜️</span>ما فيه صور بعد..<br>كن أول من يصوّر ديرته! اضغط + وشارك</div>`;return}
   feed.innerHTML=list.map((p,i)=>{
-    const medal=((sortMode==='top'||sortMode==='abroad')&&i<3&&p.ratings_count>0)?['🥇','🥈','🥉'][i]+' ':'';
-    const tb=topBadge(p);
-    return `<div class="card" onclick="openSheet(${p.id})">
-      <div class="ph"><img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="${esc(p.title)}">
-        <div class="medal">${medal}${Number(p.avg_stars).toFixed(1)} ★</div>
-        ${tb?`<div class="badge-tag">${tb.label}</div>`:''}
-        <div class="loc-chip">${p.abroad?'🌍 '+esc(p.country||p.city):'📍 '+esc(p.village||p.city)}</div>
-      </div>
-      <div class="card-body">
-        <div class="card-title">${esc(p.title)}</div>
-        <div class="card-meta">
-          <span class="stars-mini">${starsTxt(p.avg_stars)} (${p.ratings_count})</span>
-          <span class="who">${rankOf(p).ic} ${esc(p.photographer)}</span>
-        </div>
+    const medal=((sortMode==='top'||sortMode==='abroad')&&i<3&&p.ratings_count>0)?['🥇','🥈','🥉'][i]:'';
+    return `<div class="mcard" onclick="openSheet(${p.id})">
+      <img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="${esc(p.title)}">
+      ${medal?`<div class="mc-medal">${medal}</div>`:''}
+      <div class="mc-overlay">
+        <div class="mc-title">${esc(p.title)}</div>
+        <div class="mc-sub">${rankOf(p).ic} ${esc(p.photographer)} · ${p.abroad?esc(p.country||p.city):esc(p.village||p.city)}</div>
       </div>
     </div>`;
   }).join('');
@@ -425,4 +420,24 @@ function addUserPin(lat,lng){
   if(_userPin)_userPin.remove();
   const ic=L.divIcon({className:'',html:'<div class="user-pin">📍<div class="user-pin-label">موقعي</div></div>',iconSize:[40,52],iconAnchor:[20,52]});
   _userPin=L.marker([lat,lng],{icon:ic,zIndexOffset:2000}).addTo(MAP);
+}
+
+/* ====== تبديل العرض مع حفظ الحالة ====== */
+function setView(v){
+  _viewMode=v;
+  $('vtGrid').classList.toggle('on',v==='grid');
+  $('vtMap').classList.toggle('on',v==='map');
+  const feed=$('feed');
+  const map=$('mapWrap');
+  const nearby=$('nearbyWrap');
+  if(v==='map'){
+    if(feed)feed.style.display='none';
+    if(nearby)nearby.style.display='none';
+    if(map)map.style.display='block';
+    renderMap();
+  } else {
+    if(map)map.style.display='none';
+    if(feed)feed.style.display='';
+    render();
+  }
 }

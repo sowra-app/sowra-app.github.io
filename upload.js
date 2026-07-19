@@ -82,24 +82,6 @@ function compressTo(file,maxW,quality){
 }
 function compress(file){return compressTo(file,1280,0.8)}
 const thumbPath=p=>p.replace(/\.jpg$/,'_t.jpg');
-function blobToB64(blob){
-  return new Promise(res=>{
-    const r=new FileReader();
-    r.onload=()=>res(String(r.result).split(',')[1]);
-    r.onerror=()=>res(null);
-    r.readAsDataURL(blob);
-  });
-}
-/* الفاحص الذكي — يرجع تقريراً أو null عند أي عطل (سياسة: العطل لا يمنع النشر) */
-async function aiInspect(blob){
-  try{
-    const b64=await blobToB64(blob);
-    if(!b64)return null;
-    const {data,error}=await sb.functions.invoke('inspect-photo',{body:{image:b64}});
-    if(error||!data||data.error)return null;
-    return data;
-  }catch(e){return null}
-}
 function thumbUrl(p){return imgUrl(thumbPath(p))}
 
 async function addPhoto(){
@@ -120,24 +102,6 @@ async function addPhoto(){
   try{
     const blob=pendingBlob||await compress(pendingFile);
     const thumb=await compressTo(pendingFile,420,0.7);
-    // ═══ الفاحص الذكي 🤖 ═══
-    btn.textContent='🤖 فحص ذكي...';
-    const ai=await aiInspect(thumb);
-    if(ai){
-      if(ai.safe===false){
-        toast('⛔ '+(ai.reason||'الصورة مخالفة لإرشادات النشر'),true);
-        btn.disabled=false;btn.textContent='انشر الصورة 🚀';return;
-      }
-      if(ai.face||ai.plate){
-        const what=[ai.face?'وجه شخص واضح':null,ai.plate?'لوحة مركبة مقروءة':null].filter(Boolean).join(' و');
-        if(!confirm('👁️ الفاحص الذكي لاحظ '+what+' بالصورة.\n\nنشر صور الأشخاص يتطلب إذنهم (راجع إرشادات النشر).\nمتأكد وتبي تكمل؟')){
-          btn.disabled=false;btn.textContent='انشر الصورة 🚀';return;
-        }
-      }
-      const cats=['nature','arch','wildlife','people','bw','landmark','other'];
-      if(ai.category&&cats.includes(ai.category)&&$('aCat').value==='other')$('aCat').value=ai.category;
-    }
-    btn.textContent='⏳ جاري الرفع...';
     const path=`${USER.id}/${Date.now()}.jpg`;
     const [up,upT]=await Promise.all([
       sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',cacheControl:'31536000'}),
