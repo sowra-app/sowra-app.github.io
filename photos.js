@@ -46,8 +46,9 @@ function showNearby(){
     window.__USER_LAT=lat;window.__USER_LNG=lng;
     // لو الخريطة مفتوحة — أضف دبوس موقعك الآن
     if(MAP)addUserPin(lat,lng);
-    const dist=(p)=>Math.hypot((p.lat||0)-lat,(p.lng||0)-lng);
-    const near=photos.filter(p=>p.lat&&p.lng).sort((a,b)=>dist(a)-dist(b)).slice(0,6);
+    const distKm=(p)=>Math.hypot(((p.lat||0)-lat)*111,(((p.lng||0)-lng)*111*Math.cos(lat*Math.PI/180)));
+const near=photos.filter(p=>p.lat&&p.lng&&distKm(p)<=30).sort((a,b)=>distKm(a)-distKm(b)).slice(0,6);
+
     if(!near.length)return;
     $('nearbyWrap').style.display='block';
     $('nearbyFeed').innerHTML=near.map(p=>`
