@@ -1,4 +1,4 @@
-/* صورة من بلدي — main.js | نسخة المختبر م1 */
+/* صورة من بلدي — main.js | v1.1 */
 /* ============ التنقل ============ */
 function go(p){
   if(p==='add' && (!USER || USER.is_anonymous)){
@@ -9,16 +9,13 @@ function go(p){
   if(p==='adm' && !IS_ADMIN)p='feed';
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
   $('page-'+p).classList.add('on');
+  // تحديث class الـbody لإخفاء/إظهار الفلتر
+  document.body.className='page-'+p;
   if(p==='feed'){
     if(typeof loadPhotos==='function') loadPhotos().then(()=>{if(typeof render==='function')render();});
     else if(typeof render==='function') render();
-  }
-  // أغلق الترس إذا كان مفتوحاً
-  if(p==='feed'){
     const adm=$('page-adm');
-    if(adm&&adm.classList.contains('on')){
-      adm.classList.remove('on');
-    }
+    if(adm&&adm.classList.contains('on')) adm.classList.remove('on');
   }
   $('nb-feed').classList.toggle('on',p==='feed');
   $('nb-favs').classList.toggle('on',p==='favs');
@@ -32,7 +29,6 @@ function go(p){
 (async()=>{
   if(window.__BOOT_FAIL)return;
   initSelects();fillAddCities();
-  // الدخول بالخلفية — والمحتوى العام يتحمل فوراً بالتوازي
   const authP=ensureAuth().then(()=>{checkAdmin();loadFavs();}).catch(e=>toast('تعذر الاتصال بالحساب',true));
   try{await Promise.all([loadPlaces(),loadPhotos()]);
   loadWeek();loadSponsor();
@@ -46,14 +42,11 @@ function go(p){
 document.addEventListener('click',function(e){
   const card=e.target.closest('.mcard');
   if(!card)return;
-  // لو الشاشة تدعم hover (ديسكتوب) — لا نحتاج tap
   if(window.matchMedia('(hover:hover)').matches)return;
-  // أول tap يظهر الـoverlay
   if(!card.classList.contains('tapped')){
     document.querySelectorAll('.mcard.tapped').forEach(c=>c.classList.remove('tapped'));
     card.classList.add('tapped');
     e.stopPropagation();
     return;
   }
-  // ثاني tap يفتح الصورة (openSheet يُستدعى من onclick بالبطاقة)
 },true);
