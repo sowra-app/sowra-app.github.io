@@ -6,11 +6,9 @@
 /* حارس الصيانة — يعمل قبل رسم الصفحة */
 (function(){
   var U="https://gquzjaxpqeggknhipmzk.supabase.co", K="sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX";
-  // المشرف يعدّي بلا فحص (علامة محفوظة بجهازه)
   var isAdm=false;
   try{ isAdm=localStorage.getItem("sowra_admin")==="1"; }catch(e){}
   if(isAdm) return;
-  // أخفِ الصفحة ريثما يصل الجواب
   var de=document.documentElement;
   de.style.visibility="hidden";
   var shown=false, show=function(){ if(!shown){ shown=true; de.style.visibility=""; } };
@@ -18,37 +16,39 @@
   fetch(U+"/rest/v1/site_banner?id=eq.1&select=maintenance",{headers:{apikey:K,Authorization:"Bearer "+K}})
     .then(function(r){return r.json()})
     .then(function(d){
-      if(d&&d[0]&&d[0].maintenance===true){
-        location.replace("maintenance.html");
-      } else { show(); }
+      if(d&&d[0]&&d[0].maintenance===true){ location.replace("maintenance.html"); }
+      else { show(); }
     })
-    .catch(show); // انقطاع شبكة = لا تحجب أحداً
+    .catch(show);
 })();
 </script>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>صورة من بلدي</title>
 <meta name="application-name" content="صورة من بلدي">
 <meta name="apple-mobile-web-app-title" content="صورة من بلدي">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F7F1E3">
 <meta property="og:title" content="صورة من بلدي">
 <meta property="og:description" content="عدسات أهل الديار — شارك أجمل صور منطقتك وخلّ الناس تقيّم">
 <meta property="og:type" content="website">
 <meta property="og:image" content="icon-512.png">
-<link rel="manifest" href="manifest.json?x=m76">
+<link rel="manifest" href="manifest.json?x=v1.1">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<script src="supabase.js?x=m76"></script>
-<script src="leaflet.js?x=m76"></script>
-<link rel="stylesheet" href="style.css?x=m76">
-<link rel="stylesheet" href="leaflet.css?x=m76">
+<script src="supabase.js?x=v1.1"></script>
+<script src="leaflet.js?x=v1.1"></script>
+<link rel="stylesheet" href="style.css?x=v1.1">
+<link rel="stylesheet" href="leaflet.css?x=v1.1">
 </head>
 <body>
 
 <div class="sadu"></div>
+
+<!-- الهيدر والفلتر في wrapper ثابت معاً -->
+<div class="sticky-top">
 <header>
   <div style="display:flex;align-items:center;gap:10px">
     <img src="icon-192.png" alt="logo" class="hdr-icon">
@@ -60,25 +60,7 @@
   </div>
 </header>
 
-<div class="page on" id="page-feed">
-  <div id="sponsorBar" style="display:none"></div>
-  <div id="weekStrip" style="display:none" class="week-strip" onclick="openWeek()"></div>
-
-  <div class="hero" id="hero" style="display:none">
-    <button class="hero-x" onclick="closeHero()">✕</button>
-    <div class="hero-title">شارك جمال ديرتك 🇸🇦</div>
-    <div class="hero-sub">منصة أهل الديار — صوّر أجمل ما في منطقتك، والجمهور يقيّم، والأجمل يتصدر</div>
-    <div class="hero-steps">
-      <div class="hstep"><span>📸</span>صوّر مكانك</div>
-      <div class="harrow">←</div>
-      <div class="hstep"><span>📍</span>الموقع تلقائي</div>
-      <div class="harrow">←</div>
-      <div class="hstep"><span>⭐</span>الناس تقيّم</div>
-      <div class="harrow">←</div>
-      <div class="hstep"><span>🏆</span>صورتك تتصدر</div>
-    </div>
-    <button class="btn hero-cta" onclick="go('add')">📷 انشر أول صورة لك</button>
-  </div>
+<div class="page on" id="page-feed-filters">
   <div class="filters">
     <div class="search-unified">
       <button class="su-filter" id="filterBtn" onclick="toggleFilter()" aria-label="فلتر">
@@ -122,7 +104,6 @@
           <button class="fd-chip on" data-s="top" onclick="fdSetSort(this,'top')">⭐ الأعلى</button>
           <button class="fd-chip" data-s="new" onclick="fdSetSort(this,'new')">🕐 الأحدث</button>
           <button class="fd-chip" data-s="abroad" onclick="fdSetSort(this,'abroad')">🌍 عدسة مسافر</button>
-
           <button class="fd-chip" id="fdSponsorsBtn" style="display:none" onclick="applyFilter();openSponsorsPage()">🤝 الرعاة</button>
         </div>
       </div>
@@ -133,16 +114,38 @@
     </div>
     <div id="abroadHint" style="display:none;background:var(--card);border:1.5px dashed var(--qblue);border-radius:14px;padding:11px 14px;font-size:12.5px;color:var(--txt-dim);line-height:1.8;text-align:center">🌍 <b style="color:var(--qblue)">عدسة مسافر</b> — لقطاتك من خارج المملكة هنا 🇸🇦</div>
   </div>
+</div>
+</div>
+<!-- نهاية sticky-top -->
+
+<div class="page on" id="page-feed">
+  <div id="sponsorBar" style="display:none"></div>
+  <div id="weekStrip" style="display:none" class="week-strip" onclick="openWeek()"></div>
+  <div class="hero" id="hero" style="display:none">
+    <button class="hero-x" onclick="closeHero()">✕</button>
+    <div class="hero-title">شارك جمال ديرتك 🇸🇦</div>
+    <div class="hero-sub">منصة أهل الديار — صوّر أجمل ما في منطقتك، والجمهور يقيّم، والأجمل يتصدر</div>
+    <div class="hero-steps">
+      <div class="hstep"><span>📸</span>صوّر مكانك</div>
+      <div class="harrow">←</div>
+      <div class="hstep"><span>📍</span>الموقع تلقائي</div>
+      <div class="harrow">←</div>
+      <div class="hstep"><span>⭐</span>الناس تقيّم</div>
+      <div class="harrow">←</div>
+      <div class="hstep"><span>🏆</span>صورتك تتصدر</div>
+    </div>
+    <button class="btn hero-cta" onclick="go('add')">📷 انشر أول صورة لك</button>
+  </div>
   <div id="nearbyWrap" style="display:none">
     <div class="nearby-title">📍 الأقرب إليك</div>
     <div class="feed" id="nearbyFeed" style="margin-bottom:4px"></div>
   </div>
   <div id="sponsorSide" style="display:none" class="sponsor-side"></div>
   <div id="mapWrap" style="display:none">
-      <div id="map"></div>
-      <div id="mapSponsor"></div>
-    </div>
-    <div class="feed" id="feed"><div class="loader">⏳ نحمّل الصور...</div></div>
+    <div id="map"></div>
+    <div id="mapSponsor"></div>
+  </div>
+  <div class="feed" id="feed"><div class="loader">⏳ نحمّل الصور...</div></div>
 </div>
 
 <div class="page" id="page-add">
@@ -152,22 +155,8 @@
     <details class="rules" open>
       <summary>📋 إرشادات النشر — اضغط للطي</summary>
       <div class="rules-cols">
-        <div class="rules-col ok">
-          <b>✅ المسموح</b>
-          <span>🏔️ الطبيعة والتضاريس والأودية</span>
-          <span>🏛️ التراث والعمران والقلاع</span>
-          <span>🕌 المعالم والمساجد والأسواق</span>
-          <span>🌅 الغروب والنجوم والمواسم</span>
-          <span>🌾 المزارع والحياة العامة للأماكن</span>
-        </div>
-        <div class="rules-col no">
-          <b>⛔ غير المسموح</b>
-          <span>👤 وجوه أشخاص بدون إذنهم</span>
-          <span>🏠 خصوصيات المنازل من الداخل</span>
-          <span>🚗 لوحات مركبات واضحة</span>
-          <span>📵 أي محتوى يخالف الأنظمة والآداب</span>
-          <span>©️ صور منسوخة من غيرك</span>
-        </div>
+        <div class="rules-col ok"><b>✅ المسموح</b><span>🏔️ الطبيعة والتضاريس والأودية</span><span>🏛️ التراث والعمران والقلاع</span><span>🕌 المعالم والمساجد والأسواق</span><span>🌅 الغروب والنجوم والمواسم</span><span>🌾 المزارع والحياة العامة للأماكن</span></div>
+        <div class="rules-col no"><b>⛔ غير المسموح</b><span>👤 وجوه أشخاص بدون إذنهم</span><span>🏠 خصوصيات المنازل من الداخل</span><span>🚗 لوحات مركبات واضحة</span><span>📵 أي محتوى يخالف الأنظمة والآداب</span><span>©️ صور منسوخة من غيرك</span></div>
       </div>
       <div class="rules-foot">المخالف يُحذف وقد يُحظر ناشره — التفاصيل في <a href="terms.html" target="_blank">الشروط والأحكام</a></div>
     </details>
@@ -180,26 +169,14 @@
       <button class="cap-btn live" onclick="document.getElementById('fileLive').click()">📸<b>التقط لايف</b><small>كاميرا + موقعك الآن</small></button>
       <button class="cap-btn" onclick="document.getElementById('fileGal').click()">🖼️<b>من المعرض</b><small>نقرأ موقع الصورة</small></button>
     </div>
-    <div class="drop" id="drop" style="display:none">
-      <span id="dropTxt"></span>
-      <img id="preview" style="display:none">
-    </div>
-    <div class="geo-card" id="geoCard" style="display:none">
-      <div class="geo-status" id="geoStatus"></div>
-      <div class="geo-coords" id="geoCoords"></div>
-    </div>
+    <div class="drop" id="drop" style="display:none"><span id="dropTxt"></span><img id="preview" style="display:none"></div>
+    <div class="geo-card" id="geoCard" style="display:none"><div class="geo-status" id="geoStatus"></div><div class="geo-coords" id="geoCoords"></div></div>
     <input type="file" id="fileLive" accept="image/*" capture="environment" style="display:none" onchange="pickImg(this,true)">
     <input type="file" id="fileGal" accept="image/*" style="display:none" onchange="pickImg(this,false)">
     <div class="f-group"><label>عنوان الصورة</label><input id="aTitle" placeholder="مثال: غروب على جبال السودة"></div>
     <div class="f-group"><label>تصنيف الصورة</label>
       <select id="aCat">
-        <option value="nature">🌿 طبيعة</option>
-        <option value="arch">🏛️ عمارة</option>
-        <option value="wildlife">🦅 طيور وحيوانات</option>
-        <option value="people">👥 أشخاص</option>
-        <option value="bw">⬛ أبيض وأسود</option>
-        <option value="landmark">🕌 معلم</option>
-        <option value="other" selected>📷 أخرى</option>
+        <option value="nature">🌿 طبيعة</option><option value="arch">🏛️ عمارة</option><option value="wildlife">🦅 طيور وحيوانات</option><option value="people">👥 أشخاص</option><option value="bw">⬛ أبيض وأسود</option><option value="landmark">🕌 معلم</option><option value="other" selected>📷 أخرى</option>
       </select>
     </div>
     <div class="f-group" id="grpRegion"><label>المنطقة</label><select id="aRegion" onchange="fillAddCities()"></select></div>
@@ -230,87 +207,51 @@
       </div>
       <div class="comments-h">💬 التعليقات <span id="cCount" style="color:var(--txt-dim);font-size:12px"></span></div>
       <div id="cList"></div>
-      <div class="c-input">
-        <input id="cText" placeholder="اكتب تعليقك...">
-        <button class="btn" onclick="addComment()">أرسل</button>
-      </div>
-      <div style="text-align:center;margin-top:18px">
-        <button onclick="reportPhoto()" style="background:none;border:none;color:var(--txt-dim);font-family:'Tajawal';font-size:12px;cursor:pointer;text-decoration:underline">🚩 إبلاغ عن صورة مخالفة</button>
-      </div>
+      <div class="c-input"><input id="cText" placeholder="اكتب تعليقك..."><button class="btn" onclick="addComment()">أرسل</button></div>
+      <div style="text-align:center;margin-top:18px"><button onclick="reportPhoto()" style="background:none;border:none;color:var(--txt-dim);font-family:'Tajawal';font-size:12px;cursor:pointer;text-decoration:underline">🚩 إبلاغ عن صورة مخالفة</button></div>
     </div>
   </div>
 </div>
 
-<!-- ====== الحساب ====== -->
-<!-- ====== صفحة المفضلة ====== -->
-<div class="page" id="page-favs">
-  <div class="form">
-    <h2>❤️ مفضلتي</h2>
-    <p class="hint">الصور اللي حفظتها ترجع لها متى ما تبي</p>
-    <div class="feed" id="favFeed" style="padding:0"></div>
-  </div>
-</div>
+<div class="page" id="page-favs"><div class="form"><h2>❤️ مفضلتي</h2><p class="hint">الصور اللي حفظتها ترجع لها متى ما تبي</p><div class="feed" id="favFeed" style="padding:0"></div></div></div>
 
-<!-- ====== صفحة رسائلي ====== -->
 <div class="page" id="page-msgs">
   <div class="form">
-    <h2>📨 رسائلي</h2>
-    <p class="hint">راسل الإدارة وتابع الردود هنا</p>
-    <div class="f-group"><label>نوع الرسالة</label>
-      <select id="fbKind">
-        <option value="suggestion">💡 اقتراح</option>
-        <option value="complaint">⚠️ شكوى</option>
-        <option value="question">❓ استفسار</option>
-        <option value="other">📝 أخرى</option>
-      </select>
-    </div>
-    <div class="f-group"><label>رسالتك</label>
-      <textarea id="fbBody" rows="4" placeholder="اكتب رسالتك هنا..."></textarea>
-    </div>
+    <h2>📨 رسائلي</h2><p class="hint">راسل الإدارة وتابع الردود هنا</p>
+    <div class="f-group"><label>نوع الرسالة</label><select id="fbKind"><option value="suggestion">💡 اقتراح</option><option value="complaint">⚠️ شكوى</option><option value="question">❓ استفسار</option><option value="other">📝 أخرى</option></select></div>
+    <div class="f-group"><label>رسالتك</label><textarea id="fbBody" rows="4" placeholder="اكتب رسالتك هنا..."></textarea></div>
     <button class="btn" style="width:100%;padding:13px" id="fbGo" onclick="sendFeedback()">إرسال 📨</button>
     <div id="myMsgs" style="margin-top:22px"></div>
   </div>
 </div>
 
-<!-- ====== صفحة الرعاة ====== -->
 <div class="page" id="page-sponsors">
   <div class="form">
-    <h2>🤝 رعاتنا</h2>
-    <p class="hint">شركاء يدعمون عدسات أهل الديار</p>
+    <h2>🤝 رعاتنا</h2><p class="hint">شركاء يدعمون عدسات أهل الديار</p>
     <div id="spBannerPage" style="margin-bottom:14px"></div>
     <div id="spListPage"></div>
     <div class="sp-cta">
       <div style="font-size:18px;margin-bottom:8px">🌟</div>
       <b>كن راعياً لصورة من بلدي</b>
-      <div style="font-size:13px;color:var(--txt-dim);margin-top:8px;line-height:1.9">
-        ✅ دبوس على الخريطة التفاعلية<br>
-        ✅ بطاقة جانبية بكل الصفحات<br>
-        ✅ تصدّر مسابقة أسبوعية باسمك<br>
-        ✅ حضور دائم بصفحة الرعاة
-      </div>
+      <div style="font-size:13px;color:var(--txt-dim);margin-top:8px;line-height:1.9">✅ دبوس على الخريطة التفاعلية<br>✅ بطاقة جانبية بكل الصفحات<br>✅ تصدّر مسابقة أسبوعية باسمك<br>✅ حضور دائم بصفحة الرعاة</div>
       <div style="margin-top:12px;font-size:13px">للتواصل: صفحة حسابي ← 📨 راسل الإدارة</div>
     </div>
     <button class="btn" style="width:100%;margin-top:14px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="go('feed')">→ رجوع للصور</button>
   </div>
 </div>
 
-<!-- ====== صفحة لقطة الأسبوع ====== -->
 <div class="page" id="page-week">
   <div class="form">
-    <h2 id="weekTitle">🏆 لقطة الأسبوع</h2>
-    <p class="hint" id="weekSponsor"></p>
+    <h2 id="weekTitle">🏆 لقطة الأسبوع</h2><p class="hint" id="weekSponsor"></p>
     <div class="feed" id="weekBody" style="padding:0"></div>
     <button class="btn" style="width:100%;margin-top:16px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="go('feed')">→ رجوع للصور</button>
   </div>
 </div>
 
-<!-- ====== صفحة الحساب ====== -->
 <div class="page" id="page-acc">
   <div class="form">
-    <!-- غير مسجل -->
     <div id="accOut">
-      <h2>👤 حسابي</h2>
-      <p class="hint">سجّل عشان صورك تنسب لك وتحفظ حقوقك</p>
+      <h2>👤 حسابي</h2><p class="hint">سجّل عشان صورك تنسب لك وتحفظ حقوقك</p>
       <div class="sort-tabs" style="margin-bottom:14px">
         <div class="sort-tab on" id="accTabIn" onclick="accTab('in')">دخول</div>
         <div class="sort-tab" id="accTabUp" onclick="accTab('up')">حساب جديد</div>
@@ -326,33 +267,20 @@
       </div>
       <button class="btn" style="width:100%;padding:13px" id="accGo" onclick="accSubmit()">دخول</button>
     </div>
-    <!-- مسجل -->
     <div id="accIn" style="display:none">
-      <h2>👤 <span id="accHello"></span></h2>
-      <p class="hint" id="accMail"></p>
-      <div class="f-group"><label>اسمك الظاهر مع صورك</label>
-        <div style="display:flex;gap:8px">
-          <input id="accEditName" style="flex:1">
-          <button class="btn" onclick="saveMyName()">حفظ</button>
-        </div>
-      </div>
+      <h2>👤 <span id="accHello"></span></h2><p class="hint" id="accMail"></p>
+      <div class="f-group"><label>اسمك الظاهر مع صورك</label><div style="display:flex;gap:8px"><input id="accEditName" style="flex:1"><button class="btn" onclick="saveMyName()">حفظ</button></div></div>
       <div id="myStats"></div>
       <button class="btn" id="accAdminBtn" style="width:100%;padding:13px;margin-bottom:10px;display:none" onclick="openAdmin()">⚙️ فتح لوحة الإشراف</button>
       <button class="btn" style="width:100%;padding:13px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="accLogout()">🚪 تسجيل الخروج</button>
     </div>
-    <!-- تذييل دائم -->
     <div class="acc-footer">
-      <a href="about.html" target="_blank">من نحن</a>
-      <span>·</span>
-      <a href="terms.html" target="_blank">الشروط والأحكام</a>
-      <span>·</span>
-      <a href="privacy.html" target="_blank">سياسة الخصوصية</a>
+      <a href="about.html" target="_blank">من نحن</a><span>·</span><a href="terms.html" target="_blank">الشروط والأحكام</a><span>·</span><a href="privacy.html" target="_blank">سياسة الخصوصية</a>
       <div class="acc-copy">صورة من بلدي 🇸🇦 — عدسات أهل الديار</div>
     </div>
   </div>
 </div>
 
-<!-- ====== صفحة الإشراف ====== -->
 <div class="page" id="page-adm">
   <div class="form">
     <h2>⚙️ لوحة الإشراف</h2>
@@ -370,17 +298,10 @@
     <div id="admPlaces" style="display:none">
       <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px">
         <div style="font-weight:700;font-size:14px;margin-bottom:10px">إضافة مكان جديد</div>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <select id="plcRegion" style="flex:1" onchange="plcFillCities()"></select>
-          <select id="plcCity" style="flex:1"></select>
-        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px"><select id="plcRegion" style="flex:1" onchange="plcFillCities()"></select><select id="plcCity" style="flex:1"></select></div>
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <input id="plcName" placeholder="اسم المكان" style="flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none">
-          <select id="plcKind" style="flex:0 0 110px">
-            <option value="city">مدينة</option>
-            <option value="village">قرية</option>
-            <option value="landmark">معلم</option>
-          </select>
+          <select id="plcKind" style="flex:0 0 110px"><option value="city">مدينة</option><option value="village">قرية</option><option value="landmark">معلم</option></select>
         </div>
         <button class="btn" style="width:100%" onclick="admAddPlace()">➕ إضافة</button>
       </div>
@@ -391,7 +312,6 @@
   </div>
 </div>
 
-<!-- ====== عارض الزوم ====== -->
 <div id="lightbox" onclick="if(event.target===this)zoomClose()">
   <div class="lb-bar">
     <button onclick="lbScaleBy(1.5)">➕</button>
@@ -420,17 +340,16 @@
   </button>
 </nav>
 <button id="fab" onclick="go('add')" title="انشر صورة">+</button>
-
 <div class="toast" id="toast"></div>
 
-<script src="app.js?x=m76"></script>
-<script src="places.js?x=m76"></script>
-<script src="capture.js?x=m76"></script>
-<script src="photos.js?x=m76"></script>
-<script src="week.js?x=m76"></script>
-<script src="upload.js?x=m76"></script>
-<script src="auth.js?x=m76"></script>
-<script src="admin.js?x=m76"></script>
-<script src="main.js?x=m76"></script>
+<script src="app.js?x=v1.1"></script>
+<script src="places.js?x=v1.1"></script>
+<script src="capture.js?x=v1.1"></script>
+<script src="photos.js?x=v1.1"></script>
+<script src="week.js?x=v1.1"></script>
+<script src="upload.js?x=v1.1"></script>
+<script src="auth.js?x=v1.1"></script>
+<script src="admin.js?x=v1.1"></script>
+<script src="main.js?x=v1.1"></script>
 </body>
 </html>
