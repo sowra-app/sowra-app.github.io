@@ -30,11 +30,13 @@ html{scrollbar-color:var(--line) var(--night)}
   background-repeat:repeat-x;
   background-size:128px 16px;
 }
-header{padding:18px 18px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;background:linear-gradient(var(--night) 78%,transparent)}
+header{padding:18px 18px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;background:var(--night)}
+
 .logo{font-family:'Reem Kufi',sans-serif;font-size:26px;font-weight:700;color:var(--sand);line-height:1}
 .logo span{font-size:13px;display:block;font-family:'Tajawal';font-weight:500;color:var(--txt-dim);margin-top:3px}
 .count-pill{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--sand-dim)}
 .filters{padding:6px 18px 14px;display:flex;flex-direction:column;gap:10px;position:sticky;top:72px;z-index:19;background:var(--night)}
+
 
 /* ====== بنر التعريف ====== */
 .hero{
