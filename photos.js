@@ -17,7 +17,7 @@ function fdSetSort(el,s){
   document.querySelectorAll('.fd-chips .fd-chip[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
 }
 function applyFilter(){
-  catFilter=_cat;
+  catFilter=_cat; 
   sortMode=_sort;
   $('filterDrawer').style.display='none';
   $('filterBtn').classList.remove('active'); 
