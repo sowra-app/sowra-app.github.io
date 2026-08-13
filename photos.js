@@ -328,7 +328,6 @@ function renderComments(){
     ?list.map(c=>`<div class="comment"><b>${esc(c.profiles?.display_name||'زائر')}</b>${esc(c.body)}</div>`).join('')
     :`<div style="color:var(--txt-dim);font-size:13px;padding:6px 2px">كن أول من يعلق ✍️</div>`;
 }
-${USER&&p.user_id===USER.id?`<button onclick="deleteMyPhoto(${p.id})" style="background:none;border:none;color:var(--sadu);font-family:'Tajawal';font-size:12px;cursor:pointer;text-decoration:underline;display:block;text-align:center;margin-top:8px">🗑️ حذف صورتي</button>`:''}
 async function reportPhoto(){
   if(!confirm('هل أنت متأكد أن هذه الصورة مخالفة؟ البلاغات الكيدية قد تعرّض حسابك للحظر.'))return;
   const { error } = await sb.from('reports').insert({photo_id:curId,user_id:USER.id});
@@ -442,21 +441,4 @@ function setView(v){
     if(feed)feed.style.display='';
     render();
   }
-}
-async function deleteMyPhoto(id){
-  const p=photos.find(x=>x.id===id);
-  if(!p)return;
-  // فحص المسابقة النشطة
-  const{data:wk}=await sb.from('weekly_entries').select('id').eq('photo_id',id).maybeSingle();
-  if(wk){toast('⚠️ الصورة مرشحة بمسابقة نشطة — لا يمكن حذفها الآن',true);return}
-  if(!confirm('حذف الصورة نهائياً؟ لا يمكن التراجع'))return;
-  // حذف الملف من التخزين
-  const path=p.image_path;
-  await sb.storage.from('photos').remove([path,path.replace('.jpg','_t.jpg')]);
-  // حذف من القاعدة
-  const{error}=await sb.from('photos').delete().eq('id',id).eq('user_id',USER.id);
-  if(error){toast('فشل الحذف: '+error.message,true);return}
-  toast('انحذفت الصورة ✅');
-  closeSheet();
-  await loadPhotos();
 }
