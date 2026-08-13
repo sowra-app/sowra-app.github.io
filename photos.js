@@ -176,7 +176,7 @@ function render(){
       ${medal?`<div class="mc-medal">${medal}</div>`:''}
       <div class="mc-overlay">
         <div class="mc-title">${esc(p.title)}</div>
-        <div class="mc-sub">${rankOf(p).ic} ${esc(p.photographer)} · ${p.abroad?esc(p.country||p.city):esc(p.village||p.city)}</div>
+        <div class="mc-sub">${rankOf(p).ic} ${esc(p.photographer)} · ${p.abroad?esc(p.country||p.city):esc(p.village||p.city)} · 👁️ ${p.views||0}</div>
       </div>
     </div>`;
   }).join('');
