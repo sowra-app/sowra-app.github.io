@@ -8,7 +8,7 @@ function toggleFilter(){
   d.style.display=open?'block':'none';
   $('filterBtn').classList.toggle('active',open);
 }
-function fdSetCat(el,k){
+function fdSetCat(el,k){ 
   _cat=k;
   document.querySelectorAll('.fd-chips .fd-chip[data-k]').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
 }
