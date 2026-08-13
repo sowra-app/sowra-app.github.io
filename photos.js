@@ -20,7 +20,7 @@ function applyFilter(){
   catFilter=_cat;
   sortMode=_sort;
   $('filterDrawer').style.display='none';
-  $('filterBtn').classList.remove('active');
+  $('filterBtn').classList.remove('active'); 
   const badge=$('filterBadge');
   badge.style.display=(catFilter!=='all'||_sort!=='top')?'inline':'none';
   $('abroadHint').style.display=sortMode==='abroad'?'block':'none';
