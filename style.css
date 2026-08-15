@@ -50,7 +50,7 @@ select{flex:1;background:var(--card);border:1px solid var(--line);border-radius:
 .close-x{z-index:30!important;width:40px;height:40px;font-size:18px}
 .sheet .ph.full{height:auto;max-height:none}
 .sheet .ph.full img{height:auto;max-height:82vh;object-fit:contain}
-.sheet-body{padding:16px 20px 30px}
+.sheet-body{padding:16px 20px 100px}
 .sheet-title{font-family:'Reem Kufi',sans-serif;font-size:22px;color:var(--sand)}
 .sheet-loc{color:var(--txt-dim);font-size:13px;margin:4px 0 14px;line-height:1.7}
 .rate-box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;text-align:center;margin-bottom:16px}
