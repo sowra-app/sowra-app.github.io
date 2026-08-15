@@ -185,6 +185,9 @@ function render(){
 /* ============ نافذة الصورة ============ */
 async function openSheet(id){
   curId=id;curPhoto=photos.find(x=>x.id===id);
+  const db=$('deleteBtn');
+if(db)db.style.display=(USER&&p.user_id===USER.id)?'block':'none';
+window.__CURPHOTO=id;
   const p=curPhoto;
   $('sPh').innerHTML=`<img src="${imgUrl(p.image_path)}" onclick="zoomOpen(this.src)" alt="${esc(p.title)}">
     <button class="zoombtn" id="zoomBtn" onclick="togglePhotoZoom()">⤢ عرض كامل</button>`;
@@ -441,5 +444,16 @@ function setView(v){
     if(feed)feed.style.display='';
     render();
   }
+}
+async function deleteMyPhoto(id){
+  const ph=photos.find(x=>x.id===id);
+  if(!ph)return;
+  const{data:wk}=await sb.from('weekly_entries').select('id').eq('photo_id',id).maybeSingle();
+  if(wk){toast('⚠️ الصورة مرشحة بمسابقة — لا يمكن حذفها',true);return}
+  if(!confirm('حذف الصورة نهائياً؟'))return;
+  await sb.storage.from('photos').remove([ph.image_path,ph.image_path.replace('.jpg','_t.jpg')]);
+  const{error}=await sb.from('photos').delete().eq('id',id).eq('user_id',USER.id);
+  if(error){toast('فشل: '+error.message,true);return}
+  toast('انحذفت ✅');closeSheet();await loadPhotos();
 }
 
