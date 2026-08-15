@@ -194,7 +194,13 @@ async function openSheet(id){
   $('sTitle').textContent=p.title;
   $('sLoc').innerHTML=(p.abroad?`🌍 عدسة مسافر · ${esc(p.country||p.city)} — عدسة ${esc(p.photographer)}`:`📍 ${esc(p.region)} · ${esc(p.city)}${p.village?' · '+esc(p.village):''} — عدسة ${esc(p.photographer)}`)
     +`<br><a class="mapbtn" href="${p.lat?`https://maps.google.com/?q=${p.lat},${p.lng}`:`https://maps.google.com/?q=${encodeURIComponent(p.abroad?(p.country||p.city):((p.village?p.village+' ':'')+p.city+' '+p.region))}`}" target="_blank" rel="noopener">🗺️ افتح الموقع على قوقل ماب${p.lat?'':' (بحث بالاسم)'}</a>`;
+ 
   renderFollow(p);
+  const db=$('deleteBtn');
+if(db&&USER&&p.user_id===USER.id){
+  db.style.display='block';
+  $('deleteBtnInner').onclick=()=>deleteMyPhoto(p.id,p.image_path);
+}else if(db){db.style.display='none';}
   $('overlay').classList.add('show');
   document.body.style.overflow='hidden';
   // تقييمي وأوسمتي وتعليقات — من القاعدة
