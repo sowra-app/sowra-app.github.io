@@ -185,8 +185,7 @@ function render(){
 /* ============ نافذة الصورة ============ */
 async function openSheet(id){
   curId=id;curPhoto=photos.find(x=>x.id===id);
- 
-  const p=curPhoto;
+   const p=curPhoto;
   $('sPh').innerHTML=`<img src="${imgUrl(p.image_path)}" onclick="zoomOpen(this.src)" alt="${esc(p.title)}">
     <button class="zoombtn" id="zoomBtn" onclick="togglePhotoZoom()">⤢ عرض كامل</button>`;
   if(!seenViews.has(p.id)){seenViews.add(p.id);try{sb.rpc('bump_view',{pid:p.id}).then(()=>{},()=>{})}catch(_){}}
@@ -444,5 +443,3 @@ function setView(v){
     render();
   }
 }
-
-
