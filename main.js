@@ -34,7 +34,13 @@ function go(p){
   loadWeek();loadSponsor();
   initHero();
        showNearby();}
-    initGoogleBtn();  
+function initGoogleBtn(){
+  try{
+    const on=localStorage.getItem('sowra_google_login')==='1';
+    const wrap=$('googleBtnWrap');
+    if(wrap)wrap.style.display=on?'block':'none';
+  }catch(e){}
+}
  
   catch(e){$('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${e.message||''}</div>`}
   await authP;
