@@ -120,3 +120,10 @@ async function loadMyMsgs(){
       </div>`).join('')||'<div class="empty" style="padding:18px">ما أرسلت رسائل بعد</div>');
   }catch(e){el.innerHTML='<div class="empty" style="padding:14px">نفّذ سكربت v15 لعرض السجل</div>'}
 }
+async function signInWithGoogle(){
+  const{error}=await sb.auth.signInWithOAuth({
+    provider:'google',
+    options:{redirectTo:window.location.origin}
+  });
+  if(error)toast('تعذر الدخول بـGoogle: '+error.message,true);
+}
