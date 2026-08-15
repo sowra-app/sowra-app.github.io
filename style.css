@@ -1,7 +1,7 @@
 :root{--night:#F7F1E3;--card:#FFFFFF;--card2:#F1E8D6;--sand:#8C2F23;--sand-dim:#8A7B6A;--sadu:#D63A2F;--sadu-deep:#A82A21;--palm:#2E8B57;--qblue:#2E6FB7;--qteal:#2AA8A0;--star:#E8A020;--line:#D9CDB4;--ink:#241F1C;--txt:#241F1C;--txt-dim:#6B6259}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{font-family:'Tajawal',sans-serif;background:var(--night);color:var(--txt);max-width:1600px;margin:0 auto;padding:130px 90px 14px;min-height:100vh}
+body{font-family:'Tajawal',sans-serif;background:var(--night);color:var(--txt);max-width:1600px;margin:0 auto;padding:130px 14px 80px;min-height:100vh}
 
 header{padding:18px 18px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;background:linear-gradient(var(--night) 78%,transparent)}
 .logo{font-family:'Reem Kufi',sans-serif;font-size:26px;font-weight:700;color:var(--sand);line-height:1}
