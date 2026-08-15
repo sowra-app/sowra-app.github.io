@@ -28,9 +28,12 @@ function accTab(m){
   $('accGo').textContent=m==='up'?'إنشاء الحساب':'دخول';
 }
 async function renderAccIn(){
-  const { data } = await sb.from('profiles').select('display_name').eq('id',USER.id).maybeSingle();
+const { data } = await sb.from('profiles').select('display_name,bio,region').eq('id',USER.id).maybeSingle();
   $('accHello').textContent='هلا '+(data?.display_name||'مصوّر');
   $('accEditName').value=data?.display_name||'';
+const rg2=$('accRegion');if(rg2)rg2.value=data?.region||'';
+  const bo2=$('accBio');if(bo2)bo2.value=data?.bio||'';
+  
   $('accMail').textContent=USER.email||'';
   $('accAdminBtn').style.display=IS_ADMIN?'block':'none';
   $('accOut').style.display='none';$('accIn').style.display='block';
@@ -57,10 +60,13 @@ async function renderMyStats(){
 async function saveMyName(){
   const name=$('accEditName').value.trim();
   if(!name)return toast('اكتب اسم',true);
-  const { error } = await sb.from('profiles').update({display_name:name}).eq('id',USER.id);
+  const upd={display_name:name};
+  const rg=$('accRegion');if(rg)upd.region=rg.value.trim();
+  const bo=$('accBio');if(bo)upd.bio=bo.value.trim();
+  const { error } = await sb.from('profiles').update(upd).eq('id',USER.id);
   if(error){toast('تعذر الحفظ',true);return}
   $('accHello').textContent='هلا '+name;
-  toast('انحفظ اسمك ✅');
+  toast('انحفظت بياناتك ✅');
   await loadPhotos();
 }
 async function accSubmit(){
