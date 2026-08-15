@@ -237,7 +237,7 @@ select{flex:1;background:var(--card);border:1px solid var(--line);border-radius:
 .mc-sub{color:rgba(255,255,255,.75);font-size:10.5px;margin-top:2px;text-shadow:0 1px 2px rgba(0,0,0,.5)}
 .mc-medal{position:absolute;top:8px;right:8px;font-size:16px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
 @media(hover:none){.mc-overlay{opacity:0}.mcard.tapped .mc-overlay{opacity:1}}
-#feed{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+#feed{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding-bottom:100px}
 @media(min-width:600px){#feed{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:900px){#feed{grid-template-columns:repeat(4,1fr)}}
 .view-toggle-pair{display:flex;gap:2px;background:var(--card2);border:1.5px solid var(--line);border-radius:10px;padding:3px}
