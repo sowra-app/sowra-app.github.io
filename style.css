@@ -1,7 +1,7 @@
 :root{--night:#F7F1E3;--card:#FFFFFF;--card2:#F1E8D6;--sand:#8C2F23;--sand-dim:#8A7B6A;--sadu:#D63A2F;--sadu-deep:#A82A21;--palm:#2E8B57;--qblue:#2E6FB7;--qteal:#2AA8A0;--star:#E8A020;--line:#D9CDB4;--ink:#241F1C;--txt:#241F1C;--txt-dim:#6B6259}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{font-family:'Tajawal',sans-serif;background:var(--night);color:var(--txt);max-width:1600px;margin:0 auto;padding:130px 14px 14px;min-height:100vh}
+body{font-family:'Tajawal',sans-serif;background:var(--night);color:var(--txt);max-width:1600px;margin:0 auto;padding:130px 90px 14px;min-height:100vh}
 
 header{padding:18px 18px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;background:linear-gradient(var(--night) 78%,transparent)}
 .logo{font-family:'Reem Kufi',sans-serif;font-size:26px;font-weight:700;color:var(--sand);line-height:1}
@@ -111,7 +111,7 @@ select{flex:1;background:var(--card);border:1px solid var(--line);border-radius:
 .drop.has{border-color:var(--palm);color:var(--palm)}
 .drop img{max-width:100%;max-height:200px;border-radius:12px;margin-top:10px}
 .submit-btn{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);width:calc(100% - 40px);max-width:480px;z-index:35;padding:15px;font-size:16px;box-shadow:0 6px 20px rgba(214,58,47,.4)}
-.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;z-index:30;background:var(--card);border-top:1px solid var(--line);display:flex;padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;z-index:30;background:var(--card);border-top:1px solid var(--line);display:flex;padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
 .nav-btn{flex:1;background:none;border:none;color:var(--txt-dim);font-family:'Tajawal';font-size:11.5px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 4px;transition:color .15s}
 .nb-ic{width:24px;height:24px;stroke:currentColor;flex-shrink:0}
 .nav-btn span{font-size:10.5px;line-height:1}
