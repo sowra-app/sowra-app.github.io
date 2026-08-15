@@ -195,6 +195,15 @@ async function openSheet(id){
     +`<br><a class="mapbtn" href="${p.lat?`https://maps.google.com/?q=${p.lat},${p.lng}`:`https://maps.google.com/?q=${encodeURIComponent(p.abroad?(p.country||p.city):((p.village?p.village+' ':'')+p.city+' '+p.region))}`}" target="_blank" rel="noopener">🗺️ افتح الموقع على قوقل ماب${p.lat?'':' (بحث بالاسم)'}</a>`;
  
   renderFollow(p);
+  const dbw=$('deleteBtn');
+  if(dbw){
+    const isMine=!!(USER && p.user_id===USER.id);
+    dbw.style.display=isMine?'block':'none';
+    if(isMine){
+      const dbi=$('deleteBtnInner');
+      if(dbi)dbi.onclick=function(){deleteMyPhoto(p.id,p.image_path)};
+    }
+  }
   $('overlay').classList.add('show');
   document.body.style.overflow='hidden';
   // تقييمي وأوسمتي وتعليقات — من القاعدة
@@ -442,4 +451,20 @@ function setView(v){
     if(feed)feed.style.display='';
     render();
   }
+}
+/* ====== حذف الصورة لصاحبها ====== */
+async function deleteMyPhoto(pid,path){
+  try{
+    const r=await sb.from('weekly_entries').select('id').eq('photo_id',pid).maybeSingle();
+    if(r&&r.data){toast('⚠️ الصورة مرشحة بمسابقة — لا يمكن حذفها الآن',true);return}
+  }catch(e){}
+  if(!confirm('حذف الصورة نهائياً؟ لا يمكن التراجع.'))return;
+  try{
+    await sb.storage.from('photos').remove([path,path.replace('.jpg','_t.jpg')]);
+  }catch(e){}
+  const {error}=await sb.from('photos').delete().eq('id',pid).eq('user_id',USER.id);
+  if(error){toast('تعذر الحذف: '+error.message,true);return}
+  toast('انحذفت الصورة ✅');
+  closeSheet();
+  await loadPhotos();
 }
