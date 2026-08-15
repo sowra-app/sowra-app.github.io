@@ -185,12 +185,7 @@ function render(){
 /* ============ نافذة الصورة ============ */
 async function openSheet(id){
   curId=id;curPhoto=photos.find(x=>x.id===id);
- const db=$('deleteBtn');
-if(db){
-  db.style.display=(USER&&p.user_id===USER.id)?'block':'none';
-  const btn=$('deleteBtnInner');
-  if(btn)btn.onclick=()=>deleteMyPhoto(id);
-}
+ 
   const p=curPhoto;
   $('sPh').innerHTML=`<img src="${imgUrl(p.image_path)}" onclick="zoomOpen(this.src)" alt="${esc(p.title)}">
     <button class="zoombtn" id="zoomBtn" onclick="togglePhotoZoom()">⤢ عرض كامل</button>`;
