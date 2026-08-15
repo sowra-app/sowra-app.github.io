@@ -9,7 +9,6 @@ function go(p){
   if(p==='adm' && !IS_ADMIN)p='feed';
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
   $('page-'+p).classList.add('on');
-  // تحديث class الـbody لإخفاء/إظهار الفلتر
   document.body.className='page-'+p;
   if(p==='feed'){
     if(typeof loadPhotos==='function') loadPhotos().then(()=>{if(typeof render==='function')render();});
@@ -30,19 +29,15 @@ function go(p){
   if(window.__BOOT_FAIL)return;
   initSelects();fillAddCities();
   const authP=ensureAuth().then(()=>{checkAdmin();loadFavs();}).catch(e=>toast('تعذر الاتصال بالحساب',true));
-  try{await Promise.all([loadPlaces(),loadPhotos()]);
-  loadWeek();loadSponsor();
-  initHero();
-       showNearby();}
-function initGoogleBtn(){
   try{
-    const on=localStorage.getItem('sowra_google_login')==='1';
-    const wrap=$('googleBtnWrap');
-    if(wrap)wrap.style.display=on?'block':'none';
-  }catch(e){}
-}
- 
-  catch(e){$('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${e.message||''}</div>`}
+    await Promise.all([loadPlaces(),loadPhotos()]);
+    loadWeek();loadSponsor();
+    initHero();
+    showNearby();
+    if(typeof initGoogleBtn==='function')initGoogleBtn();
+  }catch(e){
+    $('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${e.message||''}</div>`;
+  }
   await authP;
 })();
 
