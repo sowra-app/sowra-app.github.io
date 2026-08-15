@@ -127,3 +127,8 @@ async function signInWithGoogle(){
   });
   if(error)toast('تعذر الدخول بـGoogle: '+error.message,true);
 }
+function initGoogleBtn(){
+  let on=false;try{on=localStorage.getItem('sowra_google_login')==='1';}catch(e){}
+  const wrap=$('googleBtnWrap');
+  if(wrap)wrap.style.display=on?'block':'none';
+}
