@@ -41,7 +41,8 @@ select{flex:1;background:var(--card);border:1px solid var(--line);border-radius:
 .stars-mini{color:var(--star);letter-spacing:.5px;font-size:11px;white-space:nowrap}
 .overlay{position:fixed;inset:0;background:rgba(36,31,28,.55);z-index:50;display:none;align-items:flex-end;justify-content:center}
 .overlay.show{display:flex}
-.sheet{position:relative;background:var(--night);width:100%;max-width:760px;max-height:92vh;border-radius:24px 24px 0 0;overflow-y:auto;border-top:2px solid var(--sadu);animation:up .25s ease}
+/* .sheet{position:relative;background:var(--night);width:100%;max-width:760px;max-height:92vh;border-radius:24px 24px 0 0;overflow-y:auto;border-top:2px solid var(--sadu);animation:up .25s ease} */
+.sheet{position:relative;background:var(--night);width:100%;max-width:760px;max-height:92vh;border-radius:24px 24px 0 0;overflow-y:auto;border-top:2px solid var(--sadu);animation:up .25s ease;padding-bottom:80px}
 @keyframes up{from{transform:translateY(60px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.sheet{animation:none}}
 .sheet .ph{height:45vh;min-height:240px;max-height:430px;border-radius:0;background:#000}
