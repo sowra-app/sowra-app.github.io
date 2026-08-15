@@ -33,8 +33,9 @@ function go(p){
   try{await Promise.all([loadPlaces(),loadPhotos()]);
   loadWeek();loadSponsor();
   initHero();
+       showNearby();}
     initGoogleBtn();  
-  showNearby();}
+ 
   catch(e){$('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${e.message||''}</div>`}
   await authP;
 })();
