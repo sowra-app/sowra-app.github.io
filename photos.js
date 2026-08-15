@@ -468,3 +468,31 @@ async function deleteMyPhoto(pid,path){
   closeSheet();
   await loadPhotos();
 }
+/* ====== بروفايل المصور ====== */
+async function openProfile(uid){
+  go('profile');
+  $('profHead').innerHTML='<div class="loader">⏳</div>';
+  const r=await sb.from('profiles').select('display_name,bio,region').eq('id',uid).maybeSingle();
+  const pr=r.data||{};
+  const mine=photos.filter(x=>x.user_id===uid);
+  const totV=mine.reduce((s,x)=>s+(x.views||0),0);
+  const rk=mine.length?rankOf(mine[0]):{ic:'🌱',t:'مستكشف',c:'bronze'};
+  const fo=mine.length?(mine[0].followers_count||0):0;
+  $('profHead').innerHTML=`
+    <div class="prof-card">
+      <div class="prof-name">${esc(pr.display_name||'مصوّر')}</div>
+      <span class="rankchip r-${rk.c}">${rk.ic} ${rk.t}</span>
+      ${pr.region?`<div class="prof-bio">📍 ${esc(pr.region)}</div>`:''}
+      ${pr.bio?`<div class="prof-bio">${esc(pr.bio)}</div>`:''}
+      <div class="prof-stats">
+        <div class="prof-stat"><b>${mine.length}</b><span>صورة</span></div>
+        <div class="prof-stat"><b>${fo}</b><span>متابع</span></div>
+        <div class="prof-stat"><b>${totV}</b><span>مشاهدة</span></div>
+      </div>
+    </div>`;
+  $('profFeed').innerHTML=mine.length?mine.map(p=>`
+    <div class="mcard" onclick="openSheet(${p.id})">
+      <img src="${thumbUrl(p.image_path)}" loading="lazy" alt="${esc(p.title)}">
+      <div class="mc-overlay"><div class="mc-title">${esc(p.title)}</div></div>
+    </div>`).join(''):'<div class="empty">ما نشر صوراً بعد</div>';
+}
