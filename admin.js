@@ -418,20 +418,20 @@ async function admSideBannerToggle(){
   await loadSponsor();await loadAdmWeek();
 }
 function admGoogleLoginBlock(){
-  let on=false;try{on=localStorage.getItem('sowra_google_login')==='1';}catch(e){}
+  const b=window.__SPB||{};
+  const on=!!b.google_login;
   return `<div style="background:var(--card);border:1.5px solid ${on?'var(--qblue)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🔵 تسجيل الدخول بـ Google <span style="font-size:11px;font-weight:700;color:${on?'var(--qblue)':'var(--txt-dim)'}">${on?'● مفعّل':'○ مطفأ'}</span></div>
-    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">يظهر زر Google في صفحة الحساب.</div>
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🔵 تسجيل الدخول بـ Google <span style="font-size:11px;font-weight:700;color:${on?'var(--qblue)':'var(--txt-dim)'}">${on?'● مفعّل للجميع':'○ مطفأ'}</span></div>
+    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">يظهر زر Google لكل الزوار في صفحة الحساب.</div>
     <button class="btn" style="width:100%;${on?'background:var(--sadu)':'background:var(--qblue)'}" onclick="admGoogleToggle()">${on?'🙈 إخفاء الزر':'👁️ إظهار زر Google'}</button>
   </div>`;
 }
-function admGoogleToggle(){
-  let on=false;try{on=localStorage.getItem('sowra_google_login')==='1';}catch(e){}
-  try{on?localStorage.removeItem('sowra_google_login'):localStorage.setItem('sowra_google_login','1');}catch(e){}
-  const wrap=$('googleBtnWrap');
-  if(wrap)wrap.style.display=!on?'block':'none';
-  toast(!on?'زر Google ظاهر 🔵':'اختفى الزر');
-  loadAdmWeek();
+async function admGoogleToggle(){
+  const b=window.__SPB||{};
+  const {error}=await sb.from('site_banner').update({google_login:!b.google_login}).eq('id',1);
+  if(error){toast('فشلت العملية: '+error.message,true);return}
+  toast(!b.google_login?'زر Google ظاهر للجميع 🔵':'اختفى الزر');
+  await loadSponsor();await loadAdmWeek();
 }
 function admMaintBlock(){
   const b=window.__SPB||{};
