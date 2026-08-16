@@ -520,7 +520,7 @@ const prev=i>0?photos.find(p=>p.id===stops[i-1].photo_id):null;
     </div>`;
  }).join(''):'<div class="empty" style="padding:20px">ما فيه مسارات بعد</div>'}`;
 
-  }
+
 
 async function rtCreate(){
   const name=$('rtName').value.trim();
