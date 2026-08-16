@@ -520,10 +520,6 @@ const prev=i>0?photos.find(p=>p.id===stops[i-1].photo_id):null;
     </div>`;
  }).join(''):'<div class="empty" style="padding:20px">ما فيه مسارات بعد</div>'}`;
 
-  if(window.__RT_SUGGEST){
-    const s=window.__RT_SUGGEST;
-    window.__RT_SUGGEST=null;
-    suggestNearby(s.rid,s.pid);
   }
 
 async function rtCreate(){
