@@ -399,6 +399,23 @@ function renderMap(){
     MAP=L.map('map',{zoomControl:true,attributionControl:true}).setView([23.9,45.1],5);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(MAP);
     MARKS=L.layerGroup().addTo(MAP);
+    // زر العودة لموقعي
+    const ZoomHome=L.Control.extend({
+      options:{position:'topright'},
+      onAdd:function(){
+        const b=L.DomUtil.create('button','');
+        b.innerHTML='📍';
+        b.title='موقعي';
+        b.style.cssText='width:38px;height:38px;background:#fff;border:2px solid rgba(0,0,0,.2);border-radius:8px;font-size:18px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2)';
+        b.onclick=function(e){
+          e.stopPropagation();
+          if(window.__USER_LAT)MAP.setView([window.__USER_LAT,window.__USER_LNG],13);
+          else toast('فعّل الموقع أولاً',true);
+        };
+        return b;
+      }
+    });
+    MAP.addControl(new ZoomHome());
   }
   MARKS.clearLayers();
   const q=($('q').value||'').trim();
@@ -413,7 +430,13 @@ function renderMap(){
   });
   // رسم المسارات المنشورة
   drawRoutes();
-  if(pts.length)MAP.fitBounds(pts,{padding:[46,46],maxZoom:12});
+ // التمركز الذكي: موقع المستخدم أولاً، وإلا كل الصور
+  if(window.__USER_LAT && !MAP._userCentered){
+    MAP.setView([window.__USER_LAT,window.__USER_LNG],11);
+    MAP._userCentered=true;
+  } else if(pts.length && !MAP._userCentered){
+    MAP.fitBounds(pts,{padding:[46,46],maxZoom:12});
+  }
   // دبوس الراعي
   const spd=window.__SPDATA;
   if(spd&&spd.active&&spd.image_path&&spd.sponsor_lat&&spd.sponsor_lng){
