@@ -634,6 +634,16 @@ async function drawRoutes(){
           <a href="${gmap}" target="_blank" rel="noopener" style="display:block;margin-top:8px;background:#2E8B57;color:#fff;text-decoration:none;padding:7px;border-radius:8px;font-size:12px;font-weight:700">🚗 افتح المسار بقوقل ماب</a>
         </div>`);
       ROUTE_LAYERS.push(line);
+      // أرقام المحطات على الخريطة
+      pts.forEach((pt,i)=>{
+        const nic=L.divIcon({
+          className:'',
+          html:`<div style="width:24px;height:24px;border-radius:50%;background:${rt.color||'#D63A2F'};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);font-family:'Tajawal'">${i+1}</div>`,
+          iconSize:[24,24],iconAnchor:[12,12]
+        });
+        const m=L.marker(pt,{icon:nic,zIndexOffset:900}).addTo(MAP);
+        ROUTE_LAYERS.push(m);
+      });
     });
   }catch(e){}
 }
