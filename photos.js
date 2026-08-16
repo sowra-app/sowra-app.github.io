@@ -498,29 +498,50 @@ async function openProfile(uid){
     </div>`).join(''):'<div class="empty">ما نشر صوراً بعد</div>';
 }
 /* ====== نصيحة الطقس للمصور ====== */
+
 async function loadWeatherTip(){
   if(!window.__USER_LAT)return;
   const el=$('weatherTip');if(!el)return;
   try{
-    const u=`https://api.open-meteo.com/v1/forecast?latitude=${window.__USER_LAT}&longitude=${window.__USER_LNG}&current=temperature_2m,weather_code,cloud_cover&daily=sunset&timezone=auto`;
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${window.__USER_LAT}&longitude=${window.__USER_LNG}&current=temperature_2m,weather_code,cloud_cover,is_day&daily=sunset,sunrise&timezone=auto`;
     const r=await fetch(u);
     const d=await r.json();
     const c=d.current;if(!c)return;
     const code=c.weather_code, temp=Math.round(c.temperature_2m), cloud=c.cloud_cover;
-    const sunset=d.daily&&d.daily.sunset?new Date(d.daily.sunset[0]):null;
+    const isDay=c.is_day===1;
     const now=new Date();
+    const sunset=d.daily&&d.daily.sunset?new Date(d.daily.sunset[0]):null;
+    const sunrise=d.daily&&d.daily.sunrise?new Date(d.daily.sunrise[0]):null;
     const minsToSunset=sunset?Math.round((sunset-now)/60000):null;
+    const minsToSunrise=sunrise?Math.round((sunrise-now)/60000):null;
 
-    let ic='☀️',state='صافٍ',adv='إضاءة قوية — جرّب التصوير في الظل أو انتظر الساعة الذهبية';
-    if(code>=45&&code<=48){ic='🌫️';state='ضباب';adv='الضباب فرصة ذهبية للقطات دراماتيكية — اخرج الآن!';}
-    else if(code>=51&&code<=67){ic='🌧️';state='مطر';adv='بعد المطر: انعكاسات وألوان مشبعة — انتظر الصحو';}
-    else if(code>=71&&code<=77){ic='🌨️';state='ثلج';adv='مشهد نادر — وثّقه قبل ما يذوب';}
-    else if(code>=95){ic='⛈️';state='عاصفة';adv='السلامة أولاً — صوّر من مكان آمن';}
-    else if(cloud>70){ic='☁️';state='غائم';adv='إضاءة ناعمة مثالية للتفاصيل والبورتريه';}
-    else if(cloud>30){ic='⛅';state='غيوم متفرقة';adv='سماء درامية — وقت ممتاز للمناظر الواسعة';}
+    let ic,state,adv;
 
-    if(minsToSunset!==null&&minsToSunset>0&&minsToSunset<90){
-      ic='🌅';adv='الساعة الذهبية تقترب — بعد '+minsToSunset+' دقيقة أجمل ضوء لليوم';
+    // ═══ الليل ═══
+    if(!isDay){
+      ic='🌙';state='ليل';
+      if(cloud<30) adv='سماء صافية — فرصة لتصوير النجوم ودرب التبانة ✨';
+      else if(cloud<70) adv='غيوم متفرقة — جرّب تصوير أضواء المدينة';
+      else adv='سماء غائمة — التصوير الليلي صعب الليلة';
+      if(code>=45&&code<=48){ic='🌫️';state='ضباب ليلي';adv='الضباب مع أضواء الشارع = لقطات غامضة جميلة';}
+      if(minsToSunrise!==null&&minsToSunrise>0&&minsToSunrise<90){
+        ic='🌄';state='قبل الشروق';adv='الشروق بعد '+minsToSunrise+' دقيقة — استعد للساعة الذهبية';
+      }
+    }
+    // ═══ النهار ═══
+    else {
+      ic='☀️';state='صافٍ';adv='إضاءة قوية — صوّر في الظل أو انتظر الساعة الذهبية';
+      if(code>=45&&code<=48){ic='🌫️';state='ضباب';adv='الضباب فرصة ذهبية للقطات دراماتيكية — اخرج الآن!';}
+      else if(code>=51&&code<=67){ic='🌧️';state='مطر';adv='بعد المطر: انعكاسات وألوان مشبعة';}
+      else if(code>=71&&code<=77){ic='🌨️';state='ثلج';adv='مشهد نادر — وثّقه قبل ما يذوب';}
+      else if(code>=95){ic='⛈️';state='عاصفة';adv='السلامة أولاً — صوّر من مكان آمن';}
+      else if(cloud>70){ic='☁️';state='غائم';adv='إضاءة ناعمة مثالية للتفاصيل والبورتريه';}
+      else if(cloud>30){ic='⛅';state='غيوم متفرقة';adv='سماء درامية — وقت ممتاز للمناظر الواسعة';}
+
+      if(minsToSunset!==null&&minsToSunset>0&&minsToSunset<90){
+        ic='🌅';state='قبل الغروب';adv='الساعة الذهبية — بعد '+minsToSunset+' دقيقة أجمل ضوء لليوم';
+      }
+      if(temp>=42){adv='الحر شديد ('+temp+'°) — صوّر بالصباح الباكر أو قبل المغرب';}
     }
 
     el.style.display='flex';
