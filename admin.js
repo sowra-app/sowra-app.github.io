@@ -526,7 +526,7 @@ if(window.__RT_SUGGEST){
     window.__RT_SUGGEST=null;
     suggestNearby(s.rid,s.pid);
   }
-    }
+  
 async function rtCreate(){
   const name=$('rtName').value.trim();
   if(!name){toast('اكتب اسم المسار',true);return}
