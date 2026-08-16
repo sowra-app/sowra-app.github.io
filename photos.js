@@ -416,6 +416,20 @@ function renderMap(){
       }
     });
     MAP.addControl(new ZoomHome());
+    // زر تبديل نطاق المسارات
+    const RtToggle=L.Control.extend({
+      options:{position:'topright'},
+      onAdd:function(){
+        const b=L.DomUtil.create('button','');
+        b.id='rtToggleBtn';
+        b.innerHTML='🗺️';
+        b.title='المسارات القريبة';
+        b.style.cssText='width:38px;height:38px;background:#fff;border:2px solid rgba(0,0,0,.2);border-radius:8px;font-size:17px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);margin-top:6px';
+        b.onclick=function(e){e.stopPropagation();toggleAllRoutes();};
+        return b;
+      }
+    });
+    MAP.addControl(new RtToggle());
   }
   MARKS.clearLayers();
   const q=($('q').value||'').trim();
@@ -579,7 +593,9 @@ async function loadWeatherTip(){
 }
 /* ====== رسم المسارات على الخريطة ====== */
 /* ====== رسم المسارات على الخريطة ====== */
-let ROUTE_LAYERS=[];
+/* ====== رسم المسارات على الخريطة ====== */
+let ROUTE_LAYERS=[], ROUTES_ALL=false;
+
 async function drawRoutes(){
   if(!MAP||typeof L==='undefined')return;
   ROUTE_LAYERS.forEach(l=>{try{MAP.removeLayer(l)}catch(e){}});
@@ -603,8 +619,7 @@ async function drawRoutes(){
       }).filter(Boolean);
       if(pts.length<2)return;
 
-      // فلترة: المسارات ضمن 150 كم من موقع المستخدم فقط
-      if(ulat){
+      if(!ROUTES_ALL && ulat){
         const near=pts.some(p=>distKm([ulat,ulng],p)<=150);
         if(!near)return;
       }
@@ -621,4 +636,16 @@ async function drawRoutes(){
       ROUTE_LAYERS.push(line);
     });
   }catch(e){}
+}
+
+function toggleAllRoutes(){
+  ROUTES_ALL=!ROUTES_ALL;
+  const b=$('rtToggleBtn');
+  if(b){b.textContent=ROUTES_ALL?'🌍':'🗺️';b.title=ROUTES_ALL?'كل المسارات':'المسارات القريبة';}
+  toast(ROUTES_ALL?'عرض كل مسارات المملكة 🌍':'المسارات القريبة منك 🗺️');
+  drawRoutes();
+  if(ROUTES_ALL&&ROUTE_LAYERS.length){
+    const all=[];ROUTE_LAYERS.forEach(l=>l.getLatLngs().forEach(p=>all.push(p)));
+    if(all.length)MAP.fitBounds(all,{padding:[40,40]});
+  }
 }
