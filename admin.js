@@ -485,11 +485,7 @@ async function loadRoutes(){
     <textarea id="rtDesc" rows="2" placeholder="وصف قصير للمسار" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;resize:none;margin-bottom:8px"></textarea>
     <button class="btn" style="width:100%" onclick="rtCreate()">➕ إنشاء المسار</button>
   </div>
-  if(window.__RT_SUGGEST){
-    const s=window.__RT_SUGGEST;
-    window.__RT_SUGGEST=null;
-    suggestNearby(s.rid,s.pid);
-  }
+  
   ${ROUTES.length?ROUTES.map(rt=>{
     const stops=RSTOPS[rt.id]||[];
     return `<div style="background:var(--card);border:1.5px solid ${rt.active?'var(--palm)':'var(--line)'};border-radius:14px;padding:14px;margin-bottom:12px">
@@ -524,7 +520,11 @@ const prev=i>0?photos.find(p=>p.id===stops[i-1].photo_id):null;
     </div>`;
   }).join(''):'<div class="empty" style="padding:20px">ما فيه مسارات بعد</div>'}`;
 }
-
+if(window.__RT_SUGGEST){
+    const s=window.__RT_SUGGEST;
+    window.__RT_SUGGEST=null;
+    suggestNearby(s.rid,s.pid);
+  }
 async function rtCreate(){
   const name=$('rtName').value.trim();
   if(!name){toast('اكتب اسم المسار',true);return}
