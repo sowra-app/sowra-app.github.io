@@ -585,7 +585,7 @@ async function admAddToRoute(pid){
 
 /* اقتراح الصور القريبة للمحطة الأخيرة */
 /* اقتراح الصور القريبة للمحطة الأخيرة */
-function suggestNearby(rid,lastPid){
+
   function suggestNearby(rid,lastPid){
   toast('جاري البحث عن صور قريبة...');
   const el=$('admRt');if(!el)return;
