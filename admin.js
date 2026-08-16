@@ -596,7 +596,7 @@ function suggestNearby(rid,lastPid){
       <span style="font-size:12px;color:var(--txt-dim)">ما راح تظهر على الخريطة ولا نقدر نقترح صوراً قريبة منها.<br>
       الصور اللي تنفع للمسارات هي المصوّرة بالجوال مع تفعيل الموقع، أو المرفوعة بـ«📸 التقط لايف».</span>
       <button class="btn" style="width:100%;margin-top:8px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-size:12px;padding:7px" onclick="this.parentElement.remove()">✕ فهمت</button>`;
-    el.insertBefore(w,el.firstChild);
+   el.appendChild(w);
     return;
   }
 
@@ -611,7 +611,7 @@ function suggestNearby(rid,lastPid){
     n.style.cssText='background:var(--card);border:1.5px dashed var(--line);border-radius:14px;padding:12px;margin-bottom:14px;font-size:12.5px;color:var(--txt-dim);text-align:center';
     n.innerHTML=`ما فيه صور أخرى ضمن ٦٠ كم من آخر محطة
       <button class="btn" style="width:100%;margin-top:8px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-size:12px;padding:6px" onclick="this.parentElement.remove()">✕</button>`;
-    el.insertBefore(n,el.firstChild);
+el.appendChild(n);
     return;
   }
 
@@ -624,7 +624,7 @@ function suggestNearby(rid,lastPid){
       <button class="btn" style="font-size:11px;padding:5px 10px" onclick="rtQuickAdd(${rid},${p.id})">➕</button>
     </div>`).join('')}
     <button class="btn" style="width:100%;margin-top:6px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-size:12px;padding:7px" onclick="this.parentElement.remove()">✕ إخفاء</button>`;
-  el.insertBefore(box,el.firstChild);
+el.appendChild(box);
 }
 
 async function rtQuickAdd(rid,pid){
