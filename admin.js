@@ -513,6 +513,7 @@ const prev=i>0?photos.find(p=>p.id===stops[i-1].photo_id):null;
       }).join('')||'<div style="font-size:12px;color:var(--txt-dim)">ما فيه محطات — أضفها من تبويب 🗂️ الصور</div>'}</div>
       <div style="display:flex;gap:8px">
         <button class="btn" style="flex:1;font-size:12px;padding:8px;${rt.active?'background:var(--sadu)':'background:var(--palm)'}" onclick="rtToggle(${rt.id},${rt.active})">${rt.active?'🙈 إخفاء':'▶️ نشر'}</button>
+       <button class="btn" style="flex:1;font-size:12px;padding:8px;background:var(--qblue)" onclick="rtRenumber(${rt.id})">🔢 إعادة ترقيم</button>
         <button class="btn" style="flex:1;font-size:12px;padding:8px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="rtDelete(${rt.id})">🗑️ حذف</button>
       </div>
     </div>`;
@@ -573,4 +574,12 @@ async function admAddToRoute(pid){
   });
   if(error){toast(error.code==='23505'?'الصورة موجودة بالمسار':'فشلت الإضافة',true);return}
   toast('انضافت لـ'+rt.name+' 🗺️');
+}
+async function rtRenumber(rid){
+  const stops=RSTOPS[rid]||[];
+  for(let i=0;i<stops.length;i++){
+    await sb.from('route_stops').update({ord:i}).eq('id',stops[i].id);
+  }
+  toast('انرتبت المحطات ✅');
+  loadRoutes();
 }
