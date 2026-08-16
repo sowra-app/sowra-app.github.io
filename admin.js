@@ -518,15 +518,14 @@ const prev=i>0?photos.find(p=>p.id===stops[i-1].photo_id):null;
         <button class="btn" style="flex:1;font-size:12px;padding:8px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="rtDelete(${rt.id})">🗑️ حذف</button>
       </div>
     </div>`;
-  }).join(''):'<div class="empty" style="padding:20px">ما فيه مسارات بعد</div>'}`;
+ }).join(''):'<div class="empty" style="padding:20px">ما فيه مسارات بعد</div>'}`;
 
-
-if(window.__RT_SUGGEST){
+  if(window.__RT_SUGGEST){
     const s=window.__RT_SUGGEST;
     window.__RT_SUGGEST=null;
     suggestNearby(s.rid,s.pid);
   }
-  
+}
 async function rtCreate(){
   const name=$('rtName').value.trim();
   if(!name){toast('اكتب اسم المسار',true);return}
