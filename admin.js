@@ -574,7 +574,8 @@ async function admAddToRoute(pid){
   if(error){toast(error.code==='23505'?'الصورة موجودة بالمسار':'فشلت الإضافة',true);return}
   toast('انضافت لـ'+rt.name+' 🗺️');
   await loadRoutes();
-  suggestNearby(rt.id,pid);
+  admSetTab('rt');
+  setTimeout(()=>suggestNearby(rt.id,pid),300);
 }
 
 /* اقتراح الصور القريبة للمحطة الأخيرة */
@@ -628,7 +629,7 @@ async function rtQuickAdd(rid,pid){
   if(error){toast(error.code==='23505'?'موجودة بالمسار':'فشلت الإضافة',true);return}
   toast('انضافت للمسار 🗺️');
   await loadRoutes();
-  suggestNearby(rid,pid);
+  setTimeout(()=>suggestNearby(rid,pid),300);
 }
 async function rtRenumber(rid){
   const stops=RSTOPS[rid]||[];
