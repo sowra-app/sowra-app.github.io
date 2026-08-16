@@ -578,17 +578,38 @@ async function admAddToRoute(pid){
 }
 
 /* اقتراح الصور القريبة للمحطة الأخيرة */
+/* اقتراح الصور القريبة للمحطة الأخيرة */
 function suggestNearby(rid,lastPid){
+  const el=$('admRt');if(!el)return;
   const last=photos.find(p=>p.id===lastPid);
-  if(!last||!last.lat)return;
+
+  // تحذير: الصورة بلا إحداثيات
+  if(!last||!last.lat||!last.lng){
+    const w=document.createElement('div');
+    w.style.cssText='background:#FBEAE8;border:1.5px solid var(--sadu);border-radius:14px;padding:14px;margin-bottom:14px;font-size:13px;line-height:1.9';
+    w.innerHTML=`<b style="color:var(--sadu)">⚠️ هذه الصورة بلا إحداثيات</b><br>
+      <span style="font-size:12px;color:var(--txt-dim)">ما راح تظهر على الخريطة ولا نقدر نقترح صوراً قريبة منها.<br>
+      الصور اللي تنفع للمسارات هي المصوّرة بالجوال مع تفعيل الموقع، أو المرفوعة بـ«📸 التقط لايف».</span>
+      <button class="btn" style="width:100%;margin-top:8px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-size:12px;padding:7px" onclick="this.parentElement.remove()">✕ فهمت</button>`;
+    el.insertBefore(w,el.firstChild);
+    return;
+  }
+
   const stops=RSTOPS[rid]||[];
   const inRoute=new Set(stops.map(s=>s.photo_id));
   const distKm=(p)=>Math.hypot((p.lat-last.lat)*111,(p.lng-last.lng)*111*Math.cos(last.lat*Math.PI/180));
   const near=photos.filter(p=>p.lat&&p.lng&&!inRoute.has(p.id)&&distKm(p)<=60)
     .sort((a,b)=>distKm(a)-distKm(b)).slice(0,8);
-  if(!near.length)return;
 
-  const el=$('admRt');if(!el)return;
+  if(!near.length){
+    const n=document.createElement('div');
+    n.style.cssText='background:var(--card);border:1.5px dashed var(--line);border-radius:14px;padding:12px;margin-bottom:14px;font-size:12.5px;color:var(--txt-dim);text-align:center';
+    n.innerHTML=`ما فيه صور أخرى ضمن ٦٠ كم من آخر محطة
+      <button class="btn" style="width:100%;margin-top:8px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-size:12px;padding:6px" onclick="this.parentElement.remove()">✕</button>`;
+    el.insertBefore(n,el.firstChild);
+    return;
+  }
+
   const box=document.createElement('div');
   box.style.cssText='background:var(--card);border:1.5px dashed var(--qblue);border-radius:14px;padding:14px;margin-bottom:14px';
   box.innerHTML=`<div style="font-weight:700;font-size:14px;margin-bottom:8px">📍 صور قريبة من آخر محطة — أضفها للمسار</div>
