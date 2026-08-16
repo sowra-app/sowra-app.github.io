@@ -578,6 +578,7 @@ async function loadWeatherTip(){
   }catch(e){}
 }
 /* ====== رسم المسارات على الخريطة ====== */
+/* ====== رسم المسارات على الخريطة ====== */
 let ROUTE_LAYERS=[];
 async function drawRoutes(){
   if(!MAP||typeof L==='undefined')return;
@@ -591,6 +592,9 @@ async function drawRoutes(){
     const byRoute={};
     (s.data||[]).forEach(x=>{(byRoute[x.route_id]=byRoute[x.route_id]||[]).push(x)});
 
+    const ulat=window.__USER_LAT, ulng=window.__USER_LNG;
+    const distKm=(a,b)=>Math.hypot((a[0]-b[0])*111,(a[1]-b[1])*111*Math.cos(a[0]*Math.PI/180));
+
     rts.forEach(rt=>{
       const stops=byRoute[rt.id]||[];
       const pts=stops.map(st=>{
@@ -598,6 +602,12 @@ async function drawRoutes(){
         return (p&&p.lat&&p.lng)?[p.lat,p.lng]:null;
       }).filter(Boolean);
       if(pts.length<2)return;
+
+      // فلترة: المسارات ضمن 150 كم من موقع المستخدم فقط
+      if(ulat){
+        const near=pts.some(p=>distKm([ulat,ulng],p)<=150);
+        if(!near)return;
+      }
 
       const line=L.polyline(pts,{color:rt.color||'#D63A2F',weight:4,opacity:.75,dashArray:'8,6'}).addTo(MAP);
       const gmap='https://www.google.com/maps/dir/'+pts.map(p=>p[0]+','+p[1]).join('/');
