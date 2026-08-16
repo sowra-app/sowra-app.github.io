@@ -275,5 +275,6 @@ body.page-sponsors #mainFilters{display:none}
 .prof-stat{text-align:center}
 .prof-stat b{display:block;font-size:19px;color:var(--sadu)}
 .prof-stat span{font-size:11px;color:var(--txt-dim)}
+#profFeed{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 @media(min-width:600px){#profFeed{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:900px){#profFeed{grid-template-columns:repeat(4,1fr)}}
