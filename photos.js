@@ -411,6 +411,8 @@ function renderMap(){
     L.marker([p.lat,p.lng],{icon:ic}).addTo(MARKS).on('click',()=>openSheet(p.id));
     pts.push([p.lat,p.lng]);
   });
+  // رسم المسارات المنشورة
+  drawRoutes();
   if(pts.length)MAP.fitBounds(pts,{padding:[46,46],maxZoom:12});
   // دبوس الراعي
   const spd=window.__SPDATA;
@@ -550,5 +552,40 @@ async function loadWeatherTip(){
         <div class="wt-now">${state} · ${temp}°</div>
         <div class="wt-adv">${adv}</div>
       </div>`;
+  }catch(e){}
+}
+/* ====== رسم المسارات على الخريطة ====== */
+let ROUTE_LAYERS=[];
+async function drawRoutes(){
+  if(!MAP||typeof L==='undefined')return;
+  ROUTE_LAYERS.forEach(l=>{try{MAP.removeLayer(l)}catch(e){}});
+  ROUTE_LAYERS=[];
+  try{
+    const r=await sb.from('routes').select('*').eq('active',true);
+    const rts=r.data||[];
+    if(!rts.length)return;
+    const s=await sb.from('route_stops').select('*').order('ord');
+    const byRoute={};
+    (s.data||[]).forEach(x=>{(byRoute[x.route_id]=byRoute[x.route_id]||[]).push(x)});
+
+    rts.forEach(rt=>{
+      const stops=byRoute[rt.id]||[];
+      const pts=stops.map(st=>{
+        const p=photos.find(x=>x.id===st.photo_id);
+        return (p&&p.lat&&p.lng)?[p.lat,p.lng]:null;
+      }).filter(Boolean);
+      if(pts.length<2)return;
+
+      const line=L.polyline(pts,{color:rt.color||'#D63A2F',weight:4,opacity:.75,dashArray:'8,6'}).addTo(MAP);
+      const gmap='https://www.google.com/maps/dir/'+pts.map(p=>p[0]+','+p[1]).join('/');
+      line.bindPopup(`
+        <div style="font-family:'Tajawal';text-align:center;min-width:180px">
+          <div style="font-weight:700;font-size:14px;color:#D63A2F;margin-bottom:4px">🗺️ ${esc(rt.name)}</div>
+          <div style="font-size:12px;color:#666">${esc(rt.region||'')} · ${pts.length} محطة</div>
+          ${rt.description?`<div style="font-size:11.5px;color:#888;margin-top:4px;line-height:1.7">${esc(rt.description)}</div>`:''}
+          <a href="${gmap}" target="_blank" rel="noopener" style="display:block;margin-top:8px;background:#2E8B57;color:#fff;text-decoration:none;padding:7px;border-radius:8px;font-size:12px;font-weight:700">🚗 افتح المسار بقوقل ماب</a>
+        </div>`);
+      ROUTE_LAYERS.push(line);
+    });
   }catch(e){}
 }
