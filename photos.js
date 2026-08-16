@@ -46,6 +46,7 @@ function showNearby(){
     window.__USER_LAT=lat;window.__USER_LNG=lng;
     // لو الخريطة مفتوحة — أضف دبوس موقعك الآن
     if(MAP)addUserPin(lat,lng);
+    loadWeatherTip();
     const distKm=(p)=>Math.hypot(((p.lat||0)-lat)*111,(((p.lng||0)-lng)*111*Math.cos(lat*Math.PI/180)));
 const near=photos.filter(p=>p.lat&&p.lng&&distKm(p)<=30).sort((a,b)=>distKm(a)-distKm(b)).slice(0,6);
 
@@ -495,4 +496,38 @@ async function openProfile(uid){
       <img src="${thumbUrl(p.image_path)}" loading="lazy" alt="${esc(p.title)}">
       <div class="mc-overlay"><div class="mc-title">${esc(p.title)}</div></div>
     </div>`).join(''):'<div class="empty">ما نشر صوراً بعد</div>';
+}
+/* ====== نصيحة الطقس للمصور ====== */
+async function loadWeatherTip(){
+  if(!window.__USER_LAT)return;
+  const el=$('weatherTip');if(!el)return;
+  try{
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${window.__USER_LAT}&longitude=${window.__USER_LNG}&current=temperature_2m,weather_code,cloud_cover&daily=sunset&timezone=auto`;
+    const r=await fetch(u);
+    const d=await r.json();
+    const c=d.current;if(!c)return;
+    const code=c.weather_code, temp=Math.round(c.temperature_2m), cloud=c.cloud_cover;
+    const sunset=d.daily&&d.daily.sunset?new Date(d.daily.sunset[0]):null;
+    const now=new Date();
+    const minsToSunset=sunset?Math.round((sunset-now)/60000):null;
+
+    let ic='☀️',state='صافٍ',adv='إضاءة قوية — جرّب التصوير في الظل أو انتظر الساعة الذهبية';
+    if(code>=45&&code<=48){ic='🌫️';state='ضباب';adv='الضباب فرصة ذهبية للقطات دراماتيكية — اخرج الآن!';}
+    else if(code>=51&&code<=67){ic='🌧️';state='مطر';adv='بعد المطر: انعكاسات وألوان مشبعة — انتظر الصحو';}
+    else if(code>=71&&code<=77){ic='🌨️';state='ثلج';adv='مشهد نادر — وثّقه قبل ما يذوب';}
+    else if(code>=95){ic='⛈️';state='عاصفة';adv='السلامة أولاً — صوّر من مكان آمن';}
+    else if(cloud>70){ic='☁️';state='غائم';adv='إضاءة ناعمة مثالية للتفاصيل والبورتريه';}
+    else if(cloud>30){ic='⛅';state='غيوم متفرقة';adv='سماء درامية — وقت ممتاز للمناظر الواسعة';}
+
+    if(minsToSunset!==null&&minsToSunset>0&&minsToSunset<90){
+      ic='🌅';adv='الساعة الذهبية تقترب — بعد '+minsToSunset+' دقيقة أجمل ضوء لليوم';
+    }
+
+    el.style.display='flex';
+    el.innerHTML=`<div class="wt-ic">${ic}</div>
+      <div class="wt-txt">
+        <div class="wt-now">${state} · ${temp}°</div>
+        <div class="wt-adv">${adv}</div>
+      </div>`;
+  }catch(e){}
 }
