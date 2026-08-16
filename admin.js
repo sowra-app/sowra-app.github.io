@@ -559,21 +559,55 @@ async function rtMove(rid,sid,dir){
 }
 
 /* إضافة صورة لمسار — من تبويب الصور */
+/* إضافة صورة لمسار — مع اقتراح القريبة */
 async function admAddToRoute(pid){
   if(!ROUTES.length){await loadRoutes();}
   if(!ROUTES.length){toast('أنشئ مساراً أولاً من تبويب 🗺️',true);return}
-  const list=ROUTES.map((r,i)=>`${i+1} = ${r.name}`).join('\n');
+  const list=ROUTES.map((r,i)=>`${i+1} = ${r.name} (${(RSTOPS[r.id]||[]).length} محطة)`).join('\n');
   const pick=prompt('أضف الصورة لأي مسار؟\n\n'+list);
   if(pick===null)return;
   const idx=parseInt(pick.trim())-1;
   if(isNaN(idx)||!ROUTES[idx]){toast('رقم غير صحيح',true);return}
   const rt=ROUTES[idx];
   const stops=RSTOPS[rt.id]||[];
-  const {error}=await sb.from('route_stops').insert({
-    route_id:rt.id,photo_id:pid,ord:stops.length
-  });
+  const {error}=await sb.from('route_stops').insert({route_id:rt.id,photo_id:pid,ord:stops.length});
   if(error){toast(error.code==='23505'?'الصورة موجودة بالمسار':'فشلت الإضافة',true);return}
   toast('انضافت لـ'+rt.name+' 🗺️');
+  await loadRoutes();
+  suggestNearby(rt.id,pid);
+}
+
+/* اقتراح الصور القريبة للمحطة الأخيرة */
+function suggestNearby(rid,lastPid){
+  const last=photos.find(p=>p.id===lastPid);
+  if(!last||!last.lat)return;
+  const stops=RSTOPS[rid]||[];
+  const inRoute=new Set(stops.map(s=>s.photo_id));
+  const distKm=(p)=>Math.hypot((p.lat-last.lat)*111,(p.lng-last.lng)*111*Math.cos(last.lat*Math.PI/180));
+  const near=photos.filter(p=>p.lat&&p.lng&&!inRoute.has(p.id)&&distKm(p)<=60)
+    .sort((a,b)=>distKm(a)-distKm(b)).slice(0,8);
+  if(!near.length)return;
+
+  const el=$('admRt');if(!el)return;
+  const box=document.createElement('div');
+  box.style.cssText='background:var(--card);border:1.5px dashed var(--qblue);border-radius:14px;padding:14px;margin-bottom:14px';
+  box.innerHTML=`<div style="font-weight:700;font-size:14px;margin-bottom:8px">📍 صور قريبة من آخر محطة — أضفها للمسار</div>
+    ${near.map(p=>`<div style="display:flex;align-items:center;gap:8px;background:var(--card2);border-radius:10px;padding:7px 10px;margin-bottom:5px;font-size:12px">
+      <img src="${thumbUrl(p.image_path)}" style="width:34px;height:34px;border-radius:8px;object-fit:cover">
+      <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.title)} <span style="color:var(--palm);font-size:11px">↔ ${distKm(p).toFixed(1)} كم</span></span>
+      <button class="btn" style="font-size:11px;padding:5px 10px" onclick="rtQuickAdd(${rid},${p.id})">➕</button>
+    </div>`).join('')}
+    <button class="btn" style="width:100%;margin-top:6px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-size:12px;padding:7px" onclick="this.parentElement.remove()">✕ إخفاء</button>`;
+  el.insertBefore(box,el.firstChild);
+}
+
+async function rtQuickAdd(rid,pid){
+  const stops=RSTOPS[rid]||[];
+  const {error}=await sb.from('route_stops').insert({route_id:rid,photo_id:pid,ord:stops.length});
+  if(error){toast(error.code==='23505'?'موجودة بالمسار':'فشلت الإضافة',true);return}
+  toast('انضافت للمسار 🗺️');
+  await loadRoutes();
+  suggestNearby(rid,pid);
 }
 async function rtRenumber(rid){
   const stops=RSTOPS[rid]||[];
