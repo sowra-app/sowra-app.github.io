@@ -496,9 +496,16 @@ async function loadRoutes(){
       ${rt.description?`<div style="font-size:12px;color:var(--txt-dim);margin-bottom:8px">${esc(rt.description)}</div>`:''}
       <div id="rtStops${rt.id}" style="margin:8px 0">${stops.map((s,i)=>{
         const ph=photos.find(p=>p.id===s.photo_id);
+const prev=i>0?photos.find(p=>p.id===stops[i-1].photo_id):null;
+        let dist='';
+        if(prev&&ph&&prev.lat&&ph.lat){
+          const d=Math.hypot((ph.lat-prev.lat)*111,(ph.lng-prev.lng)*111*Math.cos(ph.lat*Math.PI/180));
+          dist=` <span style="color:var(--palm);font-size:11px">↔ ${d.toFixed(1)} كم</span>`;
+        }
         return `<div style="display:flex;align-items:center;gap:8px;background:var(--card2);border-radius:10px;padding:7px 10px;margin-bottom:5px;font-size:12px">
           <b style="color:var(--sadu)">${i+1}</b>
-          <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph?esc(ph.title):'#'+s.photo_id}</span>
+        <b style="color:var(--sadu)">${i+1}</b>
+     <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph?esc(ph.title):'#'+s.photo_id}${dist}</span>
           <button onclick="rtMove(${rt.id},${s.id},-1)" style="background:none;border:none;cursor:pointer;font-size:14px">⬆️</button>
           <button onclick="rtMove(${rt.id},${s.id},1)" style="background:none;border:none;cursor:pointer;font-size:14px">⬇️</button>
           <button onclick="rtDelStop(${s.id})" style="background:none;border:none;cursor:pointer;font-size:13px">🗑️</button>
