@@ -542,7 +542,8 @@ async function openProfile(uid){
 /* ====== نصيحة الطقس للمصور ====== */
 
 async function loadWeatherTip(){
-  if(!window.__USER_LAT)return;
+  const wel=$('weatherTip');
+  if(!window.__USER_LAT){if(wel)wel.style.display='none';return;}
   const el=$('weatherTip');if(!el)return;
   try{
     const u=`https://api.open-meteo.com/v1/forecast?latitude=${window.__USER_LAT}&longitude=${window.__USER_LNG}&current=temperature_2m,weather_code,cloud_cover,is_day&daily=sunset,sunrise&timezone=auto`;
