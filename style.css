@@ -279,7 +279,7 @@ body.page-sponsors #mainFilters{display:none}
 @media(min-width:600px){#profFeed{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:900px){#profFeed{grid-template-columns:repeat(4,1fr)}}
 /* ====== نصيحة الطقس ====== */
-.wtip{background:linear-gradient(135deg,#E8F4FD,var(--card));border:1.5px solid var(--qblue);border-radius:14px;padding:11px 15px;margin-bottom:12px;font-size:13px;line-height:1.8;display:flex;align-items:center;gap:10px}
+.wtip{background:linear-gradient(135deg,#E8F4FD,var(--card));border:1.5px solid var(--qblue);border-radius:14px;padding:11px 15px;margin-bottom:12px;font-size:13px;line-height:1.8;display:flex;align-items:center;gap:10px;min-height:64px;transition:opacity .25s}
 .wtip .wt-ic{font-size:26px;flex-shrink:0}
 .wtip .wt-txt{flex:1;min-width:0}
 .wtip .wt-now{font-weight:700;color:var(--qblue);font-size:13.5px}

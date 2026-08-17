@@ -34,6 +34,7 @@ function go(p){
     loadWeek();loadSponsor();loadChallenge();
     initHero();
     showNearby();
+    if(typeof loadWeatherTip==='function')setTimeout(loadWeatherTip,400);
     if(typeof initGoogleBtn==='function')initGoogleBtn();
   }catch(e){
     $('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${e.message||''}</div>`;
