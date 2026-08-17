@@ -664,7 +664,7 @@ async function shareCard(p){
     img.src=imgUrl(p.image_path);
     await new Promise((res,rej)=>{img.onload=res;img.onerror=rej});
 
-    const W=1080,H=1350,ih=920;
+    const W=1080,H=1350,ih=1110;
     const cv=document.createElement('canvas');
     cv.width=W;cv.height=H;
     const ctx=cv.getContext('2d');
@@ -710,18 +710,18 @@ async function shareCard(p){
     if(p.ratings_count>0){
       ctx.textAlign='right';
       ctx.fillStyle='#E8A020';
-      ctx.font='bold 46px Tajawal, sans-serif';
-      ctx.fillText('★ '+Number(p.avg_stars).toFixed(1),W-60,ih+135);
+      ctx.font='bold 40px Tajawal, sans-serif';
+      ctx.fillText('★ '+Number(p.avg_stars).toFixed(1),W-60,ih+108);
     }
 
     ctx.textAlign='center';
     ctx.fillStyle='#D63A2F';
-    ctx.font='bold 62px Tajawal, sans-serif';
-    ctx.fillText('صورة من بلدي',W/2,ih+240);
+    ctx.font='bold 52px Tajawal, sans-serif';
+    ctx.fillText('صورة من بلدي',W/2,ih+168);
 
     ctx.fillStyle='#6B6259';
-    ctx.font='34px Tajawal, sans-serif';
-    ctx.fillText('عدسات أهل الديار  ·  sowra.app',W/2,ih+295);
+    ctx.font='30px Tajawal, sans-serif';
+    ctx.fillText('عدسات أهل الديار  ·  sowra.app',W/2,ih+212);
 
     cv.toBlob(async function(blob){
       if(!blob){toast('تعذر إنشاء البطاقة',true);return}
