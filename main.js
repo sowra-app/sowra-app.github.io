@@ -31,7 +31,7 @@ function go(p){
   const authP=ensureAuth().then(()=>{checkAdmin();loadFavs();}).catch(e=>toast('تعذر الاتصال بالحساب',true));
   try{
     await Promise.all([loadPlaces(),loadPhotos()]);
-    loadWeek();loadSponsor();
+    loadWeek();loadSponsor();loadChallenge();
     initHero();
     showNearby();
     if(typeof initGoogleBtn==='function')initGoogleBtn();
@@ -59,6 +59,7 @@ document.addEventListener('visibilitychange',()=>{
     if(typeof loadPhotos==='function')loadPhotos();
     if(typeof loadSponsor==='function')loadSponsor();
     if(typeof loadWeek==='function')loadWeek();
+    if(typeof loadChallenge==='function')loadChallenge();
   }
 });
 

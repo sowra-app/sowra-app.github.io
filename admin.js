@@ -246,7 +246,7 @@ async function loadAdmWeek(){
       <div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px">
         <div style="flex:1"><b style="font-size:13px">#${p.id} · ${esc(p.title)}</b></div>
         <button class="btn" style="font-size:12px;padding:7px 12px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admWeekRemove(${p.id})">إزالة</button>
-      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + await admSpBlock() + admSponsorsBtn() + admSponsorSideBlock() +  admGoogleLoginBlock() + admMaintBlock();
+      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + admChallengeBlock() + await admSpBlock() + admSponsorsBtn() + admSponsorSideBlock() +  admGoogleLoginBlock() + admMaintBlock();
 }
 /* ====== بنر الراعي ====== */
 async function admSpBlock(){
@@ -461,4 +461,39 @@ async function admMaintSaveMsg(){
   const {error}=await sb.from('site_banner').update({maintenance_msg:$('mtMsg').value.trim()}).eq('id',1);
   if(error){toast('فشل الحفظ',true);return}
   toast('انحفظت الرسالة ✅');
+}
+
+/* ====== تحدي الأسبوع ====== */
+function admChallengeBlock(){
+  const c=window.__CH||{};
+  const on=!!c.active;
+  return `<div style="background:var(--card);border:1.5px solid ${on?'var(--qblue)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🎯 تحدي الأسبوع <span style="font-size:11px;font-weight:700;color:${on?'var(--qblue)':'var(--txt-dim)'}">${on?'● نشط':'○ مطفأ'}</span></div>
+    <input id="chTitle" placeholder="موضوع التحدي (مثال: الأبواب القديمة)" value="${esc(c.title||'')}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
+    <input id="chHint" placeholder="وصف أو تلميح (اختياري)" value="${esc(c.hint||'')}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
+    <input id="chEnds" type="date" value="${c.ends_at||''}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;font-size:12px;padding:9px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admChSave()">💾 حفظ</button>
+      <button class="btn" style="flex:1;font-size:12px;padding:9px;${on?'background:var(--sadu)':'background:var(--qblue)'}" onclick="admChToggle()">${on?'🙈 إيقاف':'▶️ تفعيل'}</button>
+    </div>
+  </div>`;
+}
+async function admChSave(){
+  const {error}=await sb.from('challenge').update({
+    title:$('chTitle').value.trim(),
+    hint:$('chHint').value.trim(),
+    ends_at:$('chEnds').value||null,
+    updated_at:new Date().toISOString()
+  }).eq('id',1);
+  if(error){toast('فشل الحفظ: '+error.message,true);return}
+  toast('انحفظ التحدي ✅');
+  await loadChallenge();await loadAdmWeek();
+}
+async function admChToggle(){
+  const c=window.__CH||{};
+  if(!c.active&&!$('chTitle').value.trim()){toast('اكتب موضوع التحدي أولاً',true);return}
+  const {error}=await sb.from('challenge').update({active:!c.active}).eq('id',1);
+  if(error){toast('فشلت العملية',true);return}
+  toast(!c.active?'التحدي نشط 🎯':'اتوقف التحدي');
+  await loadChallenge();await loadAdmWeek();
 }

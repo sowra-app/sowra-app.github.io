@@ -421,6 +421,20 @@ function renderMap(){
       }
     });
     MAP.addControl(new ZoomHome());
+    // زر المناطق قليلة التغطية
+    const GapBtn=L.Control.extend({
+      options:{position:'topright'},
+      onAdd:function(){
+        const b=L.DomUtil.create('button','');
+        b.id='gapBtn';
+        b.innerHTML='🔍';
+        b.title='مناطق قليلة التغطية';
+        b.style.cssText='width:38px;height:38px;background:#fff;border:2px solid rgba(0,0,0,.2);border-radius:8px;font-size:17px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);margin-top:6px';
+        b.onclick=function(e){e.stopPropagation();toggleGaps();};
+        return b;
+      }
+    });
+    MAP.addControl(new GapBtn());
   }
   MARKS.clearLayers();
   const q=($('q').value||'').trim();
@@ -740,4 +754,59 @@ async function shareCard(p){
     },'image/jpeg',0.92);
 
   }catch(e){toast('تعذر تجهيز البطاقة',true)}
+}
+
+/* ====== مناطق قليلة التغطية ====== */
+let GAP_LAYERS=[], GAPS_ON=false;
+
+function drawCoverageGaps(){
+  if(!MAP||typeof L==='undefined')return;
+  GAP_LAYERS.forEach(l=>{try{MAP.removeLayer(l)}catch(e){}});
+  GAP_LAYERS=[];
+  if(!GAPS_ON)return;
+
+  const LAT_MIN=16.5, LAT_MAX=32.0, LNG_MIN=34.5, LNG_MAX=55.5;
+  const STEP=0.75;
+
+  const geo=photos.filter(p=>p.lat&&p.lng&&!p.abroad);
+  const filled=new Set();
+  geo.forEach(p=>{
+    const gy=Math.floor((p.lat-LAT_MIN)/STEP);
+    const gx=Math.floor((p.lng-LNG_MIN)/STEP);
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)filled.add((gy+dy)+'_'+(gx+dx));
+  });
+
+  const rows=Math.ceil((LAT_MAX-LAT_MIN)/STEP);
+  const cols=Math.ceil((LNG_MAX-LNG_MIN)/STEP);
+  let count=0;
+
+  for(let y=0;y<rows;y++){
+    for(let x=0;x<cols;x++){
+      if(filled.has(y+'_'+x))continue;
+      const clat=LAT_MIN+y*STEP+STEP/2;
+      const clng=LNG_MIN+x*STEP+STEP/2;
+      if(clng<36.5&&clat>28)continue;
+      if(clng>51.5&&clat>26.5)continue;
+
+      const c=L.circle([clat,clng],{
+        radius:38000,
+        color:'#8A7B6A',weight:1.5,dashArray:'6,6',
+        fillColor:'#8A7B6A',fillOpacity:.12
+      }).addTo(MAP);
+      c.bindPopup('<div style="font-family:Tajawal;text-align:center;min-width:170px">'+
+        '<div style="font-weight:700;font-size:14px;color:#8C2F23;margin-bottom:4px">📍 منطقة قليلة التغطية</div>'+
+        '<div style="font-size:12px;color:#666;line-height:1.8">ما فيها صور بعد — كن أول من يوثّق جمالها 📸</div></div>');
+      GAP_LAYERS.push(c);
+      count++;
+    }
+  }
+  if(count)toast(count+' منطقة تنتظر عدستك 📸');
+}
+
+function toggleGaps(){
+  GAPS_ON=!GAPS_ON;
+  const b=$('gapBtn');
+  if(b){b.style.background=GAPS_ON?'#8C2F23':'#fff';b.style.color=GAPS_ON?'#fff':'#000';}
+  drawCoverageGaps();
+  if(!GAPS_ON)toast('اختفت المناطق الفارغة');
 }

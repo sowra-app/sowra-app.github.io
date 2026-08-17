@@ -126,3 +126,27 @@ function renderSponsorsBtn(){
   const sp=window.__SPDATA;
   btn.style.display=(sp&&sp.sponsors_btn)?'inline-block':'none';
 }
+
+/* ====== تحدي الأسبوع ====== */
+let CHALLENGE=null;
+async function loadChallenge(){
+  const el=$('challengeStrip');if(!el)return;
+  try{
+    const r=await sb.from('challenge').select('*').eq('id',1).maybeSingle();
+    CHALLENGE=r.data||null;
+    window.__CH=CHALLENGE||{};
+  }catch(e){CHALLENGE=null}
+  if(!CHALLENGE||!CHALLENGE.active||!CHALLENGE.title){el.style.display='none';return}
+  let left='';
+  if(CHALLENGE.ends_at){
+    const d=Math.ceil((new Date(CHALLENGE.ends_at)-new Date())/86400000);
+    if(d>0)left=' · باقي '+d+(d===1?' يوم':' أيام');
+    else if(d===0)left=' · ينتهي اليوم';
+    else {el.style.display='none';return}
+  }
+  el.style.display='block';
+  el.innerHTML='🎯 <b>تحدي الأسبوع:</b> '+esc(CHALLENGE.title)+
+    (CHALLENGE.hint?'<div class="ch-hint">'+esc(CHALLENGE.hint)+'</div>':'')+
+    '<div class="ch-left">'+left.replace(' · ','')+'</div>';
+  el.onclick=function(){go('add')};
+}
