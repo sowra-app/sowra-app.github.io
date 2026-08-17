@@ -123,6 +123,7 @@ async function loadPhotos(){
   const { data, error } = await sb.from('photos_ranked').select('*');
   if(error){$('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${error.message}</div>`;return}
   photos = data || [];
+  await loadVisitCounts();
   if(typeof _viewMode!=='undefined'&&_viewMode==='map'){renderMap();}
   else{render();}
 }
@@ -175,6 +176,7 @@ function render(){
     return `<div class="mcard" onclick="openSheet(${p.id})">
       <img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="${esc(p.title)}">
       ${medal?`<div class="mc-medal">${medal}</div>`:''}
+      ${VISIT_COUNTS[p.id]?`<div class="mc-visits">👣 ${VISIT_COUNTS[p.id]}</div>`:''}
       <div class="mc-overlay">
         <div class="mc-title">${esc(p.title)}</div>
         <div class="mc-sub">${rankOf(p).ic} ${esc(p.photographer)} · ${p.abroad?esc(p.country||p.city):esc(p.village||p.city)} · 👁️ ${p.views||0}</div>
@@ -707,12 +709,14 @@ async function addVisit(pid){
   const {error}=await sb.from('visits').insert({photo_id:pid,user_id:USER.id});
   if(error){toast('تعذر التسجيل: '+error.message,true);return}
   toast('انسجّلت زيارتك 👣');
+  await loadVisitCounts();render();
   renderVisits(curPhoto);
 }
 
 async function removeVisit(pid){
   await sb.from('visits').delete().eq('photo_id',pid).eq('user_id',USER.id);
   toast('انشالت الزيارة');
+  await loadVisitCounts();render();
   renderVisits(curPhoto);
 }
 
@@ -722,4 +726,13 @@ async function saveVisitNote(pid){
   if(error){toast('تعذر الحفظ',true);return}
   toast('انحفظ انطباعك ✅');
   renderVisits(curPhoto);
+}
+/* ====== عدادات الزيارات للشبكة ====== */
+let VISIT_COUNTS={};
+async function loadVisitCounts(){
+  try{
+    const r=await sb.from('visits').select('photo_id');
+    VISIT_COUNTS={};
+    (r.data||[]).forEach(v=>{VISIT_COUNTS[v.photo_id]=(VISIT_COUNTS[v.photo_id]||0)+1});
+  }catch(e){}
 }
