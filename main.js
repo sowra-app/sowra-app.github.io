@@ -53,3 +53,16 @@ document.addEventListener('click',function(e){
     return;
   }
 },true);
+/* ====== تحديث تلقائي عند العودة للتطبيق ====== */
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'){
+    if(typeof loadPhotos==='function')loadPhotos();
+    if(typeof loadSponsor==='function')loadSponsor();
+    if(typeof loadWeek==='function')loadWeek();
+  }
+});
+
+/* تحديث دوري كل دقيقتين والتطبيق مفتوح */
+setInterval(()=>{
+  if(document.visibilityState==='visible'&&typeof loadPhotos==='function')loadPhotos();
+},120000);
