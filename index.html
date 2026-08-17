@@ -103,6 +103,7 @@
           <button class="fd-chip on" data-s="top" onclick="fdSetSort(this,'top')">⭐ الأعلى</button>
           <button class="fd-chip" data-s="new" onclick="fdSetSort(this,'new')">🕐 الأحدث</button>
           <button class="fd-chip" data-s="abroad" onclick="fdSetSort(this,'abroad')">🌍 عدسة مسافر</button>
+          <button class="fd-chip" onclick="applyFilter();openQuests()">🏆 كنوز الديرة</button>
           <button class="fd-chip" id="fdSponsorsBtn" style="display:none" onclick="applyFilter();openSponsorsPage()">🤝 الرعاة</button>
         </div>
       </div>
@@ -228,6 +229,16 @@
     <button class="btn" style="width:100%;margin-top:16px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="go('feed')">→ رجوع للصور</button>
   </div>
 </div>
+<!-- ====== كنوز الديرة ====== -->
+<div class="page" id="page-quests">
+  <div class="form">
+    <h2>🏆 كنوز الديرة</h2>
+    <p class="hint">رحلات اكتشاف — زر المواقع واحصد شاراتك</p>
+    <div id="questList"></div>
+    <button class="btn" style="width:100%;margin-top:16px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="go('feed')">→ رجوع للصور</button>
+  </div>
+</div>
+
 <div class="page" id="page-favs"><div class="form"><h2>❤️ مفضلتي</h2><p class="hint">الصور اللي حفظتها ترجع لها متى ما تبي</p><div class="feed" id="favFeed" style="padding:0"></div></div></div>
 
 <div class="page" id="page-msgs">
@@ -313,9 +324,11 @@
 <div class="sort-tab" id="admTabFb" onclick="admSetTab('fb')" title="الرسائل">📨</div>
 <div class="sort-tab" id="admTabSt" onclick="admSetTab('st')" title="الإحصائيات">📊</div>
 <div class="sort-tab" id="admTabWk" onclick="admSetTab('wk')" title="المسابقة والرعاة">🏆</div>
+      <div class="sort-tab" id="admTabQs" onclick="admSetTab('qs')" title="كنوز الديرة">🗝️</div>
     </div>
     <div id="admSt" style="display:none"></div>
     <div id="admWk" style="display:none"></div>
+    <div id="admQs" style="display:none"></div>
     <div id="admFb" style="display:none"></div>
     <div id="admPlaces" style="display:none">
       <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px">

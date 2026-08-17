@@ -300,3 +300,27 @@ body.page-sponsors #mainFilters{display:none}
 .ch-strip b{color:var(--sadu)}
 .ch-hint{font-size:12.5px;color:var(--txt-dim);margin-top:5px;line-height:1.8}
 .ch-left{font-size:11.5px;color:var(--sadu);font-weight:700;margin-top:6px}
+
+/* ====== كنوز الديرة ====== */
+.quest-card{background:var(--card);border:2px solid var(--ink);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 3px 10px rgba(36,31,28,.08)}
+.quest-card.done{border-color:var(--star);background:linear-gradient(135deg,#FFF9EC,var(--card))}
+.q-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.q-badge{font-size:34px;flex-shrink:0}
+.q-info{flex:1;min-width:0}
+.q-title{font-family:'Reem Kufi',sans-serif;font-size:18px;color:var(--sand)}
+.q-sub{font-size:12px;color:var(--txt-dim);margin-top:2px}
+.q-sponsor{font-size:12px;color:var(--txt-dim);background:var(--card2);border-radius:10px;padding:6px 11px;margin-bottom:10px}
+.q-sponsor b{color:var(--sadu)}
+.q-bar{height:9px;background:var(--card2);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.q-fill{height:100%;background:linear-gradient(90deg,var(--palm),var(--star));transition:width .4s}
+.q-meta{display:flex;justify-content:space-between;font-size:11.5px;color:var(--txt-dim);margin-top:6px;font-weight:700}
+.q-win{background:linear-gradient(135deg,#FFF4D6,var(--card));border:1.5px dashed var(--star);border-radius:12px;padding:10px;margin-top:10px;font-size:13px;text-align:center;font-weight:700;color:#A87500}
+.q-stops{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px}
+.q-stop{position:relative;border-radius:10px;overflow:hidden;cursor:pointer;aspect-ratio:1;background:var(--card2)}
+.q-stop img{width:100%;height:100%;object-fit:cover;filter:grayscale(1) opacity(.45);transition:filter .3s}
+.q-stop.got img{filter:none}
+.q-check{position:absolute;top:4px;right:4px;background:var(--palm);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:1.5px solid #fff}
+.q-stop-name{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.75));color:#fff;font-size:9px;padding:8px 3px 3px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prof-badges{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.prof-badge{background:linear-gradient(135deg,#FFF4D6,var(--card));border:1.5px solid var(--star);border-radius:12px;padding:6px 12px;font-size:12px;font-weight:700;color:#A87500}
+@media(min-width:600px){.q-stops{grid-template-columns:repeat(6,1fr)}}
