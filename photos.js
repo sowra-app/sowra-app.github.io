@@ -199,6 +199,8 @@ async function openSheet(id){
  
   renderFollow(p);
   renderVisits(p);
+  const shb=$('shareBtn');
+  if(shb)shb.onclick=function(){shareCard(p)};
   const dbw=$('deleteBtn');
   if(dbw){
     const isMine=!!(USER && p.user_id===USER.id);
@@ -651,4 +653,91 @@ async function loadVisitCounts(){
     VISIT_COUNTS={};
     (r.data||[]).forEach(v=>{VISIT_COUNTS[v.photo_id]=(VISIT_COUNTS[v.photo_id]||0)+1});
   }catch(e){}
+}
+
+/* ====== بطاقة المشاركة ====== */
+async function shareCard(p){
+  toast('نجهّز البطاقة...');
+  try{
+    const img=new Image();
+    img.crossOrigin='anonymous';
+    img.src=imgUrl(p.image_path);
+    await new Promise((res,rej)=>{img.onload=res;img.onerror=rej});
+
+    const W=1080,H=1350,ih=920;
+    const cv=document.createElement('canvas');
+    cv.width=W;cv.height=H;
+    const ctx=cv.getContext('2d');
+
+    ctx.fillStyle='#F7F1E3';ctx.fillRect(0,0,W,H);
+
+    const ratio=Math.max(W/img.width,ih/img.height);
+    const dw=img.width*ratio, dh=img.height*ratio;
+    ctx.save();
+    ctx.beginPath();ctx.rect(0,0,W,ih);ctx.clip();
+    ctx.drawImage(img,(W-dw)/2,(ih-dh)/2,dw,dh);
+    ctx.restore();
+
+    const g=ctx.createLinearGradient(0,ih-300,0,ih);
+    g.addColorStop(0,'rgba(10,8,6,0)');
+    g.addColorStop(1,'rgba(10,8,6,.85)');
+    ctx.fillStyle=g;ctx.fillRect(0,ih-300,W,300);
+
+    ctx.direction='rtl';
+    ctx.textAlign='right';
+
+    ctx.fillStyle='#fff';
+    ctx.font='bold 58px Tajawal, sans-serif';
+    ctx.fillText(String(p.title).slice(0,28),W-60,ih-110);
+
+    ctx.fillStyle='rgba(255,255,255,.85)';
+    ctx.font='36px Tajawal, sans-serif';
+    const loc=p.abroad?(p.country||p.city):((p.village?p.village+' · ':'')+p.city);
+    ctx.fillText(loc+'  ·  عدسة '+p.photographer,W-60,ih-50);
+
+    const colors=['#D63A2F','#2E6FB7','#F2B33D','#2E8B57'];
+    const tw=W/16;
+    for(let i=0;i<16;i++){
+      ctx.beginPath();
+      ctx.moveTo(i*tw,ih+42);
+      ctx.lineTo(i*tw+tw/2,ih+8);
+      ctx.lineTo((i+1)*tw,ih+42);
+      ctx.closePath();
+      ctx.fillStyle=colors[i%4];ctx.fill();
+      ctx.strokeStyle='#241F1C';ctx.lineWidth=2.5;ctx.stroke();
+    }
+
+    if(p.ratings_count>0){
+      ctx.textAlign='right';
+      ctx.fillStyle='#E8A020';
+      ctx.font='bold 46px Tajawal, sans-serif';
+      ctx.fillText('★ '+Number(p.avg_stars).toFixed(1),W-60,ih+135);
+    }
+
+    ctx.textAlign='center';
+    ctx.fillStyle='#D63A2F';
+    ctx.font='bold 62px Tajawal, sans-serif';
+    ctx.fillText('صورة من بلدي',W/2,ih+240);
+
+    ctx.fillStyle='#6B6259';
+    ctx.font='34px Tajawal, sans-serif';
+    ctx.fillText('عدسات أهل الديار  ·  sowra.app',W/2,ih+295);
+
+    cv.toBlob(async function(blob){
+      if(!blob){toast('تعذر إنشاء البطاقة',true);return}
+      const file=new File([blob],'sowra-'+p.id+'.jpg',{type:'image/jpeg'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        try{
+          await navigator.share({files:[file],title:p.title,text:p.title+' — sowra.app'});
+          return;
+        }catch(e){}
+      }
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='sowra-'+p.id+'.jpg';
+      a.click();
+      toast('انحفظت البطاقة');
+    },'image/jpeg',0.92);
+
+  }catch(e){toast('تعذر تجهيز البطاقة',true)}
 }
