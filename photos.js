@@ -419,20 +419,6 @@ function renderMap(){
       }
     });
     MAP.addControl(new ZoomHome());
-    // زر تبديل نطاق المسارات
-    const RtToggle=L.Control.extend({
-      options:{position:'topright'},
-      onAdd:function(){
-        const b=L.DomUtil.create('button','');
-        b.id='rtToggleBtn';
-        b.innerHTML='🗺️';
-        b.title='المسارات القريبة';
-        b.style.cssText='width:38px;height:38px;background:#fff;border:2px solid rgba(0,0,0,.2);border-radius:8px;font-size:17px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);margin-top:6px';
-        b.onclick=function(e){e.stopPropagation();toggleAllRoutes();};
-        return b;
-      }
-    });
-    MAP.addControl(new RtToggle());
   }
   MARKS.clearLayers();
   const q=($('q').value||'').trim();
@@ -445,8 +431,6 @@ function renderMap(){
     L.marker([p.lat,p.lng],{icon:ic}).addTo(MARKS).on('click',()=>openSheet(p.id));
     pts.push([p.lat,p.lng]);
   });
-  // رسم المسارات المنشورة
-  drawRoutes();
  // التمركز الذكي: موقع المستخدم أولاً، وإلا كل الصور
   if(window.__USER_LAT && !MAP._userCentered){
     MAP.setView([window.__USER_LAT,window.__USER_LNG],11);
@@ -593,74 +577,6 @@ async function loadWeatherTip(){
         <div class="wt-adv">${adv}</div>
       </div>`;
   }catch(e){}
-}
-/* ====== رسم المسارات على الخريطة ====== */
-/* ====== رسم المسارات على الخريطة ====== */
-/* ====== رسم المسارات على الخريطة ====== */
-let ROUTE_LAYERS=[], ROUTES_ALL=false;
-
-async function drawRoutes(){
-  if(!MAP||typeof L==='undefined')return;
-  ROUTE_LAYERS.forEach(l=>{try{MAP.removeLayer(l)}catch(e){}});
-  ROUTE_LAYERS=[];
-  try{
-    const r=await sb.from('routes').select('*').eq('active',true);
-    const rts=r.data||[];
-    if(!rts.length)return;
-    const s=await sb.from('route_stops').select('*').order('ord');
-    const byRoute={};
-    (s.data||[]).forEach(x=>{(byRoute[x.route_id]=byRoute[x.route_id]||[]).push(x)});
-
-    const ulat=window.__USER_LAT, ulng=window.__USER_LNG;
-    const distKm=(a,b)=>Math.hypot((a[0]-b[0])*111,(a[1]-b[1])*111*Math.cos(a[0]*Math.PI/180));
-
-    rts.forEach(rt=>{
-      const stops=byRoute[rt.id]||[];
-      const pts=stops.map(st=>{
-        const p=photos.find(x=>x.id===st.photo_id);
-        return (p&&p.lat&&p.lng)?[p.lat,p.lng]:null;
-      }).filter(Boolean);
-      if(pts.length<2)return;
-
-      if(!ROUTES_ALL && ulat){
-        const near=pts.some(p=>distKm([ulat,ulng],p)<=150);
-        if(!near)return;
-      }
-
-      const line=L.polyline(pts,{color:rt.color||'#D63A2F',weight:4,opacity:.75,dashArray:'8,6'}).addTo(MAP);
-      const gmap='https://www.google.com/maps/dir/'+pts.map(p=>p[0]+','+p[1]).join('/');
-      line.bindPopup(`
-        <div style="font-family:'Tajawal';text-align:center;min-width:180px">
-          <div style="font-weight:700;font-size:14px;color:#D63A2F;margin-bottom:4px">🗺️ ${esc(rt.name)}</div>
-          <div style="font-size:12px;color:#666">${esc(rt.region||'')} · ${pts.length} محطة</div>
-          ${rt.description?`<div style="font-size:11.5px;color:#888;margin-top:4px;line-height:1.7">${esc(rt.description)}</div>`:''}
-          <a href="${gmap}" target="_blank" rel="noopener" style="display:block;margin-top:8px;background:#2E8B57;color:#fff;text-decoration:none;padding:7px;border-radius:8px;font-size:12px;font-weight:700">🚗 افتح المسار بقوقل ماب</a>
-        </div>`);
-      ROUTE_LAYERS.push(line);
-      // أرقام المحطات على الخريطة
-      pts.forEach((pt,i)=>{
-        const nic=L.divIcon({
-          className:'',
-          html:`<div style="width:24px;height:24px;border-radius:50%;background:${rt.color||'#D63A2F'};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);font-family:'Tajawal'">${i+1}</div>`,
-          iconSize:[24,24],iconAnchor:[12,12]
-        });
-        const m=L.marker(pt,{icon:nic,zIndexOffset:900}).addTo(MAP);
-        ROUTE_LAYERS.push(m);
-      });
-    });
-  }catch(e){}
-}
-
-function toggleAllRoutes(){
-  ROUTES_ALL=!ROUTES_ALL;
-  const b=$('rtToggleBtn');
-  if(b){b.textContent=ROUTES_ALL?'🌍':'🗺️';b.title=ROUTES_ALL?'كل المسارات':'المسارات القريبة';}
-  toast(ROUTES_ALL?'عرض كل مسارات المملكة 🌍':'المسارات القريبة منك 🗺️');
-  drawRoutes();
-  if(ROUTES_ALL&&ROUTE_LAYERS.length){
-    const all=[];ROUTE_LAYERS.forEach(l=>l.getLatLngs().forEach(p=>all.push(p)));
-    if(all.length)MAP.fitBounds(all,{padding:[40,40]});
-  }
 }
 /* ====== الزيارات الميدانية ====== */
 async function renderVisits(p){
