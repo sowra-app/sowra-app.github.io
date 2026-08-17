@@ -14,20 +14,18 @@ async function openAdmin(){
 }
 function admSetTab(t){
   admTab=t;
-  ['Rep','All','Plc','Fb','St','Wk','Rt'].forEach(x=>{const e=$('admTab'+x);if(e)e.classList.remove('on')});
-  const m={rep:'Rep',all:'All',plc:'Plc',fb:'Fb',st:'St',wk:'Wk',rt:'Rt'};
+  ['Rep','All','Plc','Fb','St','Wk'].forEach(x=>{const e=$('admTab'+x);if(e)e.classList.remove('on')});
+  const m={rep:'Rep',all:'All',plc:'Plc',fb:'Fb',st:'St',wk:'Wk'};
   const cur=$('admTab'+m[t]);if(cur)cur.classList.add('on');
   $('admPlaces').style.display=t==='plc'?'block':'none';
   $('admFb').style.display=t==='fb'?'block':'none';
   $('admSt').style.display=t==='st'?'block':'none';
   $('admWk').style.display=t==='wk'?'block':'none';
-  const rt=$('admRt');if(rt)rt.style.display=t==='rt'?'block':'none';
   $('admList').style.display=(t==='rep'||t==='all')?'block':'none';
   if(t==='plc')renderPlaces();
   else if(t==='fb')loadFb();
   else if(t==='st')loadStats();
   else if(t==='wk')loadAdmWeek();
-  else if(t==='rt')loadRoutes();
   else admRender();
 }
 
@@ -176,7 +174,6 @@ function admRender(){
           <button class="btn" style="font-size:12px;padding:8px 12px;${p.hidden?'background:var(--palm)':'background:var(--card2);border:1px solid var(--line)'}" onclick="admHide(${p.id},${!p.hidden})">${p.hidden?'👁️ إظهار':'🙈 إخفاء'}</button>
           <button class="btn" style="font-size:12px;padding:8px 12px" onclick="admDel(${p.id},'${p.image_path}')">🗑️ حذف نهائي</button>
           <button class="btn" style="font-size:12px;padding:8px 12px;background:var(--star);color:var(--ink)" onclick="admWeekAdd(${p.id})">🏆 رشّح</button>
-          <button class="btn" style="font-size:12px;padding:8px 12px;background:var(--qblue)" onclick="admAddToRoute(${p.id})">🗺️ لمسار</button>
           <button class="btn" style="font-size:12px;padding:8px 12px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admClearBadges(${p.id})">🗳️ مسح الأوسمة</button>
           <button class="btn" style="font-size:12px;padding:8px 12px;${p.profiles?.banned?'background:var(--palm)':'background:var(--card2);border:1px solid var(--line)'}" onclick="admBan('${p.user_id}',${!(p.profiles?.banned)})">${p.profiles?.banned?'فك الحظر':'⛔ حظر المصور'}</button>
           ${rc?`<button class="btn" style="font-size:12px;padding:8px 12px;background:var(--card2);border:1px solid var(--line)" onclick="admClear(${p.id})">مسح البلاغات</button>`:''}
@@ -464,180 +461,4 @@ async function admMaintSaveMsg(){
   const {error}=await sb.from('site_banner').update({maintenance_msg:$('mtMsg').value.trim()}).eq('id',1);
   if(error){toast('فشل الحفظ',true);return}
   toast('انحفظت الرسالة ✅');
-}
-/* ====== إدارة المسارات ====== */
-let ROUTES=[],RSTOPS={};
-
-async function loadRoutes(){
-  const el=$('admRt');if(!el)return;
-  el.innerHTML='<div class="loader">⏳</div>';
-  const r=await sb.from('routes').select('*').order('created_at',{ascending:false});
-  ROUTES=r.data||[];
-  const s=await sb.from('route_stops').select('*').order('ord');
-  RSTOPS={};
-  (s.data||[]).forEach(x=>{(RSTOPS[x.route_id]=RSTOPS[x.route_id]||[]).push(x)});
-
-  el.innerHTML=`
-  <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:10px">🗺️ إنشاء مسار جديد</div>
-    <input id="rtName" placeholder="اسم المسار (مثال: جولة السودة)" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
-    <input id="rtRegion" placeholder="المنطقة (مثال: عسير)" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
-    <textarea id="rtDesc" rows="2" placeholder="وصف قصير للمسار" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;resize:none;margin-bottom:8px"></textarea>
-    <button class="btn" style="width:100%" onclick="rtCreate()">➕ إنشاء المسار</button>
-  </div>
-  
-  ${ROUTES.length?ROUTES.map(rt=>{
-    const stops=RSTOPS[rt.id]||[];
-    return `<div style="background:var(--card);border:1.5px solid ${rt.active?'var(--palm)':'var(--line)'};border-radius:14px;padding:14px;margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div style="font-weight:700;font-size:15px">${esc(rt.name)}</div>
-        <span style="font-size:11px;font-weight:700;color:${rt.active?'var(--palm)':'var(--txt-dim)'}">${rt.active?'● منشور':'○ مسودة'}</span>
-      </div>
-      <div style="font-size:12px;color:var(--txt-dim);margin-bottom:4px">📍 ${esc(rt.region||'—')} · ${stops.length} محطة</div>
-      ${rt.description?`<div style="font-size:12px;color:var(--txt-dim);margin-bottom:8px">${esc(rt.description)}</div>`:''}
-      <div id="rtStops${rt.id}" style="margin:8px 0">${stops.map((s,i)=>{
-        const ph=photos.find(p=>p.id===s.photo_id);
-const prev=i>0?photos.find(p=>p.id===stops[i-1].photo_id):null;
-        let dist='';
-        if(prev&&ph&&prev.lat&&ph.lat){
-          const d=Math.hypot((ph.lat-prev.lat)*111,(ph.lng-prev.lng)*111*Math.cos(ph.lat*Math.PI/180));
-          dist=` <span style="color:var(--palm);font-size:11px">↔ ${d.toFixed(1)} كم</span>`;
-        }
-        return `<div style="display:flex;align-items:center;gap:8px;background:var(--card2);border-radius:10px;padding:7px 10px;margin-bottom:5px;font-size:12px">
-          <b style="color:var(--sadu)">${i+1}</b>
-        <b style="color:var(--sadu)">${i+1}</b>
-     <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph?esc(ph.title):'#'+s.photo_id}${dist}</span>
-          <button onclick="rtMove(${rt.id},${s.id},-1)" style="background:none;border:none;cursor:pointer;font-size:14px">⬆️</button>
-          <button onclick="rtMove(${rt.id},${s.id},1)" style="background:none;border:none;cursor:pointer;font-size:14px">⬇️</button>
-          <button onclick="rtDelStop(${s.id})" style="background:none;border:none;cursor:pointer;font-size:13px">🗑️</button>
-        </div>`;
-      }).join('')||'<div style="font-size:12px;color:var(--txt-dim)">ما فيه محطات — أضفها من تبويب 🗂️ الصور</div>'}</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn" style="flex:1;font-size:12px;padding:8px;${rt.active?'background:var(--sadu)':'background:var(--palm)'}" onclick="rtToggle(${rt.id},${rt.active})">${rt.active?'🙈 إخفاء':'▶️ نشر'}</button>
-       <button class="btn" style="flex:1;font-size:12px;padding:8px;background:var(--qblue)" onclick="rtRenumber(${rt.id})">🔢 إعادة ترقيم</button>
-        <button class="btn" style="flex:1;font-size:12px;padding:8px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="rtDelete(${rt.id})">🗑️ حذف</button>
-      </div>
-    </div>`;
- }).join(''):'<div class="empty" style="padding:20px">ما فيه مسارات بعد</div>'}`;
-
-}
-
-async function rtCreate(){
-  const name=$('rtName').value.trim();
-  if(!name){toast('اكتب اسم المسار',true);return}
-  const {error}=await sb.from('routes').insert({
-    name,region:$('rtRegion').value.trim(),description:$('rtDesc').value.trim()
-  });
-  if(error){toast('فشل الإنشاء: '+error.message,true);return}
-  toast('انشئ المسار ✅');loadRoutes();
-}
-
-async function rtToggle(id,cur){
-  const {error}=await sb.from('routes').update({active:!cur}).eq('id',id);
-  if(error){toast('فشلت العملية',true);return}
-  toast(!cur?'اننشر المسار 🗺️':'اختفى المسار');loadRoutes();
-}
-
-async function rtDelete(id){
-  if(!confirm('حذف المسار ومحطاته نهائياً؟'))return;
-  const {error}=await sb.from('routes').delete().eq('id',id);
-  if(error){toast('فشل الحذف',true);return}
-  toast('انحذف المسار');loadRoutes();
-}
-
-async function rtDelStop(sid){
-  await sb.from('route_stops').delete().eq('id',sid);
-  loadRoutes();
-}
-
-async function rtMove(rid,sid,dir){
-  const stops=RSTOPS[rid]||[];
-  const i=stops.findIndex(x=>x.id===sid);
-  const j=i+dir;
-  if(i<0||j<0||j>=stops.length)return;
-  await sb.from('route_stops').update({ord:stops[j].ord}).eq('id',stops[i].id);
-  await sb.from('route_stops').update({ord:stops[i].ord}).eq('id',stops[j].id);
-  loadRoutes();
-}
-
-/* إضافة صورة لمسار — من تبويب الصور */
-/* إضافة صورة لمسار — مع اقتراح القريبة */
-async function admAddToRoute(pid){
-  if(!ROUTES.length){await loadRoutes();}
-  if(!ROUTES.length){toast('أنشئ مساراً أولاً من تبويب 🗺️',true);return}
-  const list=ROUTES.map((r,i)=>`${i+1} = ${r.name} (${(RSTOPS[r.id]||[]).length} محطة)`).join('\n');
-  const pick=prompt('أضف الصورة لأي مسار؟\n\n'+list);
-  if(pick===null)return;
-  const idx=parseInt(pick.trim())-1;
-  if(isNaN(idx)||!ROUTES[idx]){toast('رقم غير صحيح',true);return}
-  const rt=ROUTES[idx];
-  const stops=RSTOPS[rt.id]||[];
-  const {error}=await sb.from('route_stops').insert({route_id:rt.id,photo_id:pid,ord:stops.length});
-  if(error){toast(error.code==='23505'?'الصورة موجودة بالمسار':'فشلت الإضافة',true);return}
-  toast('انضافت لـ'+rt.name+' 🗺️');
-  window.__RT_SUGGEST={rid:rt.id,pid:pid};
-  admSetTab('rt');
-}
-
-/* اقتراح الصور القريبة للمحطة الأخيرة */
-/* اقتراح الصور القريبة للمحطة الأخيرة */
-
-  function suggestNearby(rid,lastPid){
-  
-  const last=photos.find(p=>p.id===lastPid);
-
-  // تحذير: الصورة بلا إحداثيات
-  if(!last||!last.lat||!last.lng){
-    const w=document.createElement('div');
-    w.style.cssText='background:#FBEAE8;border:1.5px solid var(--sadu);border-radius:14px;padding:14px;margin-bottom:14px;font-size:13px;line-height:1.9';
-    w.innerHTML=`<b style="color:var(--sadu)">⚠️ هذه الصورة بلا إحداثيات</b><br>
-      <span style="font-size:12px;color:var(--txt-dim)">ما راح تظهر على الخريطة ولا نقدر نقترح صوراً قريبة منها.<br>
-      الصور اللي تنفع للمسارات هي المصوّرة بالجوال مع تفعيل الموقع، أو المرفوعة بـ«📸 التقط لايف».</span>
-      <button class="btn" style="width:100%;margin-top:8px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-size:12px;padding:7px" onclick="this.parentElement.remove()">✕ فهمت</button>`;
-   el.appendChild(w);
-    return;
-  }
-
-  const stops=RSTOPS[rid]||[];
-  const inRoute=new Set(stops.map(s=>s.photo_id));
-  const distKm=(p)=>Math.hypot((p.lat-last.lat)*111,(p.lng-last.lng)*111*Math.cos(last.lat*Math.PI/180));
-  const near=photos.filter(p=>p.lat&&p.lng&&!inRoute.has(p.id)&&distKm(p)<=60)
-    .sort((a,b)=>distKm(a)-distKm(b)).slice(0,8);
-
-  if(!near.length){
-    const n=document.createElement('div');
-    n.style.cssText='background:var(--card);border:1.5px dashed var(--line);border-radius:14px;padding:12px;margin-bottom:14px;font-size:12.5px;color:var(--txt-dim);text-align:center';
-    n.innerHTML=`ما فيه صور أخرى ضمن ٦٠ كم من آخر محطة
-      <button class="btn" style="width:100%;margin-top:8px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-size:12px;padding:6px" onclick="this.parentElement.remove()">✕</button>`;
-el.appendChild(n);
-    return;
-  }
-
-  const box=document.createElement('div');
-  box.style.cssText='background:var(--card);border:1.5px dashed var(--qblue);border-radius:14px;padding:14px;margin-bottom:14px';
-  box.innerHTML=`<div style="font-weight:700;font-size:14px;margin-bottom:8px">📍 صور قريبة من آخر محطة — أضفها للمسار</div>
-    ${near.map(p=>`<div style="display:flex;align-items:center;gap:8px;background:var(--card2);border-radius:10px;padding:7px 10px;margin-bottom:5px;font-size:12px">
-      <img src="${thumbUrl(p.image_path)}" style="width:34px;height:34px;border-radius:8px;object-fit:cover">
-      <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.title)} <span style="color:var(--palm);font-size:11px">↔ ${distKm(p).toFixed(1)} كم</span></span>
-      <button class="btn" style="font-size:11px;padding:5px 10px" onclick="rtQuickAdd(${rid},${p.id})">➕</button>
-    </div>`).join('')}
-    <button class="btn" style="width:100%;margin-top:6px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-size:12px;padding:7px" onclick="this.parentElement.remove()">✕ إخفاء</button>`;
-el.appendChild(box);
-}
-
-async function rtQuickAdd(rid,pid){
-  const stops=RSTOPS[rid]||[];
-  const {error}=await sb.from('route_stops').insert({route_id:rid,photo_id:pid,ord:stops.length});
-  if(error){toast(error.code==='23505'?'موجودة بالمسار':'فشلت الإضافة',true);return}
-  toast('انضافت للمسار 🗺️');
-  window.__RT_SUGGEST={rid:rid,pid:pid};
-  await loadRoutes();
-}
-async function rtRenumber(rid){
-  const stops=RSTOPS[rid]||[];
-  for(let i=0;i<stops.length;i++){
-    await sb.from('route_stops').update({ord:i}).eq('id',stops[i].id);
-  }
-  toast('انرتبت المحطات ✅');
-  loadRoutes();
 }
