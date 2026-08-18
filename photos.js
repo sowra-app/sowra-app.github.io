@@ -511,12 +511,15 @@ async function deleteMyPhoto(pid,path){
     if(r&&r.data){toast('⚠️ الصورة مرشحة بمسابقة — لا يمكن حذفها الآن',true);return}
   }catch(e){}
   if(!confirm('حذف الصورة نهائياً؟ لا يمكن التراجع.'))return;
+  const ph=photos.find(x=>x.id===pid);
+  const isVid=ph&&ph.media_type==='video';
   try{
-    await sb.storage.from('photos').remove([path,path.replace('.jpg','_t.jpg')]);
+    if(isVid) await sb.storage.from('videos').remove([path]);
+    else await sb.storage.from('photos').remove([path,path.replace('.jpg','_t.jpg')]);
   }catch(e){}
   const {error}=await sb.from('photos').delete().eq('id',pid).eq('user_id',USER.id);
   if(error){toast('تعذر الحذف: '+error.message,true);return}
-  toast('انحذفت الصورة ✅');
+  toast(isVid?'انحذف الفيديو ✅':'انحذفت الصورة ✅');
   closeSheet();
   await loadPhotos();
 }

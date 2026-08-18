@@ -193,10 +193,15 @@ async function admHide(id,hide){
 }
 async function admDel(id,path){
   if(!confirm('حذف نهائي؟ لا يمكن التراجع.'))return;
+  const it=(admPhotos||[]).find(x=>x.id===id)||photos.find(x=>x.id===id);
+  const isVid=it&&it.media_type==='video';
   const { error } = await sb.from('photos').delete().eq('id',id);
   if(error){toast('فشل الحذف',true);return}
-  await sb.storage.from('photos').remove([path]);
-  toast('حُذفت الصورة نهائياً');
+  try{
+    if(isVid) await sb.storage.from('videos').remove([path]);
+    else await sb.storage.from('photos').remove([path,path.replace('.jpg','_t.jpg')]);
+  }catch(e){}
+  toast(isVid?'حُذف الفيديو نهائياً':'حُذفت الصورة نهائياً');
   await openAdmin();await loadPhotos();
 }
 async function admBan(uid,ban){
