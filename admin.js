@@ -668,7 +668,6 @@ async function admScanOrphans(mode){
       +'<div style="font-size:11px;color:var(--txt-dim);margin-bottom:8px">(قُرئ '+rows.length+' صفاً من القاعدة · '+keepVid.size+' فيديو · '+keepImg.size+' مسار صورة)</div>';
     if(tv){
       html+='<div style="margin-bottom:6px"><b>🎬 فيديو ('+tv+'):</b></div>';
-      html+='<div style="background:#FFF4D6;border:1px solid var(--star);border-radius:8px;padding:7px 10px;margin-bottom:6px;font-size:10.5px;direction:ltr;text-align:left;word-break:break-all"><b>المسجّل بالقاعدة:</b><br>'+Array.from(keepVid).map(x=>esc(x)).join('<br>')+'</div>';
       html+=ORPHANS.v.map(x=>'<div style="background:var(--card2);border-radius:8px;padding:5px 9px;margin-bottom:4px;font-size:11px;direction:ltr;text-align:left;word-break:break-all">'+esc(x)+'</div>').join('');
       html+='<button class="btn" style="width:100%;font-size:12px;padding:8px;margin:6px 0;background:var(--sadu)" onclick="admDelOrphans(\'v\')">🗑️ احذف الفيديوهات اليتيمة ('+tv+')</button>';
     }
@@ -710,13 +709,14 @@ async function admDelOrphans(kind){
 /* سرد كل ملفات دلو (يمشي على مجلدات المستخدمين) */
 async function listBucketAll(bucket){
   const out=[];
+  const skip=n=>!n||n.startsWith('.')||n==='.emptyFolderPlaceholder';
   const root=await sb.storage.from(bucket).list('',{limit:1000});
   const folders=(root.data||[]).filter(x=>!x.id);
   const files=(root.data||[]).filter(x=>x.id);
-  files.forEach(f=>out.push(f.name));
+  files.forEach(f=>{if(!skip(f.name))out.push(f.name)});
   for(const fo of folders){
     const sub=await sb.storage.from(bucket).list(fo.name,{limit:1000});
-    (sub.data||[]).forEach(f=>{if(f.id)out.push(fo.name+'/'+f.name)});
+    (sub.data||[]).forEach(f=>{if(f.id&&!skip(f.name))out.push(fo.name+'/'+f.name)});
   }
   return out;
 }
