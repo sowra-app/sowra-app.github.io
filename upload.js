@@ -40,6 +40,8 @@ async function pickImg(inp,isLive){
   $('preview').src=URL.createObjectURL(f);$('preview').style.display='block';
   $('dropTxt').textContent='✓ تم اختيار الصورة';
   $('drop').classList.add('has');
+  curFilter='none';
+  renderFilterRow($('preview').src,false);
   // ضغط بالخلفية من الحين — عشان النشر يكون لحظي
   compress(f).then(b=>{pendingBlob=b});
   $('geoCard').style.display='block';$('geoCard').classList.remove('warn');
@@ -79,6 +81,8 @@ async function pickVideo(inp){
   if(pv){pv.src=URL.createObjectURL(f);pv.style.display='block';}
   $('dropTxt').textContent='🎬 تم اختيار الفيديو ('+Math.round(f.size/1048576)+' ميجا)';
   $('drop').classList.add('has');
+  curFilter='none';
+  captureVideoFrame(f).then(thumb=>{if(thumb)renderFilterRow(thumb,true)});
   $('geoCard').style.display='block';$('geoCard').classList.remove('warn');
   $('geoStatus').textContent='⏳ جاري تحديد الموقع...';$('geoCoords').textContent='';
   const pos=await liveLocation();
@@ -95,7 +99,12 @@ function compressTo(file,maxW,quality){
       const cv=document.createElement('canvas');
       cv.width=Math.round(img.width*scale);cv.height=Math.round(img.height*scale);
       const ctx=cv.getContext('2d');
+      // حرق الفلتر المختار على الصورة
+      if(typeof curFilter!=='undefined'&&curFilter!=='none'){
+        try{ctx.filter=filterCss(curFilter)}catch(e){}
+      }
       ctx.drawImage(img,0,0,cv.width,cv.height);
+      ctx.filter='none';
       // ختم المنصة المحفور
       const fsz=Math.max(11,Math.round(cv.width*0.03));
       ctx.font='bold '+fsz+'px Tajawal, Arial, sans-serif';
@@ -141,13 +150,13 @@ async function addPhoto(){
         abroad:isAbroad,country,
         village:isAbroad?'':$('aVillage').value.trim(),
         lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
-        image_path:vpath,media_type:'video'
+        image_path:vpath,media_type:'video',filter_key:curFilter
       });
       if(insv.error){
         await sb.storage.from('videos').remove([vpath]).catch(()=>{});
         throw insv.error;
       }
-      pendingVideo=null;
+      pendingVideo=null;resetFilter();
       const pv=$('videoPreview');if(pv){pv.src='';pv.style.display='none';}
       $('drop').style.display='none';$('geoCard').style.display='none';
       $('aTitle').value='';$('aVillage').value='';
@@ -176,7 +185,7 @@ async function addPhoto(){
       await sb.storage.from('photos').remove([path,thumbPath(path)]).catch(()=>{});
       throw ins.error;
     }
-    pendingFile=null;pendingGeo=null;pendingBlob=null;
+    pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();
     $('preview').style.display='none';$('drop').style.display='none';$('geoCard').style.display='none';
     $('aTitle').value='';$('aVillage').value='';
     toast('نُشرت صورتك 🎉');
@@ -313,6 +322,8 @@ async function recFinish(){
   if(pv){pv.src=URL.createObjectURL(blob);pv.style.display='block';}
   $('dropTxt').textContent='🎬 تسجيل جاهز ('+Math.round(secs)+' ثانية)';
   $('drop').classList.add('has');
+  curFilter='none';
+  captureVideoFrame(pendingVideo).then(thumb=>{if(thumb)renderFilterRow(thumb,true)});
   $('geoCard').style.display='block';$('geoCard').classList.remove('warn');
   $('geoStatus').textContent='⏳ جاري تحديد الموقع...';$('geoCoords').textContent='';
   const pos=await liveLocation();
@@ -332,4 +343,91 @@ function bindRecBtn(){
   b.addEventListener('mousedown',down);
   b.addEventListener('mouseup',up);
   b.addEventListener('mouseleave',up);
+}
+
+/* ====== فلاتر بهوية سعودية ====== */
+const FILTERS=[
+  {k:'none',   n:'الأصلي',        css:'none'},
+  {k:'sunset', n:'غروب السودة',   css:'saturate(1.45) contrast(1.12) sepia(.18) hue-rotate(-8deg) brightness(1.04)'},
+  {k:'mist',   n:'ضباب أبها',     css:'saturate(.78) contrast(.94) brightness(1.12) hue-rotate(6deg)'},
+  {k:'sand',   n:'رمال الصمان',   css:'sepia(.34) saturate(1.28) contrast(1.15) brightness(1.05)'},
+  {k:'night',  n:'ليل نجد',       css:'saturate(1.18) contrast(1.3) brightness(.86) hue-rotate(200deg) saturate(1.1)'},
+  {k:'qatt',   n:'قط عسيري',      css:'saturate(1.85) contrast(1.22) brightness(1.03)'},
+  {k:'clay',   n:'طين نجران',     css:'sepia(.42) saturate(1.35) contrast(1.1) hue-rotate(-12deg)'},
+  {k:'sea',    n:'بحر جدة',       css:'saturate(1.35) hue-rotate(12deg) brightness(1.07) contrast(1.08)'},
+  {k:'palm',   n:'نخيل القصيم',   css:'saturate(1.4) hue-rotate(-10deg) contrast(1.12) brightness(1.02)'},
+  {k:'memory', n:'ذاكرة',         css:'sepia(.62) saturate(.85) contrast(1.06) brightness(1.05)'},
+  {k:'coal',   n:'فحم',           css:'grayscale(1) contrast(1.32) brightness(1.04)'},
+  {k:'clear',  n:'صحو',           css:'contrast(1.28) saturate(1.15) brightness(1.06)'}
+];
+let curFilter='none';
+
+function filterCss(k){
+  const f=FILTERS.find(x=>x.k===k);
+  return f?f.css:'none';
+}
+
+function renderFilterRow(srcUrl,isVideo){
+  const row=$('filterRow');if(!row)return;
+  row.style.display='flex';
+  row.innerHTML=FILTERS.map(f=>`
+    <div class="f-item ${curFilter===f.k?'on':''}" data-k="${f.k}" onclick="pickFilter('${f.k}')">
+      <div class="f-thumb"><img src="${srcUrl}" style="filter:${f.css}" alt="${f.n}"></div>
+      <div class="f-name">${f.n}</div>
+    </div>`).join('');
+  applyFilterPreview();
+}
+
+function pickFilter(k){
+  curFilter=k;
+  document.querySelectorAll('#filterRow .f-item').forEach(el=>el.classList.toggle('on',el.dataset.k===k));
+  applyFilterPreview();
+}
+
+function applyFilterPreview(){
+  const css=filterCss(curFilter);
+  const im=$('preview'), vd=$('videoPreview');
+  if(im)im.style.filter=css;
+  if(vd)vd.style.filter=css;
+}
+
+function resetFilter(){
+  curFilter='none';
+  const row=$('filterRow');if(row){row.style.display='none';row.innerHTML=''}
+  const im=$('preview'), vd=$('videoPreview');
+  if(im)im.style.filter='none';
+  if(vd)vd.style.filter='none';
+}
+
+/* حرق الفلتر على الصورة عند الضغط */
+function bakeFilter(ctx,w,h){
+  if(curFilter==='none')return;
+  ctx.filter=filterCss(curFilter);
+}
+
+/* التقاط إطار من الفيديو لمعاينة الفلاتر */
+function captureVideoFrame(file){
+  return new Promise(res=>{
+    try{
+      const v=document.createElement('video');
+      v.preload='metadata';v.muted=true;v.playsInline=true;
+      v.onloadeddata=()=>{
+        try{
+          v.currentTime=Math.min(0.6,(v.duration||1)/3);
+        }catch(e){res(null)}
+      };
+      v.onseeked=()=>{
+        try{
+          const cv=document.createElement('canvas');
+          const s=Math.min(1,160/Math.max(v.videoWidth,v.videoHeight));
+          cv.width=Math.round(v.videoWidth*s);cv.height=Math.round(v.videoHeight*s);
+          cv.getContext('2d').drawImage(v,0,0,cv.width,cv.height);
+          URL.revokeObjectURL(v.src);
+          res(cv.toDataURL('image/jpeg',0.7));
+        }catch(e){res(null)}
+      };
+      v.onerror=()=>res(null);
+      v.src=URL.createObjectURL(file);
+    }catch(e){res(null)}
+  });
 }

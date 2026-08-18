@@ -177,7 +177,7 @@ function render(){
     const isV=p.media_type==='video';
     return `<div class="mcard" onclick="openSheet(${p.id})">
       ${isV
-        ? `<video src="${vidUrl(p.image_path)}#t=0.5" muted playsinline preload="metadata" style="width:100%;display:block"></video>`
+        ? `<video src="${vidUrl(p.image_path)}#t=0.5" muted playsinline preload="metadata" style="width:100%;display:block;filter:${(p.filter_key&&p.filter_key!=='none'&&typeof filterCss==='function')?filterCss(p.filter_key):'none'}"></video>`
         : `<img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="${esc(p.title)}">`}
       ${medal?`<div class="mc-medal">${medal}</div>`:''}
       ${VISIT_COUNTS[p.id]?`<div class="mc-visits">👣 ${VISIT_COUNTS[p.id]}</div>`:''}
@@ -195,8 +195,9 @@ async function openSheet(id){
   curId=id;curPhoto=photos.find(x=>x.id===id);
    const p=curPhoto;
   const isVid=p.media_type==='video';
+  const vfx=(p.filter_key&&p.filter_key!=='none'&&typeof filterCss==='function')?filterCss(p.filter_key):'none';
   $('sPh').innerHTML=isVid
-    ? `<video controls playsinline webkit-playsinline preload="metadata" style="width:100%;height:100%;object-fit:contain;background:#000"><source src="${vidUrl(p.image_path)}" type="video/mp4"></video>`
+    ? `<video controls playsinline webkit-playsinline preload="metadata" style="width:100%;height:100%;object-fit:contain;background:#000;filter:${vfx}"><source src="${vidUrl(p.image_path)}" type="video/mp4"></video>`
     : `<img src="${imgUrl(p.image_path)}" onclick="zoomOpen(this.src)" alt="${esc(p.title)}">
     <button class="zoombtn" id="zoomBtn" onclick="togglePhotoZoom()">⤢ عرض كامل</button>`;
   if(!seenViews.has(p.id)){seenViews.add(p.id);try{sb.rpc('bump_view',{pid:p.id}).then(()=>{},()=>{})}catch(_){}}
