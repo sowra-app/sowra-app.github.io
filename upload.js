@@ -34,12 +34,16 @@ function applyGeo(pos,source){
 }
 async function pickImg(inp,isLive){
   const f=inp.files[0];if(!f)return;
-  pendingGeo=null;pendingFile=f;pendingBlob=null;
+  pendingGeo=null;pendingFile=f;pendingBlob=null;pendingVideo=null;
+  // إخفاء أي فيديو معلّق
+  const _pv=$('videoPreview');
+  if(_pv){try{_pv.pause()}catch(e){} _pv.removeAttribute('src'); _pv.load&&_pv.load(); _pv.style.display='none';}
   // معاينة فورية خفيفة (بدون قراءة الملف كاملاً)
   $('drop').style.display='block';
   $('preview').src=URL.createObjectURL(f);$('preview').style.display='block';
   $('dropTxt').textContent='✓ تم اختيار الصورة';
   $('drop').classList.add('has');
+  showClearBtn();
   curFilter='none';
   try{ renderFilterRow(URL.createObjectURL(f),false); }catch(e){}
   // ضغط بالخلفية من الحين — عشان النشر يكون لحظي
@@ -76,11 +80,13 @@ async function pickVideo(inp){
   }
   pendingFile=null;pendingBlob=null;pendingGeo=null;pendingVideo=f;
   $('drop').style.display='block';
-  $('preview').style.display='none';
+  const _im=$('preview');
+  if(_im){_im.removeAttribute('src');_im.style.display='none';}
   const pv=$('videoPreview');
   if(pv){pv.src=URL.createObjectURL(f);pv.style.display='block';}
   $('dropTxt').textContent='🎬 تم اختيار الفيديو ('+Math.round(f.size/1048576)+' ميجا)';
   $('drop').classList.add('has');
+  showClearBtn();
   curFilter='none';
   const _fu=pv?pv.src:URL.createObjectURL(f);
   try{ renderFilterRow(null,true,_fu); }catch(e){}
@@ -158,7 +164,7 @@ async function addPhoto(){
         await sb.storage.from('videos').remove([vpath]).catch(()=>{});
         throw insv.error;
       }
-      pendingVideo=null;resetFilter();
+      pendingVideo=null;resetFilter();const _c1=$('clearDraft');if(_c1)_c1.style.display='none';
       const pv=$('videoPreview');if(pv){pv.src='';pv.style.display='none';}
       $('drop').style.display='none';$('geoCard').style.display='none';
       $('aTitle').value='';$('aVillage').value='';
@@ -188,7 +194,7 @@ async function addPhoto(){
       await sb.storage.from('photos').remove([path,thumbPath(path)]).catch(()=>{});
       throw ins.error;
     }
-    pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();
+    pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();const _c2=$('clearDraft');if(_c2)_c2.style.display='none';
     $('preview').style.display='none';$('drop').style.display='none';$('geoCard').style.display='none';
     $('aTitle').value='';$('aVillage').value='';
     toast('نُشرت صورتك 🎉');
@@ -321,11 +327,13 @@ async function recFinish(){
   recClose();
   go('add');
   $('drop').style.display='block';
-  $('preview').style.display='none';
+  const _im2=$('preview');
+  if(_im2){_im2.removeAttribute('src');_im2.style.display='none';}
   const pv=$('videoPreview');
   if(pv){pv.src=URL.createObjectURL(blob);pv.style.display='block';}
   $('dropTxt').textContent='🎬 تسجيل جاهز ('+Math.round(secs)+' ثانية)';
   $('drop').classList.add('has');
+  showClearBtn();
   curFilter='none';
   const _vurl=pv?pv.src:URL.createObjectURL(pendingVideo);
   try{ renderFilterRow(null,true,_vurl); }catch(e){}
@@ -496,4 +504,25 @@ function makeThumbDataUrl(file){
       img.src=URL.createObjectURL(file);
     }catch(e){res(null)}
   });
+}
+
+/* ====== إلغاء المسودة ====== */
+function clearDraft(){
+  try{
+    pendingFile=null;pendingBlob=null;pendingVideo=null;pendingGeo=null;
+    const im=$('preview');
+    if(im){im.removeAttribute('src');im.style.display='none';}
+    const vd=$('videoPreview');
+    if(vd){try{vd.pause()}catch(e){} vd.removeAttribute('src'); vd.load&&vd.load(); vd.style.display='none';}
+    resetFilter();
+    $('drop').style.display='none';
+    $('drop').classList.remove('has');
+    $('geoCard').style.display='none';
+    const cd=$('clearDraft');if(cd)cd.style.display='none';
+    toast('انلغت المسودة');
+  }catch(e){}
+}
+function showClearBtn(){
+  const cd=$('clearDraft');
+  if(cd)cd.style.display='block';
 }
