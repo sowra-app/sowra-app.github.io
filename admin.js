@@ -668,14 +668,9 @@ async function admScanOrphans(mode){
 
     const tv=ORPHANS.v.length, tp=ORPHANS.p.length, tot=tv+tp;
     if(!tot){if(box)box.innerHTML='✅ نظيف — ما فيه ملفات يتيمة';return}
-    // حماية: عدد يتيم أكبر من المسجّل = فحص مشبوه
-    if(tp>keepImg.size){
-     if(box)box.innerHTML='⚠️ نتيجة مشبوهة ('+tp+' يتيم مقابل '+keepImg.size+' مسجّل) — الحذف موقوف. أول 5 مسارات:<br>'
-        +ORPHANS.p.slice(0,5).map(x=>'<div style="background:var(--card2);border-radius:8px;padding:5px 9px;margin:4px 0;font-size:10.5px;direction:ltr;text-align:left;word-break:break-all">'+esc(x)+'</div>').join('');
-      return;
-    }
 
-    let html='<div style="font-weight:700;color:var(--sadu);margin-bottom:6px">لقينا '+tot+' ملفاً يتيماً:</div>'
+    let html=(tp>keepImg.size?'<div style="background:#FFF4D6;border:1px solid var(--star);border-radius:8px;padding:8px 11px;margin-bottom:8px;font-size:11.5px;line-height:1.8">⚠️ العدد أكبر من المسجّل — راجع القائمة بعناية قبل الحذف</div>':'')
+      +'<div style="font-weight:700;color:var(--sadu);margin-bottom:6px">لقينا '+tot+' ملفاً يتيماً:</div>'
       +'<div style="font-size:11px;color:var(--txt-dim);margin-bottom:8px">(قُرئ '+rows.length+' صفاً من القاعدة · '+keepVid.size+' فيديو · '+keepImg.size+' مسار صورة)</div>';
     if(tv){
       html+='<div style="margin-bottom:6px"><b>🎬 فيديو ('+tv+'):</b></div>';
