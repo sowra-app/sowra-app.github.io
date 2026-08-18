@@ -41,11 +41,7 @@ async function pickImg(inp,isLive){
   $('dropTxt').textContent='✓ تم اختيار الصورة';
   $('drop').classList.add('has');
   curFilter='none';
-  try{
-    const _u=URL.createObjectURL(f);
-    toast('فلاتر: '+(typeof renderFilterRow)+' | row:'+(document.getElementById('filterRow')?'موجود':'مفقود'));
-    renderFilterRow(_u,false);
-  }catch(e){toast('خطأ فلاتر: '+e.message,true)}
+  try{ renderFilterRow(URL.createObjectURL(f),false); }catch(e){}
   // ضغط بالخلفية من الحين — عشان النشر يكون لحظي
   compress(f).then(b=>{pendingBlob=b});
   $('geoCard').style.display='block';$('geoCard').classList.remove('warn');
@@ -86,7 +82,9 @@ async function pickVideo(inp){
   $('dropTxt').textContent='🎬 تم اختيار الفيديو ('+Math.round(f.size/1048576)+' ميجا)';
   $('drop').classList.add('has');
   curFilter='none';
-  captureVideoFrame(f).then(thumb=>{if(thumb)renderFilterRow(thumb,true)});
+  const _fu=pv?pv.src:URL.createObjectURL(f);
+  try{ renderFilterRow(null,true,_fu); }catch(e){}
+  captureVideoFrame(f).then(t=>{if(t)renderFilterRow(t,true)}).catch(()=>{});
   $('geoCard').style.display='block';$('geoCard').classList.remove('warn');
   $('geoStatus').textContent='⏳ جاري تحديد الموقع...';$('geoCoords').textContent='';
   const pos=await liveLocation();
@@ -329,7 +327,9 @@ async function recFinish(){
   $('dropTxt').textContent='🎬 تسجيل جاهز ('+Math.round(secs)+' ثانية)';
   $('drop').classList.add('has');
   curFilter='none';
-  captureVideoFrame(pendingVideo).then(thumb=>{if(thumb)renderFilterRow(thumb,true)});
+  const _vurl=pv?pv.src:URL.createObjectURL(pendingVideo);
+  try{ renderFilterRow(null,true,_vurl); }catch(e){}
+  captureVideoFrame(pendingVideo).then(t=>{if(t)renderFilterRow(t,true)}).catch(()=>{});
   $('geoCard').style.display='block';$('geoCard').classList.remove('warn');
   $('geoStatus').textContent='⏳ جاري تحديد الموقع...';$('geoCoords').textContent='';
   const pos=await liveLocation();
@@ -373,10 +373,11 @@ function filterCss(k){
   return f?f.css:'none';
 }
 
-function renderFilterRow(srcUrl,isVideo){
+function renderFilterRow(srcUrl,isVideo,videoBlobUrl){
   try{
     const row=document.getElementById('filterRow');
-    if(!row||!srcUrl)return;
+    if(!row)return;
+    if(!srcUrl&&!videoBlobUrl)return;
     row.innerHTML='';
     row.style.display='flex';
     for(let i=0;i<FILTERS.length;i++){
@@ -386,11 +387,20 @@ function renderFilterRow(srcUrl,isVideo){
       item.setAttribute('data-k',f.k);
       const thumb=document.createElement('div');
       thumb.className='f-thumb';
-      thumb.style.backgroundImage='url("'+srcUrl+'")';
-      thumb.style.backgroundSize='cover';
-      thumb.style.backgroundPosition='center';
       thumb.style.filter=f.css;
       thumb.style.webkitFilter=f.css;
+      if(srcUrl){
+        thumb.style.backgroundImage='url("'+srcUrl+'")';
+        thumb.style.backgroundSize='cover';
+        thumb.style.backgroundPosition='center';
+      }else{
+        const v=document.createElement('video');
+        v.src=videoBlobUrl;v.muted=true;v.playsInline=true;
+        v.setAttribute('playsinline','');v.setAttribute('webkit-playsinline','');
+        v.preload='metadata';
+        v.style.cssText='width:100%;height:100%;object-fit:cover;display:block';
+        thumb.appendChild(v);
+      }
       const name=document.createElement('div');
       name.className='f-name';
       name.textContent=f.n;
