@@ -161,7 +161,8 @@ async function addPhoto(){
       $('drop').style.display='none';$('geoCard').style.display='none';
       $('aTitle').value='';$('aVillage').value='';
       toast('انرفع الفيديو 🎬');
-      await loadPhotos();go('feed');setSort('new');
+      try{sortMode='new';_sort='new';}catch(e){}
+      await loadPhotos();go('feed');
       btn.disabled=false;btn.textContent='انشر الصورة 🚀';
       return;
     }
@@ -191,7 +192,8 @@ async function addPhoto(){
     toast('نُشرت صورتك 🎉');
     const wasAbroad=isAbroad;
     $('aCountry').value='';
-    await loadPhotos();go('feed');setSort(wasAbroad?'abroad':'new');
+    try{sortMode=wasAbroad?'abroad':'new';_sort=sortMode;}catch(e){}
+    await loadPhotos();go('feed');
   }catch(e){
     if(e.message&&e.message.includes('row-level')){
       // نسأل القاعدة عن السبب الحقيقي
@@ -371,15 +373,28 @@ function renderFilterRow(srcUrl,isVideo){
   try{
     const row=document.getElementById('filterRow');
     if(!row||!srcUrl)return;
+    row.innerHTML='';
     row.style.display='flex';
-    let html='';
     for(let i=0;i<FILTERS.length;i++){
       const f=FILTERS[i];
-      html+='<div class="f-item'+(curFilter===f.k?' on':'')+'" data-k="'+f.k+'" onclick="pickFilter(\''+f.k+'\')">'
-        +'<div class="f-thumb"><img src="'+srcUrl+'" style="filter:'+f.css+';-webkit-filter:'+f.css+'"></div>'
-        +'<div class="f-name">'+f.n+'</div></div>';
+      const item=document.createElement('div');
+      item.className='f-item'+(curFilter===f.k?' on':'');
+      item.setAttribute('data-k',f.k);
+      const thumb=document.createElement('div');
+      thumb.className='f-thumb';
+      thumb.style.backgroundImage='url("'+srcUrl+'")';
+      thumb.style.backgroundSize='cover';
+      thumb.style.backgroundPosition='center';
+      thumb.style.filter=f.css;
+      thumb.style.webkitFilter=f.css;
+      const name=document.createElement('div');
+      name.className='f-name';
+      name.textContent=f.n;
+      item.appendChild(thumb);
+      item.appendChild(name);
+      item.onclick=(function(key){return function(){pickFilter(key)}})(f.k);
+      row.appendChild(item);
     }
-    row.innerHTML=html;
     applyFilterPreview();
   }catch(e){}
 }
