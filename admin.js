@@ -670,7 +670,8 @@ async function admScanOrphans(mode){
     if(!tot){if(box)box.innerHTML='✅ نظيف — ما فيه ملفات يتيمة';return}
     // حماية: عدد يتيم أكبر من المسجّل = فحص مشبوه
     if(tp>keepImg.size){
-      if(box)box.innerHTML='⚠️ نتيجة مشبوهة ('+tp+' يتيم مقابل '+keepImg.size+' مسجّل) — أُوقف الحذف حمايةً. راجع الدلاء يدوياً.';
+     if(box)box.innerHTML='⚠️ نتيجة مشبوهة ('+tp+' يتيم مقابل '+keepImg.size+' مسجّل) — الحذف موقوف. أول 5 مسارات:<br>'
+        +ORPHANS.p.slice(0,5).map(x=>'<div style="background:var(--card2);border-radius:8px;padding:5px 9px;margin:4px 0;font-size:10.5px;direction:ltr;text-align:left;word-break:break-all">'+esc(x)+'</div>').join('');
       return;
     }
 
