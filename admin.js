@@ -651,6 +651,11 @@ async function admScanOrphans(mode){
       keepImg.add(x.image_path);
       keepImg.add(x.image_path.replace('.jpg','_t.jpg'));
     });
+    // بنر الراعي وملفات الإدارة — مسجّلة بجداول أخرى
+    try{
+      const sbn=await sb.from('site_banner').select('image_path').eq('id',1).maybeSingle();
+      if(sbn.data&&sbn.data.image_path)keepImg.add(sbn.data.image_path);
+    }catch(e){}
 
     if(mode==='videos'||mode==='all'){
       const uv=await listBucketAll('videos');
@@ -658,11 +663,16 @@ async function admScanOrphans(mode){
     }
     if(mode==='photos'||mode==='all'){
       const up=await listBucketAll('photos');
-      ORPHANS.p=up.filter(p=>!keepImg.has(p));
+      ORPHANS.p=up.filter(p=>!keepImg.has(p)&&!p.startsWith('banners/')&&!p.startsWith('admin/'));
     }
 
     const tv=ORPHANS.v.length, tp=ORPHANS.p.length, tot=tv+tp;
     if(!tot){if(box)box.innerHTML='✅ نظيف — ما فيه ملفات يتيمة';return}
+    // حماية: عدد يتيم أكبر من المسجّل = فحص مشبوه
+    if(tp>keepImg.size){
+      if(box)box.innerHTML='⚠️ نتيجة مشبوهة ('+tp+' يتيم مقابل '+keepImg.size+' مسجّل) — أُوقف الحذف حمايةً. راجع الدلاء يدوياً.';
+      return;
+    }
 
     let html='<div style="font-weight:700;color:var(--sadu);margin-bottom:6px">لقينا '+tot+' ملفاً يتيماً:</div>'
       +'<div style="font-size:11px;color:var(--txt-dim);margin-bottom:8px">(قُرئ '+rows.length+' صفاً من القاعدة · '+keepVid.size+' فيديو · '+keepImg.size+' مسار صورة)</div>';
