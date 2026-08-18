@@ -324,3 +324,6 @@ body.page-sponsors #mainFilters{display:none}
 .prof-badges{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
 .prof-badge{background:linear-gradient(135deg,#FFF4D6,var(--card));border:1.5px solid var(--star);border-radius:12px;padding:6px 12px;font-size:12px;font-weight:700;color:#A87500}
 @media(min-width:600px){.q-stops{grid-template-columns:repeat(6,1fr)}}
+
+/* ====== شارة الفيديو ====== */
+.mc-vid{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid rgba(255,255,255,.85);backdrop-filter:blur(3px);pointer-events:none}

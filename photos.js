@@ -117,6 +117,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const starsTxt=v=>{let f=Math.round(v);return "★".repeat(f)+"☆".repeat(5-f)};
 function toast(m,err){const t=$('toast');t.textContent=m;t.className='toast'+(err?' err':'');t.style.display='block';setTimeout(()=>t.style.display='none',2600)}
 function imgUrl(path){return sb.storage.from('photos').getPublicUrl(path).data.publicUrl}
+function vidUrl(path){return sb.storage.from('videos').getPublicUrl(path).data.publicUrl}
 
 /* ============ تحميل الصور ============ */
 async function loadPhotos(){
@@ -173,10 +174,14 @@ function render(){
   if(!list.length){feed.innerHTML=`<div class="empty"><span class="big">🏜️</span>ما فيه صور بعد..<br>كن أول من يصوّر ديرته! اضغط + وشارك</div>`;return}
   feed.innerHTML=list.map((p,i)=>{
     const medal=((sortMode==='top'||sortMode==='abroad')&&i<3&&p.ratings_count>0)?['🥇','🥈','🥉'][i]:'';
+    const isV=p.media_type==='video';
     return `<div class="mcard" onclick="openSheet(${p.id})">
-      <img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="${esc(p.title)}">
+      ${isV
+        ? `<video src="${vidUrl(p.image_path)}#t=0.5" muted playsinline preload="metadata" style="width:100%;display:block"></video>`
+        : `<img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="${esc(p.title)}">`}
       ${medal?`<div class="mc-medal">${medal}</div>`:''}
       ${VISIT_COUNTS[p.id]?`<div class="mc-visits">👣 ${VISIT_COUNTS[p.id]}</div>`:''}
+      ${p.media_type==='video'?'<div class="mc-vid">▶</div>':''}
       <div class="mc-overlay">
         <div class="mc-title">${esc(p.title)}</div>
         <div class="mc-sub">${rankOf(p).ic} ${esc(p.photographer)} · ${p.abroad?esc(p.country||p.city):esc(p.village||p.city)} · 👁️ ${p.views||0}</div>
@@ -189,7 +194,10 @@ function render(){
 async function openSheet(id){
   curId=id;curPhoto=photos.find(x=>x.id===id);
    const p=curPhoto;
-  $('sPh').innerHTML=`<img src="${imgUrl(p.image_path)}" onclick="zoomOpen(this.src)" alt="${esc(p.title)}">
+  const isVid=p.media_type==='video';
+  $('sPh').innerHTML=isVid
+    ? `<video src="${vidUrl(p.image_path)}" controls playsinline style="width:100%;height:100%;object-fit:contain;background:#000"></video>`
+    : `<img src="${imgUrl(p.image_path)}" onclick="zoomOpen(this.src)" alt="${esc(p.title)}">
     <button class="zoombtn" id="zoomBtn" onclick="togglePhotoZoom()">⤢ عرض كامل</button>`;
   if(!seenViews.has(p.id)){seenViews.add(p.id);try{sb.rpc('bump_view',{pid:p.id}).then(()=>{},()=>{})}catch(_){}}
   $('sPh').classList.remove('full');
@@ -910,4 +918,11 @@ async function loadUserBadges(uid){
     const q=await sb.from('quests').select('id,badge_icon,badge_name,title').in('id',ids);
     return q.data||[];
   }catch(e){return []}
+}
+
+/* ====== تفعيل الفيديو ====== */
+function initVideoUpload(){
+  const row=$('videoRow');if(!row)return;
+  const sp=window.__SPDATA;
+  row.style.display=(sp&&sp.video_enabled)?'flex':'none';
 }

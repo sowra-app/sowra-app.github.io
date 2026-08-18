@@ -1,6 +1,6 @@
 /* صورة من بلدي — upload.js | نسخة المختبر م1 */
 /* ============ الإضافة ============ */
-let pendingFile=null,pendingGeo=null,pendingBlob=null,isAbroad=false;
+let pendingFile=null,pendingGeo=null,pendingBlob=null,isAbroad=false,pendingVideo=null;
 function setDest(abroad){
   isAbroad=abroad;
   $('destHome').classList.toggle('on-dest',!abroad);
@@ -55,6 +55,25 @@ async function pickImg(inp,isLive){
   inp.value='';
 }
 
+/* ====== اختيار فيديو ====== */
+async function pickVideo(inp){
+  const f=inp.files[0];if(!f)return;
+  const MAXMB=25;
+  if(f.size>MAXMB*1024*1024){toast('الفيديو كبير — الحد '+MAXMB+' ميجا',true);inp.value='';return}
+  pendingFile=null;pendingBlob=null;pendingGeo=null;pendingVideo=f;
+  $('drop').style.display='block';
+  $('preview').style.display='none';
+  const pv=$('videoPreview');
+  if(pv){pv.src=URL.createObjectURL(f);pv.style.display='block';}
+  $('dropTxt').textContent='🎬 تم اختيار الفيديو ('+Math.round(f.size/1048576)+' ميجا)';
+  $('drop').classList.add('has');
+  $('geoCard').style.display='block';$('geoCard').classList.remove('warn');
+  $('geoStatus').textContent='⏳ جاري تحديد الموقع...';$('geoCoords').textContent='';
+  const pos=await liveLocation();
+  applyGeo(pos,'live');
+  inp.value='';
+}
+
 /* ضغط الصورة قبل الرفع (أقصى عرض 1600px) */
 function compressTo(file,maxW,quality){
   return new Promise(resolve=>{
@@ -93,13 +112,38 @@ async function addPhoto(){
     if(country.length<2){toast('اكتب الدولة والمدينة 🌍',true);return}
     region='عدسة مسافر';city=country;
   }
-  if(!pendingFile)return toast('اختر صورة أول ⚠️',true);
+  if(!pendingFile&&!pendingVideo)return toast('اختر صورة أو فيديو أول ⚠️',true);
   if(!title)return toast('اكتب عنوان للصورة ⚠️',true);
   if(title.length<2)return toast('العنوان قصير — حرفان على الأقل ✏️',true);
   if(title.length>100)return toast('العنوان طويل — 100 حرف كحد أقصى ✏️',true);
   if(!isAbroad&&(!region||!city))return toast('حدد المنطقة والمدينة ⚠️',true);
   const btn=$('pubBtn');btn.disabled=true;btn.textContent='⏳ جاري الرفع...';
   try{
+    // ═══ مسار الفيديو ═══
+    if(pendingVideo){
+      const vpath=`${USER.id}/${Date.now()}.mp4`;
+      const upv=await sb.storage.from('videos').upload(vpath,pendingVideo,{contentType:pendingVideo.type||'video/mp4',cacheControl:'31536000'});
+      if(upv.error)throw upv.error;
+      const insv=await sb.from('photos').insert({
+        user_id:USER.id,title,region,city,category:$('aCat').value||'other',
+        abroad:isAbroad,country,
+        village:isAbroad?'':$('aVillage').value.trim(),
+        lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
+        image_path:vpath,media_type:'video'
+      });
+      if(insv.error){
+        await sb.storage.from('videos').remove([vpath]).catch(()=>{});
+        throw insv.error;
+      }
+      pendingVideo=null;
+      const pv=$('videoPreview');if(pv){pv.src='';pv.style.display='none';}
+      $('drop').style.display='none';$('geoCard').style.display='none';
+      $('aTitle').value='';$('aVillage').value='';
+      toast('انرفع الفيديو 🎬');
+      await loadPhotos();go('feed');setSort('new');
+      btn.disabled=false;btn.textContent='انشر الصورة 🚀';
+      return;
+    }
     const blob=pendingBlob||await compress(pendingFile);
     const thumb=await compressTo(pendingFile,420,0.7);
     const path=`${USER.id}/${Date.now()}.jpg`;

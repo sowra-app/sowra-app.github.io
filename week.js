@@ -87,6 +87,7 @@ async function loadSponsor(){
     // زر الرعاة
     renderSponsorsBtn();
     if(typeof initGoogleBtn==='function')initGoogleBtn();
+    if(typeof initVideoUpload==='function')initVideoUpload();
   }catch(e){}
 }
 

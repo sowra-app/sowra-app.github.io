@@ -249,7 +249,7 @@ async function loadAdmWeek(){
       <div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px">
         <div style="flex:1"><b style="font-size:13px">#${p.id} · ${esc(p.title)}</b></div>
         <button class="btn" style="font-size:12px;padding:7px 12px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admWeekRemove(${p.id})">إزالة</button>
-      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + admChallengeBlock() + await admSpBlock() + admSponsorsBtn() + admSponsorSideBlock() +  admGoogleLoginBlock() + admMaintBlock();
+      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + admChallengeBlock() + admVideoBlock() + await admSpBlock() + admSponsorsBtn() + admSponsorSideBlock() +  admGoogleLoginBlock() + admMaintBlock();
 }
 /* ====== بنر الراعي ====== */
 async function admSpBlock(){
@@ -594,4 +594,22 @@ async function admAddToQuest(pid){
   if(error){toast(error.code==='23505'?'موجودة بالرحلة':'فشلت الإضافة',true);return}
   toast('انضافت لـ'+ADMQ[idx].title+' 🗝️');
   loadAdmQuests();
+}
+
+/* ====== تفعيل رفع الفيديو ====== */
+function admVideoBlock(){
+  const b=window.__SPB||{};
+  const on=!!b.video_enabled;
+  return `<div style="background:var(--card);border:1.5px solid ${on?'var(--qblue)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🎬 رفع الفيديوهات <span style="font-size:11px;font-weight:700;color:${on?'var(--qblue)':'var(--txt-dim)'}">${on?'● مفعّل':'○ مطفأ'}</span></div>
+    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">يظهر خيار «فيديو قصير» بصفحة النشر. ⚠️ الفيديو يستهلك التخزين بسرعة.</div>
+    <button class="btn" style="width:100%;${on?'background:var(--sadu)':'background:var(--qblue)'}" onclick="admVideoToggle()">${on?'🙈 إيقاف الفيديو':'▶️ تفعيل الفيديو'}</button>
+  </div>`;
+}
+async function admVideoToggle(){
+  const b=window.__SPB||{};
+  const {error}=await sb.from('site_banner').update({video_enabled:!b.video_enabled}).eq('id',1);
+  if(error){toast('فشلت العملية: '+error.message,true);return}
+  toast(!b.video_enabled?'رفع الفيديو مفعّل 🎬':'اتوقف رفع الفيديو');
+  await loadSponsor();await loadAdmWeek();
 }

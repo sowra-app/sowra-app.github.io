@@ -170,7 +170,11 @@
       <button class="cap-btn live" onclick="document.getElementById('fileLive').click()">📸<b>التقط لايف</b><small>كاميرا + موقعك الآن</small></button>
       <button class="cap-btn" onclick="document.getElementById('fileGal').click()">🖼️<b>من المعرض</b><small>نقرأ موقع الصورة</small></button>
     </div>
-    <div class="drop" id="drop" style="display:none"><span id="dropTxt"></span><img id="preview" style="display:none"></div>
+    <div class="cap-row" id="videoRow" style="display:none">
+      <button class="cap-btn" style="border-color:var(--qblue)" onclick="document.getElementById('fileVid').click()">🎬<b>فيديو قصير</b><small>حتى 25 ميجا · 30 ثانية</small></button>
+    </div>
+    <input type="file" id="fileVid" accept="video/*" style="display:none" onchange="pickVideo(this)">
+    <div class="drop" id="drop" style="display:none"><span id="dropTxt"></span><img id="preview" style="display:none"><video id="videoPreview" controls playsinline style="display:none;max-width:100%;max-height:220px;border-radius:12px;margin-top:10px"></video></div>
     <div class="geo-card" id="geoCard" style="display:none"><div class="geo-status" id="geoStatus"></div><div class="geo-coords" id="geoCoords"></div></div>
     <input type="file" id="fileLive" accept="image/*" capture="environment" style="display:none" onchange="pickImg(this,true)">
     <input type="file" id="fileGal" accept="image/*" style="display:none" onchange="pickImg(this,false)">
