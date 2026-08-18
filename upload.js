@@ -41,9 +41,7 @@ async function pickImg(inp,isLive){
   $('dropTxt').textContent='✓ تم اختيار الصورة';
   $('drop').classList.add('has');
   curFilter='none';
-  const bu=URL.createObjectURL(f);
-  renderFilterRow(bu,false);
-  makeThumbDataUrl(f).then(d=>{if(d)renderFilterRow(d,false)}).catch(()=>{});
+  try{ renderFilterRow(URL.createObjectURL(f),false); }catch(e){}
   // ضغط بالخلفية من الحين — عشان النشر يكون لحظي
   compress(f).then(b=>{pendingBlob=b});
   $('geoCard').style.display='block';$('geoCard').classList.remove('warn');
@@ -370,35 +368,50 @@ function filterCss(k){
 }
 
 function renderFilterRow(srcUrl,isVideo){
-  const row=$('filterRow');if(!row)return;
-  row.style.display='flex';
-  row.innerHTML=FILTERS.map(f=>`
-    <div class="f-item ${curFilter===f.k?'on':''}" data-k="${f.k}" onclick="pickFilter('${f.k}')">
-      <div class="f-thumb"><img src="${srcUrl}" style="filter:${f.css};-webkit-filter:${f.css}" alt="${f.n}"></div>
-      <div class="f-name">${f.n}</div>
-    </div>`).join('');
-  applyFilterPreview();
+  try{
+    const row=document.getElementById('filterRow');
+    if(!row||!srcUrl)return;
+    row.style.display='flex';
+    let html='';
+    for(let i=0;i<FILTERS.length;i++){
+      const f=FILTERS[i];
+      html+='<div class="f-item'+(curFilter===f.k?' on':'')+'" data-k="'+f.k+'" onclick="pickFilter(\''+f.k+'\')">'
+        +'<div class="f-thumb"><img src="'+srcUrl+'" style="filter:'+f.css+';-webkit-filter:'+f.css+'"></div>'
+        +'<div class="f-name">'+f.n+'</div></div>';
+    }
+    row.innerHTML=html;
+    applyFilterPreview();
+  }catch(e){}
 }
 
 function pickFilter(k){
-  curFilter=k;
-  document.querySelectorAll('#filterRow .f-item').forEach(el=>el.classList.toggle('on',el.dataset.k===k));
-  applyFilterPreview();
+  try{
+    curFilter=k;
+    const items=document.querySelectorAll('#filterRow .f-item');
+    for(let i=0;i<items.length;i++){
+      items[i].classList.toggle('on',items[i].getAttribute('data-k')===k);
+    }
+    applyFilterPreview();
+  }catch(e){}
 }
 
 function applyFilterPreview(){
-  const css=filterCss(curFilter);
-  const im=$('preview'), vd=$('videoPreview');
-  if(im){im.style.filter=css;im.style.webkitFilter=css;}
-  if(vd){vd.style.filter=css;vd.style.webkitFilter=css;}
+  try{
+    const css=filterCss(curFilter);
+    const im=document.getElementById('preview'), vd=document.getElementById('videoPreview');
+    if(im){im.style.filter=css;im.style.webkitFilter=css;}
+    if(vd){vd.style.filter=css;vd.style.webkitFilter=css;}
+  }catch(e){}
 }
 
 function resetFilter(){
+  try{
   curFilter='none';
   const row=$('filterRow');if(row){row.style.display='none';row.innerHTML=''}
   const im=$('preview'), vd=$('videoPreview');
-  if(im)im.style.filter='none';
-  if(vd)vd.style.filter='none';
+  if(im){im.style.filter='none';im.style.webkitFilter='none';}
+  if(vd){vd.style.filter='none';vd.style.webkitFilter='none';}
+  }catch(e){}
 }
 
 /* حرق الفلتر على الصورة عند الضغط */
