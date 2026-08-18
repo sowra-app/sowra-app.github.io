@@ -254,7 +254,7 @@ async function loadAdmWeek(){
       <div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px">
         <div style="flex:1"><b style="font-size:13px">#${p.id} · ${esc(p.title)}</b></div>
         <button class="btn" style="font-size:12px;padding:7px 12px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admWeekRemove(${p.id})">إزالة</button>
-      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + admChallengeBlock() + admVideoBlock() + await admSpBlock() + admSponsorsBtn() + admSponsorSideBlock() +  admGoogleLoginBlock() + admMaintBlock();
+      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + admChallengeBlock() + admVideoBlock() + admCleanupBlock() + await admSpBlock() + admSponsorsBtn() + admSponsorSideBlock() +  admGoogleLoginBlock() + admMaintBlock();
 }
 /* ====== بنر الراعي ====== */
 async function admSpBlock(){
@@ -617,4 +617,75 @@ async function admVideoToggle(){
   if(error){toast('فشلت العملية: '+error.message,true);return}
   toast(!b.video_enabled?'رفع الفيديو مفعّل 🎬':'اتوقف رفع الفيديو');
   await loadSponsor();await loadAdmWeek();
+}
+
+/* ====== تنظيف الملفات اليتيمة ====== */
+function admCleanupBlock(){
+  return `<div style="background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:14px;margin-top:12px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🧹 تنظيف التخزين</div>
+    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">يحذف ملفات الصور والفيديو اللي ما لها صف بالقاعدة (يتيمة).</div>
+    <button class="btn" style="width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admCleanupStorage()">🧹 فحص وتنظيف</button>
+    <div id="cleanResult" style="font-size:12px;color:var(--txt-dim);margin-top:8px;line-height:1.8"></div>
+  </div>`;
+}
+
+async function admCleanupStorage(){
+  const box=$('cleanResult');
+  if(box)box.textContent='⏳ نفحص الملفات...';
+  try{
+    // كل المسارات المسجّلة بالقاعدة
+    const r=await sb.from('photos').select('image_path,media_type');
+    const rows=r.data||[];
+    const keepVid=new Set(rows.filter(x=>x.media_type==='video').map(x=>x.image_path));
+    const keepImg=new Set();
+    rows.filter(x=>x.media_type!=='video').forEach(x=>{
+      keepImg.add(x.image_path);
+      keepImg.add(x.image_path.replace('.jpg','_t.jpg'));
+    });
+
+    let orphanV=[],orphanP=[];
+
+    // فحص دلو الفيديو
+    const uv=await listBucketAll('videos');
+    orphanV=uv.filter(p=>!keepVid.has(p));
+
+    // فحص دلو الصور
+    const up=await listBucketAll('photos');
+    orphanP=up.filter(p=>!keepImg.has(p));
+
+    const total=orphanV.length+orphanP.length;
+    if(!total){if(box)box.textContent='✅ التخزين نظيف — ما فيه ملفات يتيمة';return}
+
+    if(!confirm('لقينا '+total+' ملفاً يتيماً ('+orphanV.length+' فيديو · '+orphanP.length+' صورة).\n\nحذفها نهائياً؟'))
+      {if(box)box.textContent='تم الإلغاء';return}
+
+    if(orphanV.length){
+      for(let i=0;i<orphanV.length;i+=50){
+        await sb.storage.from('videos').remove(orphanV.slice(i,i+50));
+      }
+    }
+    if(orphanP.length){
+      for(let i=0;i<orphanP.length;i+=50){
+        await sb.storage.from('photos').remove(orphanP.slice(i,i+50));
+      }
+    }
+    if(box)box.textContent='✅ انحذف '+total+' ملفاً يتيماً';
+    toast('انتهى التنظيف 🧹');
+  }catch(e){
+    if(box)box.textContent='⚠️ تعذر الفحص: '+(e.message||'');
+  }
+}
+
+/* سرد كل ملفات دلو (يمشي على مجلدات المستخدمين) */
+async function listBucketAll(bucket){
+  const out=[];
+  const root=await sb.storage.from(bucket).list('',{limit:1000});
+  const folders=(root.data||[]).filter(x=>!x.id);
+  const files=(root.data||[]).filter(x=>x.id);
+  files.forEach(f=>out.push(f.name));
+  for(const fo of folders){
+    const sub=await sb.storage.from(bucket).list(fo.name,{limit:1000});
+    (sub.data||[]).forEach(f=>{if(f.id)out.push(fo.name+'/'+f.name)});
+  }
+  return out;
 }
