@@ -41,7 +41,7 @@ async function pickImg(inp,isLive){
   $('dropTxt').textContent='✓ تم اختيار الصورة';
   $('drop').classList.add('has');
   curFilter='none';
-  renderFilterRow($('preview').src,false);
+  makeThumbDataUrl(f).then(d=>{if(d)renderFilterRow(d,false)});
   // ضغط بالخلفية من الحين — عشان النشر يكون لحظي
   compress(f).then(b=>{pendingBlob=b});
   $('geoCard').style.display='block';$('geoCard').classList.remove('warn');
@@ -428,6 +428,28 @@ function captureVideoFrame(file){
       };
       v.onerror=()=>res(null);
       v.src=URL.createObjectURL(file);
+    }catch(e){res(null)}
+  });
+}
+
+/* مصغّرة dataURL للمعاينة (أضمن على iOS من blob URL) */
+function makeThumbDataUrl(file){
+  return new Promise(res=>{
+    try{
+      const img=new Image();
+      img.onload=()=>{
+        try{
+          const s=Math.min(1,160/Math.max(img.width,img.height));
+          const cv=document.createElement('canvas');
+          cv.width=Math.max(1,Math.round(img.width*s));
+          cv.height=Math.max(1,Math.round(img.height*s));
+          cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+          URL.revokeObjectURL(img.src);
+          res(cv.toDataURL('image/jpeg',0.72));
+        }catch(e){res(null)}
+      };
+      img.onerror=()=>res(null);
+      img.src=URL.createObjectURL(file);
     }catch(e){res(null)}
   });
 }
