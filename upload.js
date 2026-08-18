@@ -41,7 +41,11 @@ async function pickImg(inp,isLive){
   $('dropTxt').textContent='✓ تم اختيار الصورة';
   $('drop').classList.add('has');
   curFilter='none';
-  try{ renderFilterRow(URL.createObjectURL(f),false); }catch(e){}
+  try{
+    const _u=URL.createObjectURL(f);
+    toast('فلاتر: '+(typeof renderFilterRow)+' | row:'+(document.getElementById('filterRow')?'موجود':'مفقود'));
+    renderFilterRow(_u,false);
+  }catch(e){toast('خطأ فلاتر: '+e.message,true)}
   // ضغط بالخلفية من الحين — عشان النشر يكون لحظي
   compress(f).then(b=>{pendingBlob=b});
   $('geoCard').style.display='block';$('geoCard').classList.remove('warn');
