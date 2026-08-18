@@ -208,6 +208,10 @@ async function openSheet(id){
  
   renderFollow(p);
   renderVisits(p);
+  if(isVid&&p.music_key){
+    const lc=$('sLoc');
+    if(lc)lc.innerHTML+='<br><span style="font-size:12px;color:var(--txt-dim)">🎵 '+esc(p.music_key)+'</span>';
+  }
   const shb=$('shareBtn');
   if(shb)shb.onclick=function(){shareCard(p)};
   const dbw=$('deleteBtn');

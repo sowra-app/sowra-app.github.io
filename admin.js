@@ -14,20 +14,22 @@ async function openAdmin(){
 }
 function admSetTab(t){
   admTab=t;
-  ['Rep','All','Plc','Fb','St','Wk','Qs'].forEach(x=>{const e=$('admTab'+x);if(e)e.classList.remove('on')});
-  const m={rep:'Rep',all:'All',plc:'Plc',fb:'Fb',st:'St',wk:'Wk',qs:'Qs'};
+  ['Rep','All','Plc','Fb','St','Wk','Qs','Mu'].forEach(x=>{const e=$('admTab'+x);if(e)e.classList.remove('on')});
+  const m={rep:'Rep',all:'All',plc:'Plc',fb:'Fb',st:'St',wk:'Wk',qs:'Qs',mu:'Mu'};
   const cur=$('admTab'+m[t]);if(cur)cur.classList.add('on');
   $('admPlaces').style.display=t==='plc'?'block':'none';
   $('admFb').style.display=t==='fb'?'block':'none';
   $('admSt').style.display=t==='st'?'block':'none';
   $('admWk').style.display=t==='wk'?'block':'none';
   const aq=$('admQs');if(aq)aq.style.display=t==='qs'?'block':'none';
+  const am=$('admMu');if(am)am.style.display=t==='mu'?'block':'none';
   $('admList').style.display=(t==='rep'||t==='all')?'block':'none';
   if(t==='plc')renderPlaces();
   else if(t==='fb')loadFb();
   else if(t==='st')loadStats();
   else if(t==='wk')loadAdmWeek();
   else if(t==='qs')loadAdmQuests();
+  else if(t==='mu')loadAdmMusic();
   else admRender();
 }
 
@@ -725,4 +727,75 @@ async function listBucketAll(bucket){
     (sub.data||[]).forEach(f=>{if(f.id&&!skip(f.name))out.push(fo.name+'/'+f.name)});
   }
   return out;
+}
+
+/* ====== مكتبة الموسيقى ====== */
+let MUSIC=[];
+
+async function loadAdmMusic(){
+  const el=$('admMu');if(!el)return;
+  el.innerHTML='<div class="loader">⏳</div>';
+  const r=await sb.from('music').select('*').order('created_at',{ascending:false});
+  MUSIC=r.data||[];
+  el.innerHTML=`
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:8px">🎵 إضافة مقطع</div>
+    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">MP3 خالٍ من الحقوق · حتى 5 ميجا · يُفضّل 30-60 ثانية</div>
+    <input id="muName" placeholder="اسم المقطع (مثال: عود هادئ)" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
+    <input type="file" id="muFile" accept="audio/*" style="width:100%;font-family:'Tajawal';font-size:12px;margin-bottom:8px">
+    <button class="btn" style="width:100%" id="muUpBtn" onclick="muUpload()">📤 رفع المقطع</button>
+  </div>
+  ${MUSIC.length?MUSIC.map(m=>`
+    <div style="background:var(--card);border:1.5px solid ${m.active?'var(--palm)':'var(--line)'};border-radius:14px;padding:12px 14px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:20px">🎵</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.name)}</div>
+          <div style="font-size:11px;color:${m.active?'var(--palm)':'var(--txt-dim)'};font-weight:700">${m.active?'● متاح للأعضاء':'○ مخفي'}</div>
+        </div>
+      </div>
+      <audio controls preload="none" src="${muUrl(m.path)}" style="width:100%;height:36px;margin-bottom:8px"></audio>
+      <div style="display:flex;gap:8px">
+        <button class="btn" style="flex:1;font-size:12px;padding:7px;${m.active?'background:var(--sadu)':'background:var(--palm)'}" onclick="muToggle(${m.id},${m.active})">${m.active?'🙈 إخفاء':'▶️ إتاحة'}</button>
+        <button class="btn" style="flex:1;font-size:12px;padding:7px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="muDelete(${m.id},'${m.path}')">🗑️ حذف</button>
+      </div>
+    </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه مقاطع بعد</div>'}`;
+}
+
+function muUrl(path){return sb.storage.from('music').getPublicUrl(path).data.publicUrl}
+
+async function muUpload(){
+  const name=$('muName').value.trim();
+  const f=$('muFile').files[0];
+  if(!name){toast('اكتب اسم المقطع',true);return}
+  if(!f){toast('اختر ملف MP3',true);return}
+  if(f.size>5*1024*1024){toast('الملف كبير — الحد 5 ميجا',true);return}
+  const btn=$('muUpBtn');btn.disabled=true;btn.textContent='⏳ نرفع...';
+  try{
+    const ext=(f.name.split('.').pop()||'mp3').toLowerCase();
+    const path=Date.now()+'.'+ext;
+    const up=await sb.storage.from('music').upload(path,f,{contentType:f.type||'audio/mpeg',cacheControl:'31536000'});
+    if(up.error)throw up.error;
+    const ins=await sb.from('music').insert({name,path});
+    if(ins.error){await sb.storage.from('music').remove([path]).catch(()=>{});throw ins.error}
+    $('muName').value='';$('muFile').value='';
+    toast('انرفع المقطع 🎵');
+    loadAdmMusic();
+  }catch(e){toast('فشل الرفع: '+(e.message||''),true)}
+  finally{btn.disabled=false;btn.textContent='📤 رفع المقطع'}
+}
+
+async function muToggle(id,cur){
+  const {error}=await sb.from('music').update({active:!cur}).eq('id',id);
+  if(error){toast('فشلت العملية',true);return}
+  toast(!cur?'المقطع متاح 🎵':'اختفى المقطع');
+  loadAdmMusic();
+}
+
+async function muDelete(id,path){
+  if(!confirm('حذف المقطع نهائياً؟'))return;
+  await sb.from('music').delete().eq('id',id);
+  try{await sb.storage.from('music').remove([path])}catch(e){}
+  toast('انحذف المقطع');
+  loadAdmMusic();
 }

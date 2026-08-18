@@ -158,7 +158,7 @@ async function addPhoto(){
         abroad:isAbroad,country,
         village:isAbroad?'':$('aVillage').value.trim(),
         lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
-        image_path:vpath,media_type:'video',filter_key:curFilter
+        image_path:vpath,media_type:'video',filter_key:curFilter,music_key:(pendingMusicName||'')
       });
       if(insv.error){
         await sb.storage.from('videos').remove([vpath]).catch(()=>{});
@@ -218,7 +218,7 @@ async function addPhoto(){
 }
 
 /* ====== كاميرا التسجيل الداخلية ====== */
-let recStream=null, recorder=null, recChunks=[], recTimer=null, recStart=0, recFacing='environment';
+let recStream=null, recorder=null, recChunks=[], recTimer=null, recStart=0, recFacing='environment', pendingMusicName='';
 const REC_MAX=30;
 
 function recSupported(){
@@ -246,11 +246,14 @@ async function recOpen(){
   $('recTimer').textContent='00:00';
   $('recTimer').classList.remove('live');
   $('recHint').textContent='اضغط مطولاً للتسجيل';
+  pickedMusic=null;
+  loadMusicList().then(renderMusicChips);
   bindRecBtn();
 }
 
 function recClose(){
   recStop(true);
+  stopMusicPreview();stopMixer();
   if(recStream){recStream.getTracks().forEach(t=>t.stop());recStream=null}
   $('recScreen').classList.remove('on');
   document.body.style.overflow='';
@@ -273,14 +276,17 @@ function pickMime(){
   return '';
 }
 
-function recBegin(){
+async function recBegin(){
   if(!recStream||recorder)return;
   recChunks=[];
+  stopMusicPreview();
   const mime=pickMime();
+  let target=recStream;
+  try{ target=await buildMixedStream(recStream); }catch(e){}
   try{
-    recorder=mime?new MediaRecorder(recStream,{mimeType:mime,videoBitsPerSecond:2500000})
-                 :new MediaRecorder(recStream);
-  }catch(e){toast('تعذر بدء التسجيل',true);return}
+    recorder=mime?new MediaRecorder(target,{mimeType:mime,videoBitsPerSecond:2500000})
+                 :new MediaRecorder(target);
+  }catch(e){toast('تعذر بدء التسجيل',true);stopMixer();return}
   recorder.ondataavailable=e=>{if(e.data&&e.data.size)recChunks.push(e.data)};
   recorder.onstop=recFinish;
   recorder.start(200);
@@ -301,6 +307,7 @@ function recBegin(){
 
 function recStop(silent){
   if(recTimer){clearInterval(recTimer);recTimer=null}
+  stopMixer();
   $('recBtn').classList.remove('recording');
   $('recTimer').classList.remove('live');
   $('recHint').textContent='اضغط مطولاً للتسجيل';
@@ -321,6 +328,7 @@ async function recFinish(){
   recChunks=[];
   if(blob.size>25*1024*1024){toast('الفيديو كبير — سجّل مدة أقصر',true);return}
 
+  pendingMusicName=pickedMusic?pickedMusic.name:'';
   pendingVideo=new File([blob],'rec.'+ext,{type});
   pendingFile=null;pendingBlob=null;
 
@@ -349,7 +357,7 @@ function bindRecBtn(){
   const b=$('recBtn');
   if(!b||b._bound)return;
   b._bound=true;
-  const down=e=>{e.preventDefault();recBegin()};
+  const down=e=>{e.preventDefault();recBegin().catch(()=>{})};
   const up=e=>{e.preventDefault();if(recorder)recStop()};
   b.addEventListener('touchstart',down,{passive:false});
   b.addEventListener('touchend',up,{passive:false});
@@ -525,4 +533,89 @@ function clearDraft(){
 function showClearBtn(){
   const cd=$('clearDraft');
   if(cd)cd.style.display='block';
+}
+
+/* ====== موسيقى التسجيل — دمج حقيقي بالملف ====== */
+let MUSIC_LIST=[], pickedMusic=null, musicAudio=null, audioCtx=null;
+
+async function loadMusicList(){
+  try{
+    const r=await sb.from('music').select('*').eq('active',true).order('created_at');
+    MUSIC_LIST=r.data||[];
+  }catch(e){MUSIC_LIST=[]}
+}
+
+function musicUrl(path){return sb.storage.from('music').getPublicUrl(path).data.publicUrl}
+
+function renderMusicChips(){
+  const el=$('recMusic');if(!el)return;
+  if(!MUSIC_LIST.length){el.style.display='none';return}
+  el.style.display='flex';
+  el.innerHTML='';
+  const none=document.createElement('button');
+  none.className='m-chip'+(pickedMusic?'':' on');
+  none.textContent='🔇 بلا موسيقى';
+  none.onclick=()=>{pickedMusic=null;stopMusicPreview();renderMusicChips()};
+  el.appendChild(none);
+  MUSIC_LIST.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='m-chip'+(pickedMusic&&pickedMusic.id===m.id?' on':'');
+    b.textContent='🎵 '+m.name;
+    b.onclick=()=>{pickedMusic=m;previewMusic(m);renderMusicChips()};
+    el.appendChild(b);
+  });
+}
+
+function previewMusic(m){
+  stopMusicPreview();
+  try{
+    musicAudio=new Audio(musicUrl(m.path));
+    musicAudio.loop=true;musicAudio.volume=0.5;
+    musicAudio.crossOrigin='anonymous';
+    musicAudio.play().catch(()=>{});
+  }catch(e){}
+}
+
+function stopMusicPreview(){
+  if(musicAudio){try{musicAudio.pause()}catch(e){} musicAudio=null}
+}
+
+/* بناء مسار صوتي مدمج: ميكروفون + موسيقى */
+async function buildMixedStream(camStream){
+  if(!pickedMusic)return camStream;
+  try{
+    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    const dest=audioCtx.createMediaStreamDestination();
+
+    // صوت الكاميرا
+    if(camStream.getAudioTracks().length){
+      const micSrc=audioCtx.createMediaStreamSource(camStream);
+      const micGain=audioCtx.createGain();
+      micGain.gain.value=0.85;
+      micSrc.connect(micGain).connect(dest);
+    }
+
+    // الموسيقى
+    const res=await fetch(musicUrl(pickedMusic.path));
+    const buf=await res.arrayBuffer();
+    const decoded=await audioCtx.decodeAudioData(buf);
+    const src=audioCtx.createBufferSource();
+    src.buffer=decoded;src.loop=true;
+    const mGain=audioCtx.createGain();
+    mGain.gain.value=0.45;
+    src.connect(mGain).connect(dest);
+    src.start(0);
+    window.__musicSrc=src;
+
+    // دمج: فيديو الكاميرا + الصوت المخلوط
+    const mixed=new MediaStream();
+    camStream.getVideoTracks().forEach(t=>mixed.addTrack(t));
+    dest.stream.getAudioTracks().forEach(t=>mixed.addTrack(t));
+    return mixed;
+  }catch(e){return camStream}
+}
+
+function stopMixer(){
+  try{if(window.__musicSrc){window.__musicSrc.stop();window.__musicSrc=null}}catch(e){}
+  try{if(audioCtx){audioCtx.close();audioCtx=null}}catch(e){}
 }
