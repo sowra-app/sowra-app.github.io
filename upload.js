@@ -372,7 +372,7 @@ function renderFilterRow(srcUrl,isVideo){
   row.style.display='flex';
   row.innerHTML=FILTERS.map(f=>`
     <div class="f-item ${curFilter===f.k?'on':''}" data-k="${f.k}" onclick="pickFilter('${f.k}')">
-      <div class="f-thumb"><img src="${srcUrl}" style="filter:${f.css}" alt="${f.n}"></div>
+      <div class="f-thumb"><img src="${srcUrl}" style="filter:${f.css};-webkit-filter:${f.css}" alt="${f.n}"></div>
       <div class="f-name">${f.n}</div>
     </div>`).join('');
   applyFilterPreview();
@@ -387,8 +387,8 @@ function pickFilter(k){
 function applyFilterPreview(){
   const css=filterCss(curFilter);
   const im=$('preview'), vd=$('videoPreview');
-  if(im)im.style.filter=css;
-  if(vd)vd.style.filter=css;
+  if(im){im.style.filter=css;im.style.webkitFilter=css;}
+  if(vd){vd.style.filter=css;vd.style.webkitFilter=css;}
 }
 
 function resetFilter(){
