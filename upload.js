@@ -368,7 +368,10 @@ function filterCss(k){
 }
 
 function renderFilterRow(srcUrl,isVideo){
-  const row=$('filterRow');if(!row)return;
+  const row=$('filterRow');
+  if(!row){toast('❌ filterRow مفقود',true);return}
+  if(!srcUrl){toast('❌ ما فيه مصدر صورة',true);return}
+  toast('✓ الفلاتر تُبنى...');
   row.style.display='flex';
   row.innerHTML=FILTERS.map(f=>`
     <div class="f-item ${curFilter===f.k?'on':''}" data-k="${f.k}" onclick="pickFilter('${f.k}')">
