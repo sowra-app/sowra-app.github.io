@@ -620,20 +620,26 @@ async function admVideoToggle(){
 }
 
 /* ====== تنظيف الملفات اليتيمة ====== */
+let ORPHANS={v:[],p:[]};
+
 function admCleanupBlock(){
   return `<div style="background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:14px;margin-top:12px">
     <div style="font-weight:700;font-size:14px;margin-bottom:6px">🧹 تنظيف التخزين</div>
-    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">يحذف ملفات الصور والفيديو اللي ما لها صف بالقاعدة (يتيمة).</div>
-    <button class="btn" style="width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admCleanupStorage()">🧹 فحص وتنظيف</button>
-    <div id="cleanResult" style="font-size:12px;color:var(--txt-dim);margin-top:8px;line-height:1.8"></div>
+    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">الملفات اليتيمة: موجودة بالتخزين وما لها صف بالقاعدة.</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button class="btn" style="flex:1;font-size:12px;padding:9px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admScanOrphans('videos')">🎬 فحص الفيديو</button>
+      <button class="btn" style="flex:1;font-size:12px;padding:9px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admScanOrphans('photos')">🖼️ فحص الصور</button>
+    </div>
+    <button class="btn" style="width:100%;font-size:12px;padding:9px;background:var(--qblue)" onclick="admScanOrphans('all')">🔍 فحص الكل</button>
+    <div id="cleanResult" style="font-size:12px;color:var(--txt-dim);margin-top:10px;line-height:1.9"></div>
   </div>`;
 }
 
-async function admCleanupStorage(){
+async function admScanOrphans(mode){
   const box=$('cleanResult');
-  if(box)box.textContent='⏳ نفحص الملفات...';
+  if(box)box.innerHTML='⏳ نفحص...';
+  ORPHANS={v:[],p:[]};
   try{
-    // كل المسارات المسجّلة بالقاعدة
     const r=await sb.from('photos').select('image_path,media_type');
     const rows=r.data||[];
     const keepVid=new Set(rows.filter(x=>x.media_type==='video').map(x=>x.image_path));
@@ -643,36 +649,56 @@ async function admCleanupStorage(){
       keepImg.add(x.image_path.replace('.jpg','_t.jpg'));
     });
 
-    let orphanV=[],orphanP=[];
-
-    // فحص دلو الفيديو
-    const uv=await listBucketAll('videos');
-    orphanV=uv.filter(p=>!keepVid.has(p));
-
-    // فحص دلو الصور
-    const up=await listBucketAll('photos');
-    orphanP=up.filter(p=>!keepImg.has(p));
-
-    const total=orphanV.length+orphanP.length;
-    if(!total){if(box)box.textContent='✅ التخزين نظيف — ما فيه ملفات يتيمة';return}
-
-    if(!confirm('لقينا '+total+' ملفاً يتيماً ('+orphanV.length+' فيديو · '+orphanP.length+' صورة).\n\nحذفها نهائياً؟'))
-      {if(box)box.textContent='تم الإلغاء';return}
-
-    if(orphanV.length){
-      for(let i=0;i<orphanV.length;i+=50){
-        await sb.storage.from('videos').remove(orphanV.slice(i,i+50));
-      }
+    if(mode==='videos'||mode==='all'){
+      const uv=await listBucketAll('videos');
+      ORPHANS.v=uv.filter(p=>!keepVid.has(p));
     }
-    if(orphanP.length){
-      for(let i=0;i<orphanP.length;i+=50){
-        await sb.storage.from('photos').remove(orphanP.slice(i,i+50));
-      }
+    if(mode==='photos'||mode==='all'){
+      const up=await listBucketAll('photos');
+      ORPHANS.p=up.filter(p=>!keepImg.has(p));
     }
-    if(box)box.textContent='✅ انحذف '+total+' ملفاً يتيماً';
+
+    const tv=ORPHANS.v.length, tp=ORPHANS.p.length, tot=tv+tp;
+    if(!tot){if(box)box.innerHTML='✅ نظيف — ما فيه ملفات يتيمة';return}
+
+    let html='<div style="font-weight:700;color:var(--sadu);margin-bottom:6px">لقينا '+tot+' ملفاً يتيماً:</div>';
+    if(tv){
+      html+='<div style="margin-bottom:6px"><b>🎬 فيديو ('+tv+'):</b></div>';
+      html+=ORPHANS.v.map(x=>'<div style="background:var(--card2);border-radius:8px;padding:5px 9px;margin-bottom:4px;font-size:11px;direction:ltr;text-align:left;word-break:break-all">'+esc(x)+'</div>').join('');
+      html+='<button class="btn" style="width:100%;font-size:12px;padding:8px;margin:6px 0;background:var(--sadu)" onclick="admDelOrphans(\'v\')">🗑️ احذف الفيديوهات اليتيمة ('+tv+')</button>';
+    }
+    if(tp){
+      html+='<div style="margin:8px 0 6px"><b>🖼️ صور ('+tp+'):</b></div>';
+      html+=ORPHANS.p.map(x=>'<div style="background:var(--card2);border-radius:8px;padding:5px 9px;margin-bottom:4px;font-size:11px;direction:ltr;text-align:left;word-break:break-all">'+esc(x)+'</div>').join('');
+      html+='<button class="btn" style="width:100%;font-size:12px;padding:8px;margin:6px 0;background:var(--sadu)" onclick="admDelOrphans(\'p\')">🗑️ احذف الصور اليتيمة ('+tp+')</button>';
+    }
+    html+='<div style="font-size:11px;color:var(--txt-dim);margin-top:6px">⚠️ راجع القائمة قبل الحذف — العملية نهائية</div>';
+    if(box)box.innerHTML=html;
+  }catch(e){
+    if(box)box.innerHTML='⚠️ تعذر الفحص: '+(e.message||'');
+  }
+}
+
+async function admDelOrphans(kind){
+  const list=kind==='v'?ORPHANS.v:ORPHANS.p;
+  const bucket=kind==='v'?'videos':'photos';
+  if(!list.length)return;
+  if(!confirm('حذف '+list.length+' ملفاً نهائياً من دلو '+bucket+'؟'))return;
+  const box=$('cleanResult');
+  if(box)box.innerHTML='⏳ نحذف...';
+  let done=0;
+  try{
+    for(let i=0;i<list.length;i+=50){
+      const chunk=list.slice(i,i+50);
+      const {error}=await sb.storage.from(bucket).remove(chunk);
+      if(error)throw error;
+      done+=chunk.length;
+    }
+    if(kind==='v')ORPHANS.v=[];else ORPHANS.p=[];
+    if(box)box.innerHTML='✅ انحذف '+done+' ملفاً';
     toast('انتهى التنظيف 🧹');
   }catch(e){
-    if(box)box.textContent='⚠️ تعذر الفحص: '+(e.message||'');
+    if(box)box.innerHTML='⚠️ انحذف '+done+' — توقف: '+(e.message||'');
   }
 }
 
