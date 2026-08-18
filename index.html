@@ -171,7 +171,8 @@
       <button class="cap-btn" onclick="document.getElementById('fileGal').click()">🖼️<b>من المعرض</b><small>نقرأ موقع الصورة</small></button>
     </div>
     <div class="cap-row" id="videoRow" style="display:none">
-      <button class="cap-btn" style="border-color:var(--qblue)" onclick="document.getElementById('fileVid').click()">🎬<b>فيديو قصير</b><small>حتى 25 ميجا · 30 ثانية</small></button>
+      <button class="cap-btn" id="recOpenBtn" style="border-color:var(--sadu);display:none" onclick="recOpen()">🔴<b>سجّل الآن</b><small>30 ثانية · داخل التطبيق</small></button>
+      <button class="cap-btn" style="border-color:var(--qblue)" onclick="document.getElementById('fileVid').click()">🎬<b>من المعرض</b><small>حتى 25 ميجا · 30 ثانية</small></button>
     </div>
     <input type="file" id="fileVid" accept="video/*" style="display:none" onchange="pickVideo(this)">
     <div class="drop" id="drop" style="display:none"><span id="dropTxt"></span><img id="preview" style="display:none"><video id="videoPreview" controls playsinline style="display:none;max-width:100%;max-height:220px;border-radius:12px;margin-top:10px"></video></div>
@@ -379,6 +380,21 @@
   </button>
 </nav>
 <button id="fab" onclick="go('add')" title="انشر صورة">+</button>
+<!-- ====== كاميرا التسجيل ====== -->
+<div id="recScreen">
+  <video id="recPreview" autoplay muted playsinline></video>
+  <div class="rec-top">
+    <button class="rec-x" onclick="recClose()">✕</button>
+    <div class="rec-timer" id="recTimer">00:00</div>
+    <button class="rec-flip" onclick="recFlip()">🔄</button>
+  </div>
+  <div class="rec-bar"><div class="rec-fill" id="recFill"></div></div>
+  <div class="rec-bottom">
+    <div class="rec-hint" id="recHint">اضغط مطولاً للتسجيل</div>
+    <button class="rec-btn" id="recBtn"><span class="rec-dot"></span></button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="app.js?x=v1.1"></script>

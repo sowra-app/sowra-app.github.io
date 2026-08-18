@@ -58,8 +58,20 @@ async function pickImg(inp,isLive){
 /* ====== اختيار فيديو ====== */
 async function pickVideo(inp){
   const f=inp.files[0];if(!f)return;
-  const MAXMB=25;
+  const MAXMB=25, MAXSEC=30;
   if(f.size>MAXMB*1024*1024){toast('الفيديو كبير — الحد '+MAXMB+' ميجا',true);inp.value='';return}
+  // فحص المدة
+  const dur=await new Promise(res=>{
+    const v=document.createElement('video');
+    v.preload='metadata';
+    v.onloadedmetadata=()=>{URL.revokeObjectURL(v.src);res(v.duration||0)};
+    v.onerror=()=>res(0);
+    v.src=URL.createObjectURL(f);
+  });
+  if(dur>MAXSEC+1){
+    toast('الفيديو طويل ('+Math.round(dur)+' ثانية) — الحد '+MAXSEC+' ثانية',true);
+    inp.value='';return;
+  }
   pendingFile=null;pendingBlob=null;pendingGeo=null;pendingVideo=f;
   $('drop').style.display='block';
   $('preview').style.display='none';
@@ -184,4 +196,140 @@ async function addPhoto(){
   }finally{
     btn.disabled=false;btn.textContent='انشر الصورة 🚀';
   }
+}
+
+/* ====== كاميرا التسجيل الداخلية ====== */
+let recStream=null, recorder=null, recChunks=[], recTimer=null, recStart=0, recFacing='environment';
+const REC_MAX=30;
+
+function recSupported(){
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+}
+
+function initRecBtn(){
+  const b=$('recOpenBtn');
+  if(b)b.style.display=recSupported()?'flex':'none';
+}
+
+async function recOpen(){
+  if(!recSupported()){toast('جهازك ما يدعم التسجيل الداخلي — استخدم المعرض',true);return}
+  try{
+    recStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:recFacing,width:{ideal:1280},height:{ideal:720}},
+      audio:true
+    });
+  }catch(e){toast('تعذر فتح الكاميرا — تأكد من الإذن',true);return}
+  const pv=$('recPreview');
+  pv.srcObject=recStream;
+  $('recScreen').classList.add('on');
+  document.body.style.overflow='hidden';
+  $('recFill').style.width='0%';
+  $('recTimer').textContent='00:00';
+  $('recTimer').classList.remove('live');
+  $('recHint').textContent='اضغط مطولاً للتسجيل';
+  bindRecBtn();
+}
+
+function recClose(){
+  recStop(true);
+  if(recStream){recStream.getTracks().forEach(t=>t.stop());recStream=null}
+  $('recScreen').classList.remove('on');
+  document.body.style.overflow='';
+}
+
+async function recFlip(){
+  recFacing = recFacing==='environment' ? 'user' : 'environment';
+  if(recStream)recStream.getTracks().forEach(t=>t.stop());
+  try{
+    recStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:recFacing,width:{ideal:1280},height:{ideal:720}},audio:true
+    });
+    $('recPreview').srcObject=recStream;
+  }catch(e){toast('تعذر تبديل الكاميرا',true)}
+}
+
+function pickMime(){
+  const opts=['video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  for(const m of opts){if(MediaRecorder.isTypeSupported(m))return m}
+  return '';
+}
+
+function recBegin(){
+  if(!recStream||recorder)return;
+  recChunks=[];
+  const mime=pickMime();
+  try{
+    recorder=mime?new MediaRecorder(recStream,{mimeType:mime,videoBitsPerSecond:2500000})
+                 :new MediaRecorder(recStream);
+  }catch(e){toast('تعذر بدء التسجيل',true);return}
+  recorder.ondataavailable=e=>{if(e.data&&e.data.size)recChunks.push(e.data)};
+  recorder.onstop=recFinish;
+  recorder.start(200);
+  recStart=Date.now();
+  $('recBtn').classList.add('recording');
+  $('recTimer').classList.add('live');
+  $('recHint').textContent='ارفع إصبعك للإيقاف';
+  recTimer=setInterval(()=>{
+    const s=(Date.now()-recStart)/1000;
+    const pct=Math.min(100,s/REC_MAX*100);
+    $('recFill').style.width=pct+'%';
+    const mm=String(Math.floor(s/60)).padStart(2,'0');
+    const ss=String(Math.floor(s%60)).padStart(2,'0');
+    $('recTimer').textContent=mm+':'+ss;
+    if(s>=REC_MAX)recStop();
+  },100);
+}
+
+function recStop(silent){
+  if(recTimer){clearInterval(recTimer);recTimer=null}
+  $('recBtn').classList.remove('recording');
+  $('recTimer').classList.remove('live');
+  $('recHint').textContent='اضغط مطولاً للتسجيل';
+  if(recorder&&recorder.state!=='inactive'){
+    if(silent)recorder.onstop=null;
+    recorder.stop();
+  }
+  if(silent)recorder=null;
+}
+
+async function recFinish(){
+  const secs=(Date.now()-recStart)/1000;
+  recorder=null;
+  if(secs<1.2){toast('التسجيل قصير جداً — ثانية على الأقل',true);recChunks=[];return}
+  const type=recChunks[0]?.type||'video/mp4';
+  const ext=type.includes('mp4')?'mp4':'webm';
+  const blob=new Blob(recChunks,{type});
+  recChunks=[];
+  if(blob.size>25*1024*1024){toast('الفيديو كبير — سجّل مدة أقصر',true);return}
+
+  pendingVideo=new File([blob],'rec.'+ext,{type});
+  pendingFile=null;pendingBlob=null;
+
+  recClose();
+  go('add');
+  $('drop').style.display='block';
+  $('preview').style.display='none';
+  const pv=$('videoPreview');
+  if(pv){pv.src=URL.createObjectURL(blob);pv.style.display='block';}
+  $('dropTxt').textContent='🎬 تسجيل جاهز ('+Math.round(secs)+' ثانية)';
+  $('drop').classList.add('has');
+  $('geoCard').style.display='block';$('geoCard').classList.remove('warn');
+  $('geoStatus').textContent='⏳ جاري تحديد الموقع...';$('geoCoords').textContent='';
+  const pos=await liveLocation();
+  applyGeo(pos,'live');
+  toast('انتهى التسجيل — أضف العنوان وانشر 🎬');
+}
+
+function bindRecBtn(){
+  const b=$('recBtn');
+  if(!b||b._bound)return;
+  b._bound=true;
+  const down=e=>{e.preventDefault();recBegin()};
+  const up=e=>{e.preventDefault();if(recorder)recStop()};
+  b.addEventListener('touchstart',down,{passive:false});
+  b.addEventListener('touchend',up,{passive:false});
+  b.addEventListener('touchcancel',up,{passive:false});
+  b.addEventListener('mousedown',down);
+  b.addEventListener('mouseup',up);
+  b.addEventListener('mouseleave',up);
 }

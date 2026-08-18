@@ -196,7 +196,7 @@ async function openSheet(id){
    const p=curPhoto;
   const isVid=p.media_type==='video';
   $('sPh').innerHTML=isVid
-    ? `<video src="${vidUrl(p.image_path)}" controls playsinline style="width:100%;height:100%;object-fit:contain;background:#000"></video>`
+    ? `<video controls playsinline webkit-playsinline preload="metadata" style="width:100%;height:100%;object-fit:contain;background:#000"><source src="${vidUrl(p.image_path)}" type="video/mp4"></video>`
     : `<img src="${imgUrl(p.image_path)}" onclick="zoomOpen(this.src)" alt="${esc(p.title)}">
     <button class="zoombtn" id="zoomBtn" onclick="togglePhotoZoom()">⤢ عرض كامل</button>`;
   if(!seenViews.has(p.id)){seenViews.add(p.id);try{sb.rpc('bump_view',{pid:p.id}).then(()=>{},()=>{})}catch(_){}}
@@ -924,5 +924,7 @@ async function loadUserBadges(uid){
 function initVideoUpload(){
   const row=$('videoRow');if(!row)return;
   const sp=window.__SPDATA;
-  row.style.display=(sp&&sp.video_enabled)?'flex':'none';
+  const on=!!(sp&&sp.video_enabled);
+  row.style.display=on?'flex':'none';
+  if(on&&typeof initRecBtn==='function')initRecBtn();
 }
