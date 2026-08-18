@@ -641,7 +641,10 @@ async function admScanOrphans(mode){
   ORPHANS={v:[],p:[]};
   try{
     const r=await sb.from('photos').select('image_path,media_type');
+    if(r.error){if(box)box.innerHTML='⚠️ تعذر قراءة القاعدة: '+r.error.message;return}
     const rows=r.data||[];
+    // حماية: لا نفحص لو القاعدة رجعت فاضية (خطر حذف كل شيء)
+    if(!rows.length){if(box)box.innerHTML='⚠️ القاعدة رجعت فاضية — أُوقف الفحص حمايةً للملفات';return}
     const keepVid=new Set(rows.filter(x=>x.media_type==='video').map(x=>x.image_path));
     const keepImg=new Set();
     rows.filter(x=>x.media_type!=='video').forEach(x=>{
@@ -661,7 +664,8 @@ async function admScanOrphans(mode){
     const tv=ORPHANS.v.length, tp=ORPHANS.p.length, tot=tv+tp;
     if(!tot){if(box)box.innerHTML='✅ نظيف — ما فيه ملفات يتيمة';return}
 
-    let html='<div style="font-weight:700;color:var(--sadu);margin-bottom:6px">لقينا '+tot+' ملفاً يتيماً:</div>';
+    let html='<div style="font-weight:700;color:var(--sadu);margin-bottom:6px">لقينا '+tot+' ملفاً يتيماً:</div>'
+      +'<div style="font-size:11px;color:var(--txt-dim);margin-bottom:8px">(قُرئ '+rows.length+' صفاً من القاعدة · '+keepVid.size+' فيديو · '+keepImg.size+' مسار صورة)</div>';
     if(tv){
       html+='<div style="margin-bottom:6px"><b>🎬 فيديو ('+tv+'):</b></div>';
       html+=ORPHANS.v.map(x=>'<div style="background:var(--card2);border-radius:8px;padding:5px 9px;margin-bottom:4px;font-size:11px;direction:ltr;text-align:left;word-break:break-all">'+esc(x)+'</div>').join('');
