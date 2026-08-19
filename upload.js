@@ -596,75 +596,85 @@ function renderMusicChips(){
 }
 
 function previewMusic(m){
-  stopMusicPreview();
-  // تهيئة سياق الصوت مبكراً — أندرويد يتطلب تفاعلاً
   try{
     if(!window.__actx)window.__actx=new (window.AudioContext||window.webkitAudioContext)();
     if(window.__actx.state==='suspended')window.__actx.resume();
   }catch(e){}
+  const el=document.getElementById('musicPreview');
+  if(!el)return;
   try{
-    musicAudio=new Audio(musicUrl(m.path));
-    musicAudio.loop=true;musicAudio.volume=0.5;
-    musicAudio.crossOrigin='anonymous';
-    musicAudio.play().catch(()=>{});
+    el.pause();
+    el.src=m._local?URL.createObjectURL(ownMusicFile):musicUrl(m.path);
+    el.volume=0.55;
+    el.loop=true;
+    el.load();
+    const pr=el.play();
+    if(pr&&pr.catch)pr.catch(err=>{
+      toast('اضغط المقطع مرة ثانية لتشغيل المعاينة',true);
+    });
+    musicAudio=el;
   }catch(e){}
 }
 
 function stopMusicPreview(){
-  if(musicAudio){try{musicAudio.pause()}catch(e){} musicAudio=null}
+  const el=document.getElementById('musicPreview');
+  if(el){try{el.pause()}catch(e){}}
+  musicAudio=null;
 }
 
 /* بناء مسار صوتي مدمج: ميكروفون + موسيقى */
 async function buildMixedStream(camStream){
   if(!pickedMusic)return camStream;
+  const el=document.getElementById('musicPreview');
+  if(!el||!el.src)return camStream;
   try{
-    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-    // أندرويد/كروم: السياق يبدأ معلّقاً حتى تفاعل المستخدم
-    if(audioCtx.state==='suspended'){
-      try{await audioCtx.resume()}catch(e){}
-    }
+    if(!window.__actx)window.__actx=new (window.AudioContext||window.webkitAudioContext)();
+    audioCtx=window.__actx;
+    if(audioCtx.state==='suspended'){try{await audioCtx.resume()}catch(e){}}
+
     const dest=audioCtx.createMediaStreamDestination();
 
     // صوت الكاميرا
     if(camStream.getAudioTracks().length){
       const micSrc=audioCtx.createMediaStreamSource(camStream);
       const micGain=audioCtx.createGain();
-      micGain.gain.value=0.85;
+      micGain.gain.value=0.9;
       micSrc.connect(micGain).connect(dest);
     }
 
-    // الموسيقى — من المكتبة أو من جهاز المستخدم
-    let buf;
-    if(pickedMusic._local&&ownMusicFile){
-      buf=await ownMusicFile.arrayBuffer();
-    }else{
-      const res=await fetch(musicUrl(pickedMusic.path));
-      buf=await res.arrayBuffer();
+    // الموسيقى من عنصر الصفحة (يُنشأ المصدر مرة واحدة فقط)
+    if(!el._srcNode){
+      el._srcNode=audioCtx.createMediaElementSource(el);
+      el._gain=audioCtx.createGain();
+      el._srcNode.connect(el._gain);
+      el._gain.connect(audioCtx.destination);
     }
-    const decoded=await audioCtx.decodeAudioData(buf);
-    const src=audioCtx.createBufferSource();
-    src.buffer=decoded;src.loop=true;
-    const mGain=audioCtx.createGain();
-    mGain.gain.value=0.45;
-    src.connect(mGain).connect(dest);
-    src.start(0);
-    window.__musicSrc=src;
+    el._gain.gain.value=0.45;
+    el._gain.connect(dest);
 
-    // دمج: فيديو الكاميرا + الصوت المخلوط
+    el.currentTime=0;
+    try{await el.play()}catch(e){}
+
     const mixed=new MediaStream();
     camStream.getVideoTracks().forEach(t=>mixed.addTrack(t));
     dest.stream.getAudioTracks().forEach(t=>mixed.addTrack(t));
+    window.__mixDest=dest;
     return mixed;
   }catch(e){
     toast('تعذر دمج الموسيقى — سُجّل بالصوت الأصلي',true);
-    try{if(audioCtx){audioCtx.close();audioCtx=null}}catch(_){}
     return camStream;
   }
 }
 
 function stopMixer(){
-  try{if(window.__musicSrc){window.__musicSrc.stop();window.__musicSrc=null}}catch(e){}
-  try{if(audioCtx){audioCtx.close();audioCtx=null}}catch(e){}
+  try{
+    const el=document.getElementById('musicPreview');
+    if(el){
+      try{el.pause()}catch(e){}
+      if(el._gain&&window.__mixDest){try{el._gain.disconnect(window.__mixDest)}catch(e){}}
+    }
+    window.__mixDest=null;
+  }catch(e){}
 }
 
 /* ====== فلاتر حية بشاشة التسجيل ====== */
@@ -743,12 +753,7 @@ function pickOwnMusic(inp){
     if(window.__actx.state==='suspended')window.__actx.resume();
   }catch(e){}
   pickedMusic={id:'own',name:f.name.replace(/\.[^.]+$/,''),path:null,_local:true};
-  stopMusicPreview();
-  try{
-    musicAudio=new Audio(URL.createObjectURL(f));
-    musicAudio.loop=true;musicAudio.volume=0.5;
-    musicAudio.play().catch(()=>{});
-  }catch(e){}
+  previewMusic(pickedMusic);
   renderMusicChips();
   inp.value='';
 }
