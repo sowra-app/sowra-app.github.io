@@ -392,3 +392,8 @@ body.dark .msg-st.new{background:#33291A}
 body.dark input,body.dark select,body.dark textarea{color-scheme:dark}
 /* زر التبديل */
 .theme-btn{background:var(--card);border:1px solid var(--line);border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;color:var(--txt);flex-shrink:0;padding:0;line-height:1}
+
+/* ====== نسبة موحّدة للشبكة ====== */
+.mcard{aspect-ratio:4/5;background:var(--card2)}
+.mcard img,.mcard video{width:100%;height:100%;object-fit:cover;display:block}
+#profFeed .mcard{aspect-ratio:1/1}
