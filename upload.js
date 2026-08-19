@@ -380,7 +380,10 @@ function bindRecBtn(){
   const b=$('recBtn');
   if(!b||b._bound)return;
   b._bound=true;
-  const down=e=>{e.preventDefault();recBegin().catch(()=>{})};
+  const down=e=>{
+    if(e.target!==b&&!b.contains(e.target))return;
+    e.preventDefault();recBegin().catch(()=>{});
+  };
   const up=e=>{e.preventDefault();if(recorder)recStop()};
   b.addEventListener('touchstart',down,{passive:false});
   b.addEventListener('touchend',up,{passive:false});
@@ -579,7 +582,12 @@ function renderMusicChips(){
   const own=document.createElement('button');
   own.className='m-chip own'+(pickedMusic&&pickedMusic._local?' on':'');
   own.textContent=pickedMusic&&pickedMusic._local?('🎵 '+pickedMusic.name.slice(0,14)):'➕ موسيقاي';
-  own.onclick=()=>$('recMusicFile').click();
+  const openOwn=function(ev){
+    if(ev){ev.preventDefault();ev.stopPropagation();}
+    $('recMusicFile').click();
+  };
+  own.addEventListener('touchend',openOwn,{passive:false});
+  own.addEventListener('click',openOwn);
   el.appendChild(own);
   const none=document.createElement('button');
   none.className='m-chip'+(pickedMusic?'':' on');
@@ -590,7 +598,12 @@ function renderMusicChips(){
     const b=document.createElement('button');
     b.className='m-chip'+(pickedMusic&&pickedMusic.id===m.id?' on':'');
     b.textContent='🎵 '+m.name;
-    b.onclick=()=>{pickedMusic=m;previewMusic(m);renderMusicChips()};
+    const pick=function(ev){
+      if(ev){ev.preventDefault();ev.stopPropagation();}
+      pickedMusic=m;previewMusic(m);renderMusicChips();
+    };
+    b.addEventListener('touchend',pick,{passive:false});
+    b.addEventListener('click',pick);
     el.appendChild(b);
   });
 }
@@ -691,12 +704,15 @@ function renderRecFilters(){
     const b=document.createElement('button');
     b.className='rf-chip'+(recFilter===f.k?' on':'');
     b.textContent=f.n;
-    b.onclick=()=>{
+    const setF=function(ev){
+      if(ev){ev.preventDefault();ev.stopPropagation();}
       recFilter=f.k;
       const pv=$('recPreview');
       if(pv){pv.style.filter=f.css;pv.style.webkitFilter=f.css;}
       renderRecFilters();
     };
+    b.addEventListener('touchend',setF,{passive:false});
+    b.addEventListener('click',setF);
     el.appendChild(b);
   });
 }
