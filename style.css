@@ -361,3 +361,34 @@ body.page-sponsors #mainFilters{display:none}
 .rec-music::-webkit-scrollbar{display:none}
 .m-chip{flex:0 0 auto;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.35);color:#fff;border-radius:18px;padding:7px 14px;font-family:'Tajawal';font-size:12px;font-weight:700;cursor:pointer;backdrop-filter:blur(6px);white-space:nowrap}
 .m-chip.on{background:var(--sadu);border-color:var(--sadu)}
+
+/* ====== الوضع الداكن — بهوية القط ====== */
+body.dark{
+  --night:#161310;
+  --card:#221E1A;
+  --card2:#2C2621;
+  --sand:#E8A89C;
+  --sand-dim:#9A8B7A;
+  --sadu:#E85445;
+  --sadu-deep:#C13B2E;
+  --palm:#3FA96A;
+  --qblue:#4A8CD4;
+  --qteal:#35C4BB;
+  --star:#F0B448;
+  --line:#3A322B;
+  --ink:#F0E8DA;
+  --txt:#F0E8DA;
+  --txt-dim:#A89B8B;
+}
+body.dark .hero,body.dark .quest-card,body.dark .ch-strip{box-shadow:0 3px 10px rgba(0,0,0,.4)}
+body.dark .mc-overlay{background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.35) 40%,transparent 70%)}
+body.dark .medal,body.dark .loc-chip,body.dark .badge-tag{background:rgba(34,30,26,.92);color:var(--txt)}
+body.dark .close-x,body.dark .zoombtn{background:rgba(34,30,26,.92);color:var(--txt);border-color:var(--line)}
+body.dark .m-chip{background:rgba(255,255,255,.12)}
+body.dark #map{border-color:var(--line)}
+body.dark .wtip{background:linear-gradient(135deg,#1C2733,var(--card))}
+body.dark .sp-deal,body.dark .q-win,body.dark .sp-cta{background:linear-gradient(135deg,#2E2519,var(--card))}
+body.dark .msg-st.new{background:#33291A}
+body.dark input,body.dark select,body.dark textarea{color-scheme:dark}
+/* زر التبديل */
+.theme-btn{background:var(--card);border:1px solid var(--line);border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;color:var(--txt);flex-shrink:0;padding:0;line-height:1}

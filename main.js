@@ -1,3 +1,39 @@
+/* ====== الوضع الليلي ====== */
+(function(){
+  try{
+    var t=localStorage.getItem('sowra_theme');
+    if(!t){
+      t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    }
+    if(t==='dark')document.documentElement.setAttribute('data-preload-dark','1');
+  }catch(e){}
+})();
+
+function applyTheme(t){
+  try{
+    document.body.classList.toggle('dark',t==='dark');
+    var b=document.getElementById('themeBtn');
+    if(b){b.textContent=t==='dark'?'☀️':'🌙';b.title=t==='dark'?'الوضع النهاري':'الوضع الليلي';}
+    var meta=document.querySelector('meta[name="theme-color"]');
+    if(meta)meta.setAttribute('content',t==='dark'?'#161310':'#F7F1E3');
+    localStorage.setItem('sowra_theme',t);
+  }catch(e){}
+}
+
+function toggleTheme(){
+  var cur=document.body.classList.contains('dark')?'dark':'light';
+  applyTheme(cur==='dark'?'light':'dark');
+}
+
+function initTheme(){
+  var t='light';
+  try{
+    t=localStorage.getItem('sowra_theme');
+    if(!t)t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+  }catch(e){}
+  applyTheme(t);
+}
+
 /* صورة من بلدي — main.js | v1.1 */
 /* ============ التنقل ============ */
 function go(p){
@@ -27,6 +63,7 @@ function go(p){
 /* ============ البداية ============ */
 (async()=>{
   if(window.__BOOT_FAIL)return;
+  initTheme();
   initSelects();fillAddCities();
   const authP=ensureAuth().then(()=>{checkAdmin();loadFavs();}).catch(e=>toast('تعذر الاتصال بالحساب',true));
   try{
