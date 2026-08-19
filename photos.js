@@ -967,12 +967,19 @@ function renderReels(){
     const fx=(p.filter_key&&p.filter_key!=='none'&&typeof filterCss==='function')?filterCss(p.filter_key):'none';
     const loc=p.abroad?(p.country||p.city):((p.village?p.village+' · ':'')+p.city);
     const fav=favSet.has(p.id);
+    const mine=!!(USER&&p.user_id===USER.id);
+    const rk=rankOf(p);
     return `<div class="reel" data-id="${p.id}">
       <video src="${vidUrl(p.image_path)}" loop playsinline webkit-playsinline preload="none" muted style="filter:${fx}"></video>
       <div class="reel-shade"></div>
+      <div class="reel-prog"><div class="reel-prog-fill"></div></div>
+      <div class="reel-time">0:00</div>
       <button class="reel-mute" onclick="toggleReelMute(event)">🔇</button>
       <button class="reel-back" onclick="go('feed')">✕</button>
       <div class="reel-side">
+        <button class="reel-avatar" onclick="reelProfile('${p.user_id}',event)" title="${esc(p.photographer)}">
+          <span>${rk.ic}</span>
+        </button>
         <button class="reel-act ${fav?'on':''}" onclick="reelFav(${p.id},event)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           حفظ
@@ -989,10 +996,17 @@ function renderReels(){
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 9 22 9.3 16.5 13.8 18.5 21 12 17 5.5 21 7.5 13.8 2 9.3 9 9"/></svg>
           ${Number(p.avg_stars).toFixed(1)}
         </button>
+        ${mine?`<button class="reel-act del" onclick="reelDelete(${p.id},'${p.image_path}',event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          حذف
+        </button>`:`<button class="reel-act" onclick="reelReport(${p.id},event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          إبلاغ
+        </button>`}
       </div>
       <div class="reel-info">
+        <div class="reel-user" onclick="reelProfile('${p.user_id}',event)">${rk.ic} ${esc(p.photographer)}</div>
         <div class="reel-title">${esc(p.title)}</div>
-        <div class="reel-by">${rankOf(p).ic} ${esc(p.photographer)}</div>
         <div class="reel-loc" onclick="reelToMap(${p.lat||0},${p.lng||0},event)">📍 ${esc(loc)}</div>
         ${p.music_key?`<div class="reel-music">🎵 ${esc(p.music_key)}</div>`:''}
       </div>
@@ -1023,6 +1037,17 @@ function setupReelPlayback(){
   vids.forEach(v=>{
     reelObserver.observe(v);
     v.addEventListener('click',()=>{v.paused?v.play().catch(()=>{}):v.pause()});
+    v.addEventListener('timeupdate',()=>{
+      const reel=v.closest('.reel');if(!reel)return;
+      const fill=reel.querySelector('.reel-prog-fill');
+      const tm=reel.querySelector('.reel-time');
+      const d=v.duration||0;
+      if(d>0){
+        const left=Math.max(0,d-v.currentTime);
+        if(fill)fill.style.width=(v.currentTime/d*100)+'%';
+        if(tm)tm.textContent='0:'+String(Math.ceil(left)).padStart(2,'0');
+      }
+    });
   });
   // شغّل الأول فوراً
   if(vids[0]){vids[0].muted=reelsMuted;vids[0].play().catch(()=>{})}
@@ -1075,4 +1100,34 @@ function stopAllReels(){
     if(reelObserver){reelObserver.disconnect();reelObserver=null}
     document.querySelectorAll('#reelsWrap video').forEach(v=>{try{v.pause()}catch(e){}});
   }catch(e){}
+}
+
+/* ====== إجراءات الأضواء ====== */
+function reelProfile(uid,e){
+  e.stopPropagation();
+  stopAllReels();
+  openProfile(uid);
+}
+
+async function reelDelete(pid,path,e){
+  e.stopPropagation();
+  if(!confirm('حذف المقطع نهائياً؟ لا يمكن التراجع.'))return;
+  try{await sb.storage.from('videos').remove([path])}catch(err){}
+  const {error}=await sb.from('photos').delete().eq('id',pid).eq('user_id',USER.id);
+  if(error){toast('تعذر الحذف: '+error.message,true);return}
+  toast('انحذف المقطع ✅');
+  await loadPhotos();
+  REELS=photos.filter(x=>x.media_type==='video');
+  if(REELS.length)renderReels();
+  else openReels();
+}
+
+async function reelReport(pid,e){
+  e.stopPropagation();
+  if(!confirm('إبلاغ عن هذا المقطع؟'))return;
+  try{
+    const {error}=await sb.from('reports').insert({photo_id:pid});
+    if(error)throw error;
+    toast('وصل بلاغك — شكراً 🚩');
+  }catch(err){toast('تعذر الإبلاغ',true)}
 }
