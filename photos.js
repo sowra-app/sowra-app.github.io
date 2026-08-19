@@ -208,6 +208,11 @@ async function openSheet(id){
  
   renderFollow(p);
   renderVisits(p);
+  // الفيديو: نص تقييم مختلف وإخفاء الأوسمة
+  const rl=$('rateLabel');
+  if(rl)rl.textContent=isVid?'وش تقييمك للمقطع؟':'وش تقييمك للصورة؟';
+  const pb=$('pollBox');
+  if(pb)pb.style.display=isVid?'none':'block';
   if(isVid&&p.music_key){
     const lc=$('sLoc');
     if(lc)lc.innerHTML+='<br><span style="font-size:12px;color:var(--txt-dim)">🎵 '+esc(p.music_key)+'</span>';
