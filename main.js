@@ -53,7 +53,9 @@ function go(p){
     const adm=$('page-adm');
     if(adm&&adm.classList.contains('on')) adm.classList.remove('on');
   }
+  if(p!=='reels'&&typeof stopAllReels==='function')stopAllReels();
   $('nb-feed').classList.toggle('on',p==='feed');
+  const nr=$('nb-reels');if(nr)nr.classList.toggle('on',p==='reels');
   $('nb-favs').classList.toggle('on',p==='favs');
   $('nb-msgs').classList.toggle('on',p==='msgs');
   $('nb-acc').classList.toggle('on',p==='acc');

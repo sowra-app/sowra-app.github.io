@@ -941,3 +941,138 @@ function initVideoUpload(){
   row.style.display=on?'flex':'none';
   if(on&&typeof initRecBtn==='function')initRecBtn();
 }
+
+/* ====== أضواء الديرة — منصة الفيديو ====== */
+let REELS=[], reelObserver=null, reelsMuted=true;
+
+async function openReels(){
+  go('reels');
+  const wrap=$('reelsWrap');if(!wrap)return;
+  wrap.innerHTML='<div class="reels-empty"><span class="big">⏳</span></div>';
+  REELS=photos.filter(p=>p.media_type==='video');
+  if(!REELS.length){
+    wrap.innerHTML=`<div class="reels-empty">
+      <span class="big">🎬</span>
+      <div style="font-size:16px;font-weight:700">ما فيه مقاطع بعد</div>
+      <div style="font-size:13px;line-height:1.9;color:rgba(255,255,255,.65)">كن أول من يوثّق صوت المكان<br>اضغط الزر الأحمر وسجّل ٣٠ ثانية</div>
+    </div>`;
+    return;
+  }
+  renderReels();
+}
+
+function renderReels(){
+  const wrap=$('reelsWrap');if(!wrap)return;
+  wrap.innerHTML=REELS.map(p=>{
+    const fx=(p.filter_key&&p.filter_key!=='none'&&typeof filterCss==='function')?filterCss(p.filter_key):'none';
+    const loc=p.abroad?(p.country||p.city):((p.village?p.village+' · ':'')+p.city);
+    const fav=favSet.has(p.id);
+    return `<div class="reel" data-id="${p.id}">
+      <video src="${vidUrl(p.image_path)}" loop playsinline webkit-playsinline preload="none" muted style="filter:${fx}"></video>
+      <div class="reel-shade"></div>
+      <button class="reel-mute" onclick="toggleReelMute(event)">🔇</button>
+      <button class="reel-back" onclick="go('feed')">✕</button>
+      <div class="reel-side">
+        <button class="reel-act ${fav?'on':''}" onclick="reelFav(${p.id},event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          حفظ
+        </button>
+        <button class="reel-act" onclick="openSheet(${p.id})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          ${p.comments_count||0}
+        </button>
+        <button class="reel-act" onclick="reelShare(${p.id},event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          مشاركة
+        </button>
+        <button class="reel-act" onclick="openSheet(${p.id})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 9 22 9.3 16.5 13.8 18.5 21 12 17 5.5 21 7.5 13.8 2 9.3 9 9"/></svg>
+          ${Number(p.avg_stars).toFixed(1)}
+        </button>
+      </div>
+      <div class="reel-info">
+        <div class="reel-title">${esc(p.title)}</div>
+        <div class="reel-by">${rankOf(p).ic} ${esc(p.photographer)}</div>
+        <div class="reel-loc" onclick="reelToMap(${p.lat||0},${p.lng||0},event)">📍 ${esc(loc)}</div>
+        ${p.music_key?`<div class="reel-music">🎵 ${esc(p.music_key)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  setupReelPlayback();
+}
+
+function setupReelPlayback(){
+  if(reelObserver)reelObserver.disconnect();
+  const vids=document.querySelectorAll('#reelsWrap video');
+  reelObserver=new IntersectionObserver(entries=>{
+    entries.forEach(en=>{
+      const v=en.target;
+      if(en.isIntersecting&&en.intersectionRatio>0.6){
+        v.muted=reelsMuted;
+        v.play().catch(()=>{});
+        const pid=v.closest('.reel')?.dataset.id;
+        if(pid&&!seenViews.has(+pid)){
+          seenViews.add(+pid);
+          try{sb.rpc('bump_view',{pid:+pid}).then(()=>{},()=>{})}catch(e){}
+        }
+      }else{
+        try{v.pause()}catch(e){}
+      }
+    });
+  },{threshold:[0,0.6,1]});
+  vids.forEach(v=>{
+    reelObserver.observe(v);
+    v.addEventListener('click',()=>{v.paused?v.play().catch(()=>{}):v.pause()});
+  });
+  // شغّل الأول فوراً
+  if(vids[0]){vids[0].muted=reelsMuted;vids[0].play().catch(()=>{})}
+}
+
+function toggleReelMute(e){
+  e.stopPropagation();
+  reelsMuted=!reelsMuted;
+  document.querySelectorAll('#reelsWrap video').forEach(v=>v.muted=reelsMuted);
+  document.querySelectorAll('.reel-mute').forEach(b=>b.textContent=reelsMuted?'🔇':'🔊');
+  toast(reelsMuted?'الصوت مكتوم':'الصوت شغّال 🔊');
+}
+
+async function reelFav(pid,e){
+  e.stopPropagation();
+  await toggleFav(pid);
+  const btn=e.currentTarget;
+  if(btn)btn.classList.toggle('on',favSet.has(pid));
+}
+
+function reelShare(pid,e){
+  e.stopPropagation();
+  const p=photos.find(x=>x.id===pid);
+  if(!p)return;
+  const url='https://sowra.app';
+  if(navigator.share){
+    navigator.share({title:p.title,text:p.title+' — من عدسات أهل الديار 📍'+(p.village||p.city),url}).catch(()=>{});
+  }else{
+    try{navigator.clipboard.writeText(url);toast('انسخ الرابط ✅')}catch(err){}
+  }
+}
+
+function reelToMap(lat,lng,e){
+  e.stopPropagation();
+  if(!lat||!lng){toast('ما فيه موقع مسجّل لهذا المقطع',true);return}
+  window.open('https://maps.google.com/?q='+lat+','+lng,'_blank');
+}
+
+function reelsRecord(){
+  if(typeof recSupported==='function'&&recSupported()){
+    if(typeof recOpen==='function')recOpen();
+  }else{
+    toast('جهازك ما يدعم التسجيل — استخدم صفحة النشر',true);
+    go('add');
+  }
+}
+
+function stopAllReels(){
+  try{
+    if(reelObserver){reelObserver.disconnect();reelObserver=null}
+    document.querySelectorAll('#reelsWrap video').forEach(v=>{try{v.pause()}catch(e){}});
+  }catch(e){}
+}
