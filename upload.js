@@ -601,17 +601,21 @@ function previewMusic(m){
     if(window.__actx.state==='suspended')window.__actx.resume();
   }catch(e){}
   const el=document.getElementById('musicPreview');
-  if(!el)return;
+  if(!el){toast('عنصر الصوت مفقود',true);return}
   try{
     el.pause();
-    el.src=m._local?URL.createObjectURL(ownMusicFile):musicUrl(m.path);
+    const src=m._local?URL.createObjectURL(ownMusicFile):musicUrl(m.path);
+    toast('تشغيل: '+src.slice(-28));
+    el.onerror=()=>toast('خطأ تحميل الصوت (code '+(el.error?el.error.code:'?')+')',true);
+    el.src=src;
     el.volume=0.55;
     el.loop=true;
     el.load();
     const pr=el.play();
     if(pr&&pr.catch)pr.catch(err=>{
-      toast('اضغط المقطع مرة ثانية لتشغيل المعاينة',true);
+      toast('رُفض التشغيل: '+(err&&err.name?err.name:'?'),true);
     });
+    if(pr&&pr.then)pr.then(()=>toast('✓ المعاينة شغّالة')).catch(()=>{});
     musicAudio=el;
   }catch(e){}
 }
