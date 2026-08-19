@@ -597,6 +597,11 @@ function renderMusicChips(){
 
 function previewMusic(m){
   stopMusicPreview();
+  // تهيئة سياق الصوت مبكراً — أندرويد يتطلب تفاعلاً
+  try{
+    if(!window.__actx)window.__actx=new (window.AudioContext||window.webkitAudioContext)();
+    if(window.__actx.state==='suspended')window.__actx.resume();
+  }catch(e){}
   try{
     musicAudio=new Audio(musicUrl(m.path));
     musicAudio.loop=true;musicAudio.volume=0.5;
@@ -614,6 +619,10 @@ async function buildMixedStream(camStream){
   if(!pickedMusic)return camStream;
   try{
     audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    // أندرويد/كروم: السياق يبدأ معلّقاً حتى تفاعل المستخدم
+    if(audioCtx.state==='suspended'){
+      try{await audioCtx.resume()}catch(e){}
+    }
     const dest=audioCtx.createMediaStreamDestination();
 
     // صوت الكاميرا
@@ -646,7 +655,11 @@ async function buildMixedStream(camStream){
     camStream.getVideoTracks().forEach(t=>mixed.addTrack(t));
     dest.stream.getAudioTracks().forEach(t=>mixed.addTrack(t));
     return mixed;
-  }catch(e){return camStream}
+  }catch(e){
+    toast('تعذر دمج الموسيقى — سُجّل بالصوت الأصلي',true);
+    try{if(audioCtx){audioCtx.close();audioCtx=null}}catch(_){}
+    return camStream;
+  }
 }
 
 function stopMixer(){
@@ -725,6 +738,10 @@ function pickOwnMusic(inp){
   const f=inp.files[0];if(!f)return;
   if(f.size>8*1024*1024){toast('الملف كبير — الحد 8 ميجا',true);inp.value='';return}
   ownMusicFile=f;
+  try{
+    if(!window.__actx)window.__actx=new (window.AudioContext||window.webkitAudioContext)();
+    if(window.__actx.state==='suspended')window.__actx.resume();
+  }catch(e){}
   pickedMusic={id:'own',name:f.name.replace(/\.[^.]+$/,''),path:null,_local:true};
   stopMusicPreview();
   try{
