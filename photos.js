@@ -48,7 +48,7 @@ function showNearby(){
     if(MAP)addUserPin(lat,lng);
     loadWeatherTip();
     const distKm=(p)=>Math.hypot(((p.lat||0)-lat)*111,(((p.lng||0)-lng)*111*Math.cos(lat*Math.PI/180)));
-const near=photos.filter(p=>p.lat&&p.lng&&distKm(p)<=30).sort((a,b)=>distKm(a)-distKm(b)).slice(0,6);
+const near=photos.filter(p=>p.lat&&p.lng&&p.media_type!=='video'&&distKm(p)<=30).sort((a,b)=>distKm(a)-distKm(b)).slice(0,6);
 
     if(!near.length)return;
     $('nearbyWrap').style.display='block';
@@ -155,7 +155,7 @@ function render(){
   const mw=$('mapWrap');if(mw)mw.style.display='none';
   $('feed').style.display='';
   const abroadView=sortMode==='abroad';
-  let list=photos.filter(p=>!!p.abroad===abroadView);
+  let list=photos.filter(p=>!!p.abroad===abroadView&&p.media_type!=='video');
   if(catFilter!=='all')list=list.filter(p=>(p.category||'other')===catFilter);
   if(abroadView){
     list=list.filter(p=>!q||p.title.includes(q)||(p.country||'').includes(q));
@@ -456,7 +456,7 @@ function renderMap(){
   }
   MARKS.clearLayers();
   const q=($('q').value||'').trim();
-  const list=photos.filter(p=>p.lat&&p.lng
+  const list=photos.filter(p=>p.lat&&p.lng&&p.media_type!=='video'
     &&(catFilter==='all'||(p.category||'other')===catFilter)
     &&(!q||p.title.includes(q)||(p.village||'').includes(q)||(p.city||'').includes(q)||(p.country||'').includes(q)));
   const pts=[];

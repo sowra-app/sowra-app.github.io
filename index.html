@@ -152,7 +152,7 @@
 
 <div class="page" id="page-add">
   <div class="form">
-    <h2>شارك صورة من ديرتك</h2>
+    <h2 id="addTitle">شارك صورة من ديرتك</h2>
     <p class="hint">صوّر أجمل ما في منطقتك وخلّ الناس تقيّم</p>
     <details class="rules" open>
       <summary>📋 إرشادات النشر — اضغط للطي</summary>
@@ -186,8 +186,8 @@
     <div class="geo-card" id="geoCard" style="display:none"><div class="geo-status" id="geoStatus"></div><div class="geo-coords" id="geoCoords"></div></div>
     <input type="file" id="fileLive" accept="image/*" capture="environment" style="display:none" onchange="pickImg(this,true)">
     <input type="file" id="fileGal" accept="image/*" style="display:none" onchange="pickImg(this,false)">
-    <div class="f-group"><label>عنوان الصورة</label><input id="aTitle" placeholder="مثال: غروب على جبال السودة"></div>
-    <div class="f-group"><label>تصنيف الصورة</label>
+    <div class="f-group"><label id="lblTitle">عنوان الصورة</label><input id="aTitle" placeholder="مثال: غروب على جبال السودة"></div>
+    <div class="f-group"><label id="lblCat">تصنيف الصورة</label>
       <select id="aCat">
         <option value="nature">🌿 طبيعة</option><option value="arch">🏛️ عمارة</option><option value="wildlife">🦅 طيور وحيوانات</option><option value="people">👥 أشخاص</option><option value="bw">⬛ أبيض وأسود</option><option value="landmark">🕌 معلم</option><option value="other" selected>📷 أخرى</option>
       </select>

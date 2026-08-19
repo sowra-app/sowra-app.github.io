@@ -43,7 +43,7 @@ async function pickImg(inp,isLive){
   $('preview').src=URL.createObjectURL(f);$('preview').style.display='block';
   $('dropTxt').textContent='✓ تم اختيار الصورة';
   $('drop').classList.add('has');
-  showClearBtn();
+  showClearBtn();syncPublishBtn();
   curFilter='none';
   try{ renderFilterRow(URL.createObjectURL(f),false); }catch(e){}
   // ضغط بالخلفية من الحين — عشان النشر يكون لحظي
@@ -86,7 +86,7 @@ async function pickVideo(inp){
   if(pv){pv.src=URL.createObjectURL(f);pv.style.display='block';}
   $('dropTxt').textContent='🎬 تم اختيار الفيديو ('+Math.round(f.size/1048576)+' ميجا)';
   $('drop').classList.add('has');
-  showClearBtn();
+  showClearBtn();syncPublishBtn();
   curFilter='none';
   const _fu=pv?pv.src:URL.createObjectURL(f);
   try{ renderFilterRow(null,true,_fu); }catch(e){}
@@ -171,7 +171,7 @@ async function addPhoto(){
       toast('انرفع الفيديو 🎬');
       try{sortMode='new';_sort='new';}catch(e){}
       await loadPhotos();go('feed');
-      btn.disabled=false;btn.textContent='انشر الصورة 🚀';
+      btn.disabled=false;btn.textContent=(pendingVideo?'انشر المقطع 🎬':'انشر الصورة 🚀');
       return;
     }
     const blob=pendingBlob||await compress(pendingFile);
@@ -364,7 +364,7 @@ async function recFinish(){
   if(pv){pv.src=URL.createObjectURL(blob);pv.style.display='block';}
   $('dropTxt').textContent='🎬 تسجيل جاهز ('+Math.round(secs)+' ثانية)';
   $('drop').classList.add('has');
-  showClearBtn();
+  showClearBtn();syncPublishBtn();
   curFilter='none';
   const _vurl=pv?pv.src:URL.createObjectURL(pendingVideo);
   try{ renderFilterRow(null,true,_vurl); }catch(e){}
@@ -540,6 +540,7 @@ function makeThumbDataUrl(file){
 /* ====== إلغاء المسودة ====== */
 function clearDraft(){
   try{
+    setTimeout(syncPublishBtn,0);
     pendingFile=null;pendingBlob=null;pendingVideo=null;pendingGeo=null;
     const im=$('preview');
     if(im){im.removeAttribute('src');im.style.display='none';}
@@ -733,4 +734,19 @@ function pickOwnMusic(inp){
   }catch(e){}
   renderMusicChips();
   inp.value='';
+}
+
+/* نص زر النشر حسب النوع */
+function syncPublishBtn(){
+  const isV=!!pendingVideo;
+  const b=$('pubBtn');
+  if(b)b.textContent=isV?'انشر المقطع 🎬':'انشر الصورة 🚀';
+  const t=$('addTitle');
+  if(t)t.textContent=isV?'شارك مقطعاً من ديرتك':'شارك صورة من ديرتك';
+  const lt=$('lblTitle');
+  if(lt)lt.textContent=isV?'عنوان المقطع':'عنوان الصورة';
+  const lc=$('lblCat');
+  if(lc)lc.textContent=isV?'تصنيف المقطع':'تصنيف الصورة';
+  const ti=$('aTitle');
+  if(ti)ti.placeholder=isV?'مثال: ضباب الصباح على السودة':'مثال: غروب على جبال السودة';
 }
