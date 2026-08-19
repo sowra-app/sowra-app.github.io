@@ -246,14 +246,19 @@ async function recOpen(){
   $('recTimer').textContent='00:00';
   $('recTimer').classList.remove('live');
   $('recHint').textContent='اضغط مطولاً للتسجيل';
-  pickedMusic=null;
+  pickedMusic=null;ownMusicFile=null;recFilter='none';
+  const pv2=$('recPreview');
+  if(pv2){pv2.style.filter='none';pv2.style.webkitFilter='none';}
   loadMusicList().then(renderMusicChips);
+  renderRecFilters();
+  initTapFocus();
   bindRecBtn();
 }
 
 function recClose(){
   recStop(true);
   stopMusicPreview();stopMixer();
+  ownMusicFile=null;
   if(recStream){recStream.getTracks().forEach(t=>t.stop());recStream=null}
   $('recScreen').classList.remove('on');
   document.body.style.overflow='';
@@ -276,10 +281,26 @@ function pickMime(){
   return '';
 }
 
+function buzz(ms){try{if(navigator.vibrate)navigator.vibrate(ms)}catch(e){}}
+
+async function recCountdown(){
+  const el=$('recCount');if(!el)return;
+  el.classList.add('on');
+  for(let n=3;n>=1;n--){
+    el.textContent=n;
+    buzz(30);
+    await new Promise(r=>setTimeout(r,700));
+  }
+  el.classList.remove('on');
+  el.textContent='';
+}
+
 async function recBegin(){
   if(!recStream||recorder)return;
   recChunks=[];
   stopMusicPreview();
+  await recCountdown();
+  if(!recStream)return;
   const mime=pickMime();
   let target=recStream;
   try{ target=await buildMixedStream(recStream); }catch(e){}
@@ -290,6 +311,7 @@ async function recBegin(){
   recorder.ondataavailable=e=>{if(e.data&&e.data.size)recChunks.push(e.data)};
   recorder.onstop=recFinish;
   recorder.start(200);
+  buzz(60);
   recStart=Date.now();
   $('recBtn').classList.add('recording');
   $('recTimer').classList.add('live');
@@ -306,7 +328,7 @@ async function recBegin(){
 }
 
 function recStop(silent){
-  if(recTimer){clearInterval(recTimer);recTimer=null}
+  if(recTimer){clearInterval(recTimer);recTimer=null;if(!silent)buzz([40,40,40]);}
   stopMixer();
   $('recBtn').classList.remove('recording');
   $('recTimer').classList.remove('live');
@@ -329,6 +351,7 @@ async function recFinish(){
   if(blob.size>25*1024*1024){toast('الفيديو كبير — سجّل مدة أقصر',true);return}
 
   pendingMusicName=pickedMusic?pickedMusic.name:'';
+  if(recFilter&&recFilter!=='none')curFilter=recFilter;
   pendingVideo=new File([blob],'rec.'+ext,{type});
   pendingFile=null;pendingBlob=null;
 
@@ -549,9 +572,14 @@ function musicUrl(path){return sb.storage.from('music').getPublicUrl(path).data.
 
 function renderMusicChips(){
   const el=$('recMusic');if(!el)return;
-  if(!MUSIC_LIST.length){el.style.display='none';return}
   el.style.display='flex';
   el.innerHTML='';
+  // زر رفع موسيقى من الجهاز
+  const own=document.createElement('button');
+  own.className='m-chip own'+(pickedMusic&&pickedMusic._local?' on':'');
+  own.textContent=pickedMusic&&pickedMusic._local?('🎵 '+pickedMusic.name.slice(0,14)):'➕ موسيقاي';
+  own.onclick=()=>$('recMusicFile').click();
+  el.appendChild(own);
   const none=document.createElement('button');
   none.className='m-chip'+(pickedMusic?'':' on');
   none.textContent='🔇 بلا موسيقى';
@@ -595,9 +623,14 @@ async function buildMixedStream(camStream){
       micSrc.connect(micGain).connect(dest);
     }
 
-    // الموسيقى
-    const res=await fetch(musicUrl(pickedMusic.path));
-    const buf=await res.arrayBuffer();
+    // الموسيقى — من المكتبة أو من جهاز المستخدم
+    let buf;
+    if(pickedMusic._local&&ownMusicFile){
+      buf=await ownMusicFile.arrayBuffer();
+    }else{
+      const res=await fetch(musicUrl(pickedMusic.path));
+      buf=await res.arrayBuffer();
+    }
     const decoded=await audioCtx.decodeAudioData(buf);
     const src=audioCtx.createBufferSource();
     src.buffer=decoded;src.loop=true;
@@ -618,4 +651,86 @@ async function buildMixedStream(camStream){
 function stopMixer(){
   try{if(window.__musicSrc){window.__musicSrc.stop();window.__musicSrc=null}}catch(e){}
   try{if(audioCtx){audioCtx.close();audioCtx=null}}catch(e){}
+}
+
+/* ====== فلاتر حية بشاشة التسجيل ====== */
+let recFilter='none';
+
+function renderRecFilters(){
+  const el=$('recFilters');if(!el)return;
+  el.innerHTML='';
+  FILTERS.forEach(f=>{
+    const b=document.createElement('button');
+    b.className='rf-chip'+(recFilter===f.k?' on':'');
+    b.textContent=f.n;
+    b.onclick=()=>{
+      recFilter=f.k;
+      const pv=$('recPreview');
+      if(pv){pv.style.filter=f.css;pv.style.webkitFilter=f.css;}
+      renderRecFilters();
+    };
+    el.appendChild(b);
+  });
+}
+
+/* ====== شبكة الأثلاث ====== */
+function toggleGrid(){
+  const g=$('recGrid');
+  if(g)g.classList.toggle('on');
+}
+
+/* ====== قفل التركيز باللمس ====== */
+function initTapFocus(){
+  const pv=$('recPreview');
+  if(!pv||pv._focusBound)return;
+  pv._focusBound=true;
+  pv.addEventListener('click',async e=>{
+    if(!recStream)return;
+    const track=recStream.getVideoTracks()[0];
+    if(!track)return;
+    const rect=pv.getBoundingClientRect();
+    const x=(e.clientX-rect.left)/rect.width;
+    const y=(e.clientY-rect.top)/rect.height;
+    // مؤشر بصري
+    let ring=document.getElementById('recFocus');
+    if(!ring){
+      ring=document.createElement('div');
+      ring.id='recFocus';ring.className='rec-focus';
+      $('recScreen').appendChild(ring);
+    }
+    ring.style.left=(e.clientX-rect.left-38)+'px';
+    ring.style.top=(e.clientY-rect.top-38)+'px';
+    ring.classList.remove('on');
+    void ring.offsetWidth;
+    ring.classList.add('on');
+    setTimeout(()=>ring.classList.remove('on'),900);
+    buzz(20);
+    // محاولة ضبط البؤرة إن دعمها الجهاز
+    try{
+      const caps=track.getCapabilities?track.getCapabilities():{};
+      if(caps.focusMode&&caps.focusMode.includes('manual')&&caps.pointsOfInterest){
+        await track.applyConstraints({advanced:[{pointsOfInterest:[{x,y}],focusMode:'manual'}]});
+      }else if(caps.focusMode&&caps.focusMode.includes('single-shot')){
+        await track.applyConstraints({advanced:[{focusMode:'single-shot'}]});
+      }
+    }catch(err){}
+  });
+}
+
+/* ====== موسيقى من جهاز الزائر ====== */
+let ownMusicFile=null;
+
+function pickOwnMusic(inp){
+  const f=inp.files[0];if(!f)return;
+  if(f.size>8*1024*1024){toast('الملف كبير — الحد 8 ميجا',true);inp.value='';return}
+  ownMusicFile=f;
+  pickedMusic={id:'own',name:f.name.replace(/\.[^.]+$/,''),path:null,_local:true};
+  stopMusicPreview();
+  try{
+    musicAudio=new Audio(URL.createObjectURL(f));
+    musicAudio.loop=true;musicAudio.volume=0.5;
+    musicAudio.play().catch(()=>{});
+  }catch(e){}
+  renderMusicChips();
+  inp.value='';
 }

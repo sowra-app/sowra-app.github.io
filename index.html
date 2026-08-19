@@ -395,11 +395,17 @@
   <div class="rec-top">
     <button class="rec-x" onclick="recClose()">✕</button>
     <div class="rec-timer" id="recTimer">00:00</div>
+    <button class="rec-flip" onclick="toggleGrid()" title="شبكة الأثلاث">⊞</button>
     <button class="rec-flip" onclick="recFlip()">🔄</button>
   </div>
   <div class="rec-bar"><div class="rec-fill" id="recFill"></div></div>
+  <div class="rec-grid" id="recGrid"></div>
+  <div class="rec-count" id="recCount"></div>
   <div class="rec-bottom">
+    <div class="rec-filters" id="recFilters"></div>
     <div class="rec-music" id="recMusic"></div>
+    <input type="file" id="recMusicFile" accept="audio/*" style="display:none" onchange="pickOwnMusic(this)">
+    <div class="music-warn">الموسيقى من جهازك مسؤوليتك — تأكد أنها خالية من حقوق النشر</div>
     <div class="rec-hint" id="recHint">اضغط مطولاً للتسجيل</div>
     <button class="rec-btn" id="recBtn"><span class="rec-dot"></span></button>
   </div>
