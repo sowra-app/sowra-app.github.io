@@ -45,7 +45,8 @@ function go(p){
   if(p==='adm' && !IS_ADMIN)p='feed';
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
   $('page-'+p).classList.add('on');
-  document.body.className='page-'+p;
+  const wasDark=document.body.classList.contains('dark');
+  document.body.className='page-'+p+(wasDark?' dark':'');
   if(p==='feed'){
     if(typeof loadPhotos==='function') loadPhotos().then(()=>{if(typeof render==='function')render();});
     else if(typeof render==='function') render();
