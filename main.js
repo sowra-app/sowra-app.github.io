@@ -54,6 +54,7 @@ function go(p){
     if(adm&&adm.classList.contains('on')) adm.classList.remove('on');
   }
   if(p!=='reels'&&typeof stopAllReels==='function')stopAllReels();
+  if(p==='acc'&&typeof renderVault==='function')setTimeout(renderVault,150);
   $('nb-feed').classList.toggle('on',p==='feed');
   const nr=$('nb-reels');if(nr)nr.classList.toggle('on',p==='reels');
   $('nb-favs').classList.toggle('on',p==='favs');
