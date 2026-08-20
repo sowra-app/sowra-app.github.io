@@ -188,12 +188,24 @@ async function addPhoto(){
       village:isAbroad?'':$('aVillage').value.trim(),
       lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
       image_path:path
-    });
+    }).select('id').maybeSingle();
     if(ins.error){
       // فشل التسجيل — ننظف ملفات الصورة من المخزن حتى لا تبقى يتيمة
       await sb.storage.from('photos').remove([path,thumbPath(path)]).catch(()=>{});
       throw ins.error;
     }
+    // الرهان على الموقع إن أُعلن
+    try{
+      const cp=$('clPlace'), cr=$('clReason');
+      if(cp&&cr&&cp.value.trim()&&cr.value.trim()&&ins.data&&ins.data.id){
+        const cl=await sb.from('claims').insert({
+          photo_id:ins.data.id,user_id:USER.id,
+          place_name:cp.value.trim(),reason:cr.value.trim(),
+          lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null
+        });
+        if(!cl.error){cp.value='';cr.value='';setTimeout(()=>toast('انعلن رهانك 🎯'),1800);}
+      }
+    }catch(e){}
     pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();const _c2=$('clearDraft');if(_c2)_c2.style.display='none';
     $('preview').style.display='none';$('drop').style.display='none';$('geoCard').style.display='none';
     $('aTitle').value='';$('aVillage').value='';
@@ -791,4 +803,6 @@ function syncPublishBtn(){
   if(lc)lc.textContent=isV?'تصنيف المقطع':'تصنيف الصورة';
   const ti=$('aTitle');
   if(ti)ti.placeholder=isV?'مثال: ضباب الصباح على السودة':'مثال: غروب على جبال السودة';
+  const cf=$('claimForm');
+  if(cf)cf.style.display=isV?'none':'block';
 }

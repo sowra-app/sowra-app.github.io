@@ -457,3 +457,33 @@ body.page-reels #fab{display:none!important}
 .reel-user{font-size:13.5px;font-weight:700;color:#fff;cursor:pointer;text-shadow:0 1px 5px rgba(0,0,0,.7);margin-bottom:5px;display:inline-block}
 .reel-act.del{color:#FF8A7A}
 .reel-act.del svg{stroke:#FF8A7A}
+
+/* ====== الرهان على الموقع ====== */
+.claim-form{background:var(--card);border:1.5px dashed var(--star);border-radius:16px;margin-bottom:16px;overflow:hidden}
+.claim-form summary{cursor:pointer;font-weight:700;font-size:13.5px;padding:12px 14px;background:linear-gradient(135deg,#FFF7E0,var(--card));list-style:none;user-select:none;color:#A87500}
+.claim-form summary::-webkit-details-marker{display:none}
+.claim-box{background:var(--card);border:2px solid var(--star);border-radius:16px;padding:14px;margin-bottom:16px}
+.claim-head{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.claim-badge{background:var(--star);color:var(--ink);border-radius:10px;padding:3px 10px;font-size:11px;font-weight:700;flex-shrink:0}
+.claim-place{font-weight:700;font-size:15px;color:var(--sand);flex:1;min-width:0}
+.claim-reason{background:var(--card2);border-radius:12px;padding:11px 13px;font-size:13.5px;line-height:1.95;margin-bottom:10px}
+.claim-bar{display:flex;height:9px;border-radius:6px;overflow:hidden;border:1px solid var(--line);margin-bottom:6px}
+.claim-bar .sup{background:var(--palm)}
+.claim-bar .dbt{background:var(--sadu)}
+.claim-nums{display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;margin-bottom:10px}
+.claim-nums .s{color:var(--palm)}
+.claim-nums .d{color:var(--sadu)}
+.claim-acts{display:flex;gap:8px}
+.claim-btn{flex:1;border-radius:12px;padding:9px;font-family:'Tajawal';font-size:12.5px;font-weight:700;cursor:pointer;border:1.5px solid}
+.claim-btn.sup{background:#EFF7F1;border-color:var(--palm);color:var(--palm)}
+.claim-btn.sup.on{background:var(--palm);color:#fff}
+.claim-btn.dbt{background:#FBEAE8;border-color:var(--sadu);color:var(--sadu)}
+.claim-btn.dbt.on{background:var(--sadu);color:#fff}
+.claim-notes{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.claim-note{background:var(--card2);border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.85;border-right:3px solid var(--line)}
+.claim-note.s{border-right-color:var(--palm)}
+.claim-note.d{border-right-color:var(--sadu)}
+.claim-note b{font-size:11.5px;display:block;color:var(--txt-dim)}
+.claim-left{font-size:11px;color:var(--txt-dim);text-align:center;margin-top:8px}
+.mc-claim{position:absolute;top:8px;right:8px;background:rgba(232,160,32,.94);color:var(--ink);border-radius:10px;padding:3px 8px;font-size:11px;font-weight:700;font-family:'Tajawal';box-shadow:0 2px 6px rgba(0,0,0,.3)}
+body.dark .claim-reason,body.dark .claim-note{background:var(--card2)}

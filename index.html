@@ -195,6 +195,17 @@
     <div class="f-group" id="grpRegion"><label>المنطقة</label><select id="aRegion" onchange="fillAddCities()"></select></div>
     <div class="f-group" id="grpCity"><label>المدينة / المحافظة</label><select id="aCity"></select></div>
     <div class="f-group" id="grpVillage"><label>القرية أو الحي (اختياري)</label><input id="aVillage" list="villList" placeholder="مثال: قرية رجال ألمع"><datalist id="villList"></datalist></div>
+    <details class="claim-form" id="claimForm">
+      <summary>🎯 راهن على هذا الموقع (اختياري)</summary>
+      <div style="padding:12px 14px">
+        <div style="font-size:12px;color:var(--txt-dim);line-height:1.9;margin-bottom:10px">
+          تعتقد أن موقعك نادر أو ما وثّقه أحد قبلك؟ أعلن رهانك — والجمهور يؤيد أو يشكك.
+        </div>
+        <input id="clPlace" placeholder="اسم الموقع بدقة (مثال: شعيب أم الجماجم)" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
+        <textarea id="clReason" rows="3" placeholder="ليش تراهن عليه؟ (صعوبة الوصول · ندرة المشهد · موسم محدد · لم يوثَّق قبلك...)" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;resize:vertical"></textarea>
+        <div style="font-size:11px;color:var(--txt-dim);margin-top:6px">📍 تُسجَّل إحداثيات صورتك تلقائياً مع الرهان · يبقى الرهان قائماً ٦ أشهر</div>
+      </div>
+    </details>
     <button class="btn submit-btn" id="pubBtn" onclick="addPhoto()">انشر الصورة 🚀</button>
     <div style="text-align:center;font-size:11.5px;color:var(--txt-dim);margin-top:2px">بنشرك الصورة تؤكد التزامك <a href="terms.html" target="_blank" style="color:var(--txt-dim);font-weight:700">بالشروط والتعهد</a></div>
   </div>
@@ -209,6 +220,7 @@
       <div class="sheet-loc" id="sLoc"></div>
       <div id="sFollow" class="follow-row"></div>
       <div id="visitBox" style="display:none"></div>
+      <div id="claimBox"></div>
       <div class="rate-box">
         <div class="rate-label" id="rateLabel">وش تقييمك للصورة؟</div>
         <div class="big-stars" id="bigStars"></div>
