@@ -806,3 +806,15 @@ function syncPublishBtn(){
   const cf=$('claimForm');
   if(cf)cf.style.display=isV?'none':'block';
 }
+
+/* ====== نص الصناديق القابلة للطي ====== */
+function syncRulesLabel(){
+  const d=$('rulesBox'), l=$('rulesLabel');
+  if(!d||!l)return;
+  l.textContent=d.open?'📋 إرشادات النشر — اضغط للطي':'📋 إرشادات النشر — اضغط للعرض';
+}
+function syncClaimLabel(){
+  const d=$('claimForm'), l=$('claimLabel');
+  if(!d||!l)return;
+  l.textContent=d.open?'🏅 سجّل سبقك في هذا الموقع — اضغط للطي':'🏅 سجّل سبقك في هذا الموقع — اضغط للعرض';
+}

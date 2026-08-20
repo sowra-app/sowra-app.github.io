@@ -154,8 +154,8 @@
   <div class="form">
     <h2 id="addTitle">شارك صورة من ديرتك</h2>
     <p class="hint">صوّر أجمل ما في منطقتك وخلّ الناس تقيّم</p>
-    <details class="rules" open>
-      <summary>📋 إرشادات النشر — اضغط للعرض</summary>
+    <details class="rules" id="rulesBox" ontoggle="syncRulesLabel()">
+      <summary id="rulesLabel">📋 إرشادات النشر — اضغط للعرض</summary>
       <div class="rules-cols">
         <div class="rules-col ok"><b>✅ المسموح</b><span>🏔️ الطبيعة والتضاريس والأودية</span><span>🏛️ التراث والعمران والقلاع</span><span>🕌 المعالم والمساجد والأسواق</span><span>🌅 الغروب والنجوم والمواسم</span><span>🌾 المزارع والحياة العامة للأماكن</span></div>
         <div class="rules-col no"><b>⛔ غير المسموح</b><span>👤 وجوه أشخاص بدون إذنهم</span><span>🏠 خصوصيات المنازل من الداخل</span><span>🚗 لوحات مركبات واضحة</span><span>📵 أي محتوى يخالف الأنظمة والآداب</span><span>©️ صور منسوخة من غيرك</span></div>
@@ -195,8 +195,8 @@
     <div class="f-group" id="grpRegion"><label>المنطقة</label><select id="aRegion" onchange="fillAddCities()"></select></div>
     <div class="f-group" id="grpCity"><label>المدينة / المحافظة</label><select id="aCity"></select></div>
     <div class="f-group" id="grpVillage"><label>القرية أو الحي (اختياري)</label><input id="aVillage" list="villList" placeholder="مثال: قرية رجال ألمع"><datalist id="villList"></datalist></div>
-    <details class="claim-form" id="claimForm">
-      <summary>🏅 سجّل سبقك في هذا الموقع (اختياري)</summary>
+    <details class="claim-form" id="claimForm" ontoggle="syncClaimLabel()">
+      <summary id="claimLabel">🏅 سجّل سبقك في هذا الموقع — اضغط للعرض</summary>
       <div style="padding:12px 14px">
         <div style="font-size:12px;color:var(--txt-dim);line-height:1.9;margin-bottom:10px">
           تعتقد أن موقعك نادر أو أنك أول من وثّقه؟ سجّل سبقك — والجمهور يؤيد أو يشكك.
