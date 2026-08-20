@@ -47,6 +47,7 @@ function showNearby(){
     // لو الخريطة مفتوحة — أضف دبوس موقعك الآن
     if(MAP)addUserPin(lat,lng);
     loadWeatherTip();
+    if(typeof renderHomeHero==='function')renderHomeHero();
     const distKm=(p)=>Math.hypot(((p.lat||0)-lat)*111,(((p.lng||0)-lng)*111*Math.cos(lat*Math.PI/180)));
 const near=photos.filter(p=>p.lat&&p.lng&&p.media_type!=='video'&&distKm(p)<=30).sort((a,b)=>distKm(a)-distKm(b)).slice(0,6);
 
@@ -1216,4 +1217,89 @@ async function claimDelete(cid){
   await loadClaims();
   if(curPhoto)renderClaim(curPhoto);
   render();
+}
+
+/* ====== سباق الديار ====== */
+let RACE=[], MY_REGION='';
+
+async function loadRace(){
+  try{
+    const r=await sb.from('region_scores').select('*').order('total',{ascending:false});
+    RACE=r.data||[];
+  }catch(e){RACE=[]}
+}
+
+function detectMyRegion(){
+  // من موقع المستخدم: أقرب صورة له
+  if(!window.__USER_LAT||!photos.length)return '';
+  const d=p=>Math.hypot((p.lat-window.__USER_LAT)*111,(p.lng-window.__USER_LNG)*111*Math.cos(window.__USER_LAT*Math.PI/180));
+  const geo=photos.filter(p=>p.lat&&p.lng&&!p.abroad&&p.region);
+  if(!geo.length)return '';
+  const near=geo.slice().sort((a,b)=>d(a)-d(b))[0];
+  return (near&&d(near)<=120)?near.region:'';
+}
+
+async function openRace(){
+  go('race');
+  const el=$('raceList');if(!el)return;
+  el.innerHTML='<div class="loader">⏳</div>';
+  await loadRace();
+  if(!RACE.length){
+    el.innerHTML='<div class="empty"><span class="big">🏁</span>السباق ما بدأ بعد<br><span style="font-size:13px;color:var(--txt-dim)">انشر أول صورة وافتح السباق لمنطقتك</span></div>';
+    return;
+  }
+  MY_REGION=MY_REGION||detectMyRegion();
+  const medals=['🥇','🥈','🥉'];
+  let html='';
+  RACE.forEach((r,i)=>{
+    const mine=MY_REGION&&r.region===MY_REGION;
+    html+=`<div class="race-row ${i===0?'top1':''} ${mine?'mine':''}">
+      <div class="race-pos">${medals[i]||(i+1)}</div>
+      <div class="race-info">
+        <div class="race-name">${esc(r.region)}${mine?' <span style="font-size:11px;color:var(--sadu)">· ديرتك</span>':''}</div>
+        <div class="race-sub">📸 ${r.photos} صورة · 🎖️ ${r.photographers} مصوّر</div>
+      </div>
+      <div class="race-pts">${r.total} <span>نقطة</span></div>
+    </div>`;
+    // فجوة المنطقة التالية لديرتك
+    if(mine&&i>0){
+      const gap=RACE[i-1].total-r.total;
+      const need=Math.ceil(gap/10);
+      html+=`<div class="race-gap">🔥 تحتاج <b>${need}</b> ${need===1?'صورة':'صور'} لتتجاوز <b>${esc(RACE[i-1].region)}</b></div>`;
+    }
+  });
+  el.innerHTML=html;
+}
+
+/* ====== ديرتك أولاً — بنر الافتتاح ====== */
+async function renderHomeHero(){
+  const el=$('homeHero');if(!el)return;
+  if(!window.__USER_LAT){el.style.display='none';return}
+  MY_REGION=detectMyRegion();
+  if(!MY_REGION){
+    // خارج التغطية — دعوة للتوثيق
+    el.style.display='block';
+    el.innerHTML=`<div class="hh-place">📍 منطقتك بلا صور بعد</div>
+      <div class="hh-line">ما وثّق أحدٌ ما حولك — <b>كن أول من يصوّرها</b></div>
+      <button class="hh-cta" onclick="go('add')">📷 انشر أول صورة</button>`;
+    return;
+  }
+
+  const d=p=>Math.hypot((p.lat-window.__USER_LAT)*111,(p.lng-window.__USER_LNG)*111*Math.cos(window.__USER_LAT*Math.PI/180));
+  const mine=photos.filter(p=>p.region===MY_REGION&&!p.abroad);
+  const near=photos.filter(p=>p.lat&&p.lng&&!p.abroad&&d(p)<=50);
+
+  await loadRace();
+  const idx=RACE.findIndex(r=>r.region===MY_REGION);
+  const rank=idx>=0?idx+1:null;
+  const gapTxt=(idx>0)?`تحتاج <b>${Math.ceil((RACE[idx-1].total-RACE[idx].total)/10)}</b> صور لتتجاوز <b>${esc(RACE[idx-1].region)}</b>`:'';
+
+  el.style.display='block';
+  el.innerHTML=`<div class="hh-place">📍 أنت في ${esc(MY_REGION)}</div>
+    <div class="hh-line">${mine.length} صورة من ديرتك · ${near.length} حولك ضمن ٥٠ كم</div>
+    ${rank?`<div class="hh-line" style="margin-top:4px">🏁 ترتيب منطقتك: <b>#${rank}</b>${gapTxt?' — '+gapTxt:''}</div>`:''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="hh-cta" onclick="go('add')">📷 وثّق ديرتك</button>
+      ${rank?`<span class="hh-rank" onclick="openRace()">🏆 شوف السباق</span>`:''}
+    </div>`;
 }

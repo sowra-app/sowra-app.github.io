@@ -487,3 +487,30 @@ body.page-reels #fab{display:none!important}
 .claim-left{font-size:11px;color:var(--txt-dim);text-align:center;margin-top:8px}
 .mc-claim{position:absolute;top:8px;right:8px;background:rgba(232,160,32,.94);color:var(--ink);border-radius:10px;padding:3px 8px;font-size:11px;font-weight:700;font-family:'Tajawal';box-shadow:0 2px 6px rgba(0,0,0,.3)}
 body.dark .claim-reason,body.dark .claim-note{background:var(--card2)}
+
+/* ====== ديرتك أولاً ====== */
+.home-hero{background:linear-gradient(135deg,#FFF4E0,var(--card));border:2px solid var(--star);border-radius:16px;padding:14px 17px;margin-bottom:12px;box-shadow:0 3px 10px rgba(232,160,32,.18)}
+.hh-place{font-family:'Reem Kufi',sans-serif;font-size:19px;color:var(--sand);margin-bottom:5px}
+.hh-line{font-size:13px;color:var(--txt-dim);line-height:1.9}
+.hh-line b{color:var(--sadu)}
+.hh-cta{display:inline-block;background:var(--sadu);color:#fff;border:none;border-radius:12px;padding:8px 16px;font-family:'Tajawal';font-size:12.5px;font-weight:700;cursor:pointer;margin-top:9px}
+.hh-rank{display:inline-flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:6px 12px;font-size:12px;font-weight:700;margin-top:9px;cursor:pointer}
+
+/* ====== سباق الديار ====== */
+.race-row{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:9px;display:flex;align-items:center;gap:12px;transition:transform .15s}
+.race-row.mine{border-color:var(--sadu);border-width:2.5px;background:linear-gradient(135deg,#FBEAE8,var(--card))}
+.race-row.top1{border-color:var(--star);border-width:2.5px;background:linear-gradient(135deg,#FFF7E0,var(--card))}
+.race-pos{font-family:'Reem Kufi',sans-serif;font-size:21px;width:38px;text-align:center;flex-shrink:0;color:var(--sand-dim)}
+.race-row.top1 .race-pos{color:var(--star)}
+.race-info{flex:1;min-width:0}
+.race-name{font-weight:700;font-size:15px}
+.race-sub{font-size:11.5px;color:var(--txt-dim);margin-top:2px}
+.race-pts{font-family:'Reem Kufi',sans-serif;font-size:20px;color:var(--sadu);flex-shrink:0}
+.race-pts span{font-size:11px;color:var(--txt-dim);font-family:'Tajawal'}
+.race-gap{background:var(--card2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--txt-dim);margin:4px 0 12px;text-align:center;line-height:1.8}
+.race-gap b{color:var(--sadu)}
+.race-how{background:var(--card);border:1.5px dashed var(--line);border-radius:14px;padding:12px 14px;margin-top:14px;font-size:12px;line-height:2;color:var(--txt-dim)}
+.race-how b{color:var(--sand)}
+body.dark .home-hero{background:linear-gradient(135deg,#2E2519,var(--card))}
+body.dark .race-row.mine{background:linear-gradient(135deg,#33201D,var(--card))}
+body.dark .race-row.top1{background:linear-gradient(135deg,#2E2519,var(--card))}
