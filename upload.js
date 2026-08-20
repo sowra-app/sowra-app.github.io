@@ -1,6 +1,23 @@
 /* صورة من بلدي — upload.js | نسخة المختبر م1 */
 /* ============ الإضافة ============ */
 let pendingFile=null,pendingGeo=null,pendingBlob=null,isAbroad=false,pendingVideo=null,pendingVis='public';
+/* ====== مستوى الظهور ====== */
+function setVis(v){
+  pendingVis=v;
+  const pb=$('visPublic'), pv=$('visPrivate');
+  if(pb)pb.classList.toggle('on',v==='public');
+  if(pv)pv.classList.toggle('on',v==='private');
+  const b=$('pubBtn');
+  if(b){
+    const isV=!!pendingVideo;
+    b.textContent = v==='private'
+      ? (isV?'🔒 احفظ بخزنتي':'🔒 احفظ بخزنتي')
+      : (isV?'انشر المقطع 🎬':'انشر الصورة 🚀');
+  }
+}
+
+window.setVis=setVis;
+
 function setDest(abroad){
   isAbroad=abroad;
   $('destHome').classList.toggle('on-dest',!abroad);
@@ -817,19 +834,4 @@ function syncClaimLabel(){
   const d=$('claimForm'), l=$('claimLabel');
   if(!d||!l)return;
   l.textContent=d.open?'🏅 سجّل سبقك في هذا الموقع — اضغط للطي':'🏅 سجّل سبقك في هذا الموقع — اضغط للعرض';
-}
-
-/* ====== مستوى الظهور ====== */
-function setVis(v){
-  pendingVis=v;
-  const pb=$('visPublic'), pv=$('visPrivate');
-  if(pb)pb.classList.toggle('on',v==='public');
-  if(pv)pv.classList.toggle('on',v==='private');
-  const b=$('pubBtn');
-  if(b){
-    const isV=!!pendingVideo;
-    b.textContent = v==='private'
-      ? (isV?'🔒 احفظ بخزنتي':'🔒 احفظ بخزنتي')
-      : (isV?'انشر المقطع 🎬':'انشر الصورة 🚀');
-  }
 }
