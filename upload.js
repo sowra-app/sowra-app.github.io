@@ -194,7 +194,7 @@ async function addPhoto(){
       await sb.storage.from('photos').remove([path,thumbPath(path)]).catch(()=>{});
       throw ins.error;
     }
-    // الرهان على الموقع إن أُعلن
+    // السبق على الموقع إن سُجّل
     try{
       const cp=$('clPlace'), cr=$('clReason');
       if(cp&&cr&&cp.value.trim()&&cr.value.trim()&&ins.data&&ins.data.id){
@@ -203,7 +203,7 @@ async function addPhoto(){
           place_name:cp.value.trim(),reason:cr.value.trim(),
           lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null
         });
-        if(!cl.error){cp.value='';cr.value='';setTimeout(()=>toast('انعلن رهانك 🎯'),1800);}
+        if(!cl.error){cp.value='';cr.value='';setTimeout(()=>toast('انسجّل سبقك 🏅'),1800);}
       }
     }catch(e){}
     pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();const _c2=$('clearDraft');if(_c2)_c2.style.display='none';

@@ -182,7 +182,7 @@ function render(){
         : `<img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="${esc(p.title)}">`}
       ${medal?`<div class="mc-medal">${medal}</div>`:''}
       ${VISIT_COUNTS[p.id]?`<div class="mc-visits">👣 ${VISIT_COUNTS[p.id]}</div>`:''}
-      ${CLAIM_MAP[p.id]?'<div class="mc-claim">🎯 رهان</div>':''}
+      ${CLAIM_MAP[p.id]?'<div class="mc-claim">🏅 سبق</div>':''}
       ${p.media_type==='video'?'<div class="mc-vid">▶</div>':''}
       <div class="mc-overlay">
         <div class="mc-title">${esc(p.title)}</div>
@@ -1135,7 +1135,7 @@ async function reelReport(pid,e){
   }catch(err){toast('تعذر الإبلاغ',true)}
 }
 
-/* ====== الرهان على الموقع ====== */
+/* ====== السبق على الموقع ====== */
 let CLAIM_MAP={};
 
 async function loadClaims(){
@@ -1167,11 +1167,11 @@ async function renderClaim(p){
 
     el.innerHTML=`<div class="claim-box">
       <div class="claim-head">
-        <span class="claim-badge">🎯 رهان</span>
+        <span class="claim-badge">🏅 سبق</span>
         <span class="claim-place">${esc(c.place_name)}</span>
       </div>
       <div class="claim-reason">${esc(c.reason)}</div>
-      ${(c.lat&&c.lng)?`<a class="mapbtn" href="https://maps.google.com/?q=${c.lat},${c.lng}" target="_blank" rel="noopener" style="margin-bottom:10px">🗺️ إحداثيات الرهان</a>`:''}
+      ${(c.lat&&c.lng)?`<a class="mapbtn" href="https://maps.google.com/?q=${c.lat},${c.lng}" target="_blank" rel="noopener" style="margin-bottom:10px">🗺️ إحداثيات السبق</a>`:''}
       <div class="claim-bar">
         <div class="sup" style="width:${sup/tot*100}%"></div>
         <div class="dbt" style="width:${dbt/tot*100}%"></div>
@@ -1180,8 +1180,8 @@ async function renderClaim(p){
         <span class="s">✅ ${sup} مؤيّد</span>
         <span class="d">${dbt} مشكّك ❓</span>
       </div>
-      ${isOwner?`<div style="font-size:12px;color:var(--txt-dim);text-align:center;padding:6px">هذا رهانك — الجمهور يحكم
-        <button onclick="claimDelete(${c.id})" style="background:none;border:none;color:var(--sadu);font-family:'Tajawal';font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;margin-right:8px">سحب الرهان</button></div>`
+      ${isOwner?`<div style="font-size:12px;color:var(--txt-dim);text-align:center;padding:6px">هذا سبقك — الجمهور يحكم
+        <button onclick="claimDelete(${c.id})" style="background:none;border:none;color:var(--sadu);font-family:'Tajawal';font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;margin-right:8px">سحب السبق</button></div>`
       :`<div class="claim-acts">
         <button class="claim-btn sup ${mine&&mine.stance==='support'?'on':''}" onclick="claimVote(${c.id},'support',${p.id})">✅ أؤيد</button>
         <button class="claim-btn dbt ${mine&&mine.stance==='doubt'?'on':''}" onclick="claimVote(${c.id},'doubt',${p.id})">❓ أشكك</button>
@@ -1190,14 +1190,14 @@ async function renderClaim(p){
         <div class="claim-note ${n.stance==='support'?'s':'d'}">
           <b>${n.stance==='support'?'✅':'❓'} ${esc(n.profiles?.display_name||'زائر')}</b>${esc(n.note)}
         </div>`).join('')}</div>`:''}
-      <div class="claim-left">${days>0?'باقي '+days+' يوم على انتهاء الرهان':'انتهت مدة الرهان'}</div>
+      <div class="claim-left">${days>0?'باقي '+days+' يوم على انتهاء السبق':'انتهت مدة السبق'}</div>
     </div>`;
   }catch(e){}
 }
 
 async function claimVote(cid,stance,pid){
   if(!USER||USER.is_anonymous){toast('سجّل أول عشان تشارك بالحكم',true);return}
-  const note=prompt(stance==='support'?'تؤيد الرهان — تبي تضيف سبباً؟ (اختياري)':'تشكك بالرهان — وش سببك؟ (اختياري)');
+  const note=prompt(stance==='support'?'تؤيد السبق — تبي تضيف سبباً؟ (اختياري)':'تشكك بالسبق — وش سببك؟ (اختياري)');
   if(note===null)return;
   const {error}=await sb.from('claim_votes').upsert({
     claim_id:cid,user_id:USER.id,stance,note:(note||'').trim()
@@ -1209,10 +1209,10 @@ async function claimVote(cid,stance,pid){
 }
 
 async function claimDelete(cid){
-  if(!confirm('سحب الرهان؟ سيختفي مع كل الأصوات.'))return;
+  if(!confirm('سحب السبق؟ سيختفي مع كل الأصوات.'))return;
   const {error}=await sb.from('claims').delete().eq('id',cid);
   if(error){toast('تعذر السحب',true);return}
-  toast('انسحب الرهان');
+  toast('انسحب السبق');
   await loadClaims();
   if(curPhoto)renderClaim(curPhoto);
   render();
