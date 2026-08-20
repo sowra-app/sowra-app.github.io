@@ -184,6 +184,7 @@ function render(){
       ${medal?`<div class="mc-medal">${medal}</div>`:''}
       ${VISIT_COUNTS[p.id]?`<div class="mc-visits">👣 ${VISIT_COUNTS[p.id]}</div>`:''}
       ${CLAIM_MAP[p.id]?'<div class="mc-claim">🏅 سبق</div>':''}
+      ${p.visibility==='private'?'<div class="mc-lock">🔒 خاصة</div>':''}
       ${p.media_type==='video'?'<div class="mc-vid">▶</div>':''}
       <div class="mc-overlay">
         <div class="mc-title">${esc(p.title)}</div>
@@ -230,6 +231,17 @@ async function openSheet(id){
     if(isMine){
       const dbi=$('deleteBtnInner');
       if(dbi)dbi.onclick=function(){deleteMyPhoto(p.id,p.image_path)};
+      // زر السحب للخزنة
+      let vb=document.getElementById('vaultBtn');
+      if(!vb){
+        vb=document.createElement('button');
+        vb.id='vaultBtn';
+        vb.style.cssText="background:none;border:none;color:var(--txt-dim);font-family:'Tajawal';font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;display:block;margin:6px auto 0";
+        dbw.appendChild(vb);
+      }
+      const isPriv=p.visibility==='private';
+      vb.textContent=isPriv?'📢 انشرها للجميع':'🔒 اسحبها لخزنتي';
+      vb.onclick=function(){isPriv?publishFromVault(p.id):moveToVault(p.id)};
     }
   }
   $('overlay').classList.add('show');
@@ -1302,4 +1314,54 @@ async function renderHomeHero(){
       <button class="hh-cta" onclick="go('add')">📷 وثّق ديرتك</button>
       ${rank?`<span class="hh-rank" onclick="openRace()">🏆 شوف السباق</span>`:''}
     </div>`;
+}
+
+/* ====== خزنتي — الصور الخاصة ====== */
+async function renderVault(){
+  const wrap=$('vaultWrap'), el=$('vaultFeed');
+  if(!wrap||!el)return;
+  if(!USER||USER.is_anonymous){wrap.style.display='none';return}
+  try{
+    const r=await sb.from('photos').select('id,title,city,village,country,abroad,image_path,media_type,created_at')
+      .eq('user_id',USER.id).eq('visibility','private').order('created_at',{ascending:false});
+    const list=r.data||[];
+    wrap.style.display='block';
+    if(!list.length){
+      el.innerHTML='<div class="vault-empty">🔒 خزنتك فاضية<br><span style="font-size:12px">عند النشر اختر «خزنتي» لتحفظ صورك لنفسك أولاً</span></div>';
+      return;
+    }
+    el.innerHTML=list.map(p=>{
+      const isV=p.media_type==='video';
+      const loc=p.abroad?(p.country||p.city):((p.village?p.village+' · ':'')+p.city);
+      const src=isV?vidUrl(p.image_path):thumbUrl(p.image_path);
+      return `<div class="vault-item">
+        ${isV?`<video src="${src}#t=0.5" muted playsinline preload="metadata"></video>`
+             :`<img src="${src}" loading="lazy" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'">`}
+        <div class="vault-info">
+          <div class="vault-title">${isV?'🎬 ':''}${esc(p.title)}</div>
+          <div class="vault-loc">📍 ${esc(loc)}</div>
+        </div>
+        <button class="vault-pub" onclick="publishFromVault(${p.id})">📢 انشرها</button>
+      </div>`;
+    }).join('');
+  }catch(e){wrap.style.display='none'}
+}
+
+async function publishFromVault(pid){
+  if(!confirm('نشرها للجميع؟ ستدخل الشبكة وتُحتسب لسباق ديرتك.'))return;
+  const {error}=await sb.from('photos').update({visibility:'public'}).eq('id',pid).eq('user_id',USER.id);
+  if(error){toast('تعذر النشر: '+error.message,true);return}
+  toast('انتشرت للجميع 🎉');
+  await loadPhotos();
+  renderVault();
+  if(typeof renderMyStats==='function')renderMyStats();
+}
+
+async function moveToVault(pid){
+  if(!confirm('سحبها لخزنتك؟ ما راح يشوفها أحد غيرك.'))return;
+  const {error}=await sb.from('photos').update({visibility:'private'}).eq('id',pid).eq('user_id',USER.id);
+  if(error){toast('تعذر السحب',true);return}
+  toast('انسحبت لخزنتك 🔒');
+  closeSheet();
+  await loadPhotos();
 }

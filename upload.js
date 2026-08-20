@@ -1,6 +1,6 @@
 /* صورة من بلدي — upload.js | نسخة المختبر م1 */
 /* ============ الإضافة ============ */
-let pendingFile=null,pendingGeo=null,pendingBlob=null,isAbroad=false,pendingVideo=null;
+let pendingFile=null,pendingGeo=null,pendingBlob=null,isAbroad=false,pendingVideo=null,pendingVis='public';
 function setDest(abroad){
   isAbroad=abroad;
   $('destHome').classList.toggle('on-dest',!abroad);
@@ -158,13 +158,13 @@ async function addPhoto(){
         abroad:isAbroad,country,
         village:isAbroad?'':$('aVillage').value.trim(),
         lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
-        image_path:vpath,media_type:'video',filter_key:curFilter,music_key:(pendingMusicName||'')
+        image_path:vpath,media_type:'video',filter_key:curFilter,music_key:(pendingMusicName||''),visibility:pendingVis
       });
       if(insv.error){
         await sb.storage.from('videos').remove([vpath]).catch(()=>{});
         throw insv.error;
       }
-      pendingVideo=null;resetFilter();const _c1=$('clearDraft');if(_c1)_c1.style.display='none';
+      pendingVideo=null;resetFilter();pendingVis='public';setVis('public');const _c1=$('clearDraft');if(_c1)_c1.style.display='none';
       const pv=$('videoPreview');if(pv){pv.src='';pv.style.display='none';}
       $('drop').style.display='none';$('geoCard').style.display='none';
       $('aTitle').value='';$('aVillage').value='';
@@ -187,7 +187,7 @@ async function addPhoto(){
       abroad:isAbroad,country,
       village:isAbroad?'':$('aVillage').value.trim(),
       lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
-      image_path:path
+      image_path:path,visibility:pendingVis
     }).select('id').maybeSingle();
     if(ins.error){
       // فشل التسجيل — ننظف ملفات الصورة من المخزن حتى لا تبقى يتيمة
@@ -206,10 +206,10 @@ async function addPhoto(){
         if(!cl.error){cp.value='';cr.value='';setTimeout(()=>toast('انسجّل سبقك 🏅'),1800);}
       }
     }catch(e){}
-    pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();const _c2=$('clearDraft');if(_c2)_c2.style.display='none';
+    pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();pendingVis='public';setVis('public');const _c2=$('clearDraft');if(_c2)_c2.style.display='none';
     $('preview').style.display='none';$('drop').style.display='none';$('geoCard').style.display='none';
     $('aTitle').value='';$('aVillage').value='';
-    toast('نُشرت صورتك 🎉');
+    toast(pendingVis==='private'?'انحفظت بخزنتك 🔒':'نُشرت صورتك 🎉');
     const wasAbroad=isAbroad;
     $('aCountry').value='';
     try{sortMode=wasAbroad?'abroad':'new';_sort=sortMode;}catch(e){}
@@ -794,7 +794,7 @@ function pickOwnMusic(inp){
 function syncPublishBtn(){
   const isV=!!pendingVideo;
   const b=$('pubBtn');
-  if(b)b.textContent=isV?'انشر المقطع 🎬':'انشر الصورة 🚀';
+  if(b)b.textContent=(pendingVis==='private')?'🔒 احفظ بخزنتي':(isV?'انشر المقطع 🎬':'انشر الصورة 🚀');
   const t=$('addTitle');
   if(t)t.textContent=isV?'شارك مقطعاً من ديرتك':'شارك صورة من ديرتك';
   const lt=$('lblTitle');
@@ -817,4 +817,19 @@ function syncClaimLabel(){
   const d=$('claimForm'), l=$('claimLabel');
   if(!d||!l)return;
   l.textContent=d.open?'🏅 سجّل سبقك في هذا الموقع — اضغط للطي':'🏅 سجّل سبقك في هذا الموقع — اضغط للعرض';
+}
+
+/* ====== مستوى الظهور ====== */
+function setVis(v){
+  pendingVis=v;
+  const pb=$('visPublic'), pv=$('visPrivate');
+  if(pb)pb.classList.toggle('on',v==='public');
+  if(pv)pv.classList.toggle('on',v==='private');
+  const b=$('pubBtn');
+  if(b){
+    const isV=!!pendingVideo;
+    b.textContent = v==='private'
+      ? (isV?'🔒 احفظ بخزنتي':'🔒 احفظ بخزنتي')
+      : (isV?'انشر المقطع 🎬':'انشر الصورة 🚀');
+  }
 }

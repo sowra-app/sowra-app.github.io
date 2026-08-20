@@ -514,3 +514,21 @@ body.dark .claim-reason,body.dark .claim-note{background:var(--card2)}
 body.dark .home-hero{background:linear-gradient(135deg,#2E2519,var(--card))}
 body.dark .race-row.mine{background:linear-gradient(135deg,#33201D,var(--card))}
 body.dark .race-row.top1{background:linear-gradient(135deg,#2E2519,var(--card))}
+
+/* ====== مستوى الظهور ====== */
+.vis-row{display:flex;gap:10px}
+.vis-btn{flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:13px 10px;color:var(--txt);font-family:'Tajawal';cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:20px;transition:.15s}
+.vis-btn b{font-size:13.5px}
+.vis-btn small{font-size:10.5px;color:var(--txt-dim);font-weight:400;text-align:center;line-height:1.5}
+.vis-btn.on{border-color:var(--sadu);border-width:2px;background:linear-gradient(160deg,var(--card),rgba(214,58,47,.07))}
+.vis-btn:active{transform:scale(.97)}
+
+/* ====== الخزنة ====== */
+.vault-item{display:flex;align-items:center;gap:11px;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:9px}
+.vault-item img,.vault-item video{width:60px;height:60px;border-radius:11px;object-fit:cover;flex-shrink:0;background:var(--card2)}
+.vault-info{flex:1;min-width:0}
+.vault-title{font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vault-loc{font-size:11.5px;color:var(--txt-dim);margin-top:2px}
+.vault-pub{background:var(--palm);color:#fff;border:none;border-radius:11px;padding:8px 13px;font-family:'Tajawal';font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0}
+.vault-empty{background:var(--card);border:1.5px dashed var(--line);border-radius:14px;padding:20px;text-align:center;font-size:13px;color:var(--txt-dim);line-height:1.9}
+.mc-lock{position:absolute;top:8px;left:8px;background:rgba(36,31,28,.85);color:#fff;border-radius:10px;padding:3px 9px;font-size:11px;font-weight:700;font-family:'Tajawal'}

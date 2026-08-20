@@ -197,6 +197,13 @@
     <div class="f-group" id="grpRegion"><label>المنطقة</label><select id="aRegion" onchange="fillAddCities()"></select></div>
     <div class="f-group" id="grpCity"><label>المدينة / المحافظة</label><select id="aCity"></select></div>
     <div class="f-group" id="grpVillage"><label>القرية أو الحي (اختياري)</label><input id="aVillage" list="villList" placeholder="مثال: قرية رجال ألمع"><datalist id="villList"></datalist></div>
+    <div class="f-group">
+      <label>من يشوف هذه الصورة؟</label>
+      <div class="vis-row">
+        <button type="button" class="vis-btn on" id="visPublic" onclick="setVis('public')">🌍<b>الجميع</b><small>تدخل الشبكة والسباق</small></button>
+        <button type="button" class="vis-btn" id="visPrivate" onclick="setVis('private')">🔒<b>خزنتي</b><small>لك وحدك — تنشرها لاحقاً</small></button>
+      </div>
+    </div>
     <details class="claim-form" id="claimForm" ontoggle="syncClaimLabel()">
       <summary id="claimLabel">🏅 سجّل سبقك في هذا الموقع — اضغط للعرض</summary>
       <div style="padding:12px 14px">
@@ -352,6 +359,11 @@
      <div class="f-group"><label>منطقتك (اختياري)</label><input id="accRegion" placeholder="مثال: عسير"></div>
 <div class="f-group"><label>نبذة عنك (اختياري)</label><textarea id="accBio" rows="2" placeholder="مصوّر يحب توثيق جمال الديرة"></textarea></div>
       <div id="myStats"></div>
+      <div id="vaultWrap" style="display:none;margin-top:20px">
+        <div style="font-weight:700;font-size:15px;margin-bottom:4px">🔒 خزنتي</div>
+        <div style="font-size:12px;color:var(--txt-dim);margin-bottom:10px;line-height:1.9">صورك الخاصة — راجعها وانشر ما يعجبك</div>
+        <div id="vaultFeed"></div>
+      </div>
       <button class="btn" id="accAdminBtn" style="width:100%;padding:13px;margin-bottom:10px;display:none" onclick="openAdmin()">⚙️ فتح لوحة الإشراف</button>
       <button class="btn" style="width:100%;padding:13px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="accLogout()">🚪 تسجيل الخروج</button>
     </div>
