@@ -532,3 +532,9 @@ body.dark .race-row.top1{background:linear-gradient(135deg,#2E2519,var(--card))}
 .vault-pub{background:var(--palm);color:#fff;border:none;border-radius:11px;padding:8px 13px;font-family:'Tajawal';font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0}
 .vault-empty{background:var(--card);border:1.5px dashed var(--line);border-radius:14px;padding:20px;text-align:center;font-size:13px;color:var(--txt-dim);line-height:1.9}
 .mc-lock{position:absolute;top:8px;left:8px;background:rgba(36,31,28,.85);color:#fff;border-radius:10px;padding:3px 9px;font-size:11px;font-weight:700;font-family:'Tajawal'}
+
+/* ====== تبويبات البروفايل ====== */
+.prof-tabs{display:flex;gap:8px;margin-top:14px}
+.prof-tab{flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px;font-family:'Tajawal';font-size:12.5px;font-weight:700;color:var(--txt-dim);cursor:pointer;transition:.15s}
+.prof-tab.on{background:var(--sadu);border-color:var(--sadu);color:#fff}
+#profFeed .mc-lock{position:absolute;top:6px;left:6px;background:rgba(36,31,28,.85);color:#fff;border-radius:9px;padding:2px 7px;font-size:11px}

@@ -549,8 +549,11 @@ async function deleteMyPhoto(pid,path){
   await loadPhotos();
 }
 /* ====== بروفايل المصور ====== */
+let PROF_UID='', PROF_TAB='public';
+
 async function openProfile(uid){
   go('profile');
+  PROF_UID=uid;PROF_TAB='public';
   $('profHead').innerHTML='<div class="loader">⏳</div>';
   const r=await sb.from('profiles').select('display_name,bio,region').eq('id',uid).maybeSingle();
   const pr=r.data||{};
@@ -558,6 +561,8 @@ async function openProfile(uid){
   const totV=mine.reduce((s,x)=>s+(x.views||0),0);
   const rk=mine.length?rankOf(mine[0]):{ic:'🌱',t:'مستكشف',c:'bronze'};
   const fo=mine.length?(mine[0].followers_count||0):0;
+  const isMe=!!(USER&&USER.id===uid);
+
   $('profHead').innerHTML=`
     <div class="prof-card">
       <div class="prof-name">${esc(pr.display_name||'مصوّر')}</div>
@@ -565,21 +570,64 @@ async function openProfile(uid){
       ${pr.region?`<div class="prof-bio">📍 ${esc(pr.region)}</div>`:''}
       ${pr.bio?`<div class="prof-bio">${esc(pr.bio)}</div>`:''}
       <div class="prof-stats">
-        <div class="prof-stat"><b>${mine.length}</b><span>صورة</span></div>
+        <div class="prof-stat"><b>${mine.filter(x=>x.visibility!=='private').length}</b><span>صورة</span></div>
         <div class="prof-stat"><b>${fo}</b><span>متابع</span></div>
         <div class="prof-stat"><b>${totV}</b><span>مشاهدة</span></div>
       </div>
       <div class="prof-badges" id="profBadges"></div>
-    </div>`;
+    </div>
+    ${isMe?`<div class="prof-tabs" id="profTabs"></div>`:''}`;
+
   loadUserBadges(uid).then(bs=>{
     const be=$('profBadges');if(!be)return;
     be.innerHTML=bs.map(b=>`<span class="prof-badge">${b.badge_icon||'🏆'} ${esc(b.badge_name||b.title)}</span>`).join('');
   });
-  $('profFeed').innerHTML=mine.length?mine.map(p=>`
-    <div class="mcard" onclick="openSheet(${p.id})">
-      <img src="${thumbUrl(p.image_path)}" loading="lazy" alt="${esc(p.title)}">
+
+  renderProfTabs();
+  renderProfFeed();
+}
+
+function renderProfTabs(){
+  const el=$('profTabs');if(!el)return;
+  const mine=photos.filter(x=>x.user_id===PROF_UID);
+  const pub=mine.filter(x=>x.visibility!=='private').length;
+  const prv=mine.filter(x=>x.visibility==='private').length;
+  el.innerHTML=`
+    <button class="prof-tab ${PROF_TAB==='public'?'on':''}" onclick="switchProfTab('public')">🌍 عامة (${pub})</button>
+    <button class="prof-tab ${PROF_TAB==='private'?'on':''}" onclick="switchProfTab('private')">🔒 خزنتي (${prv})</button>`;
+}
+
+function switchProfTab(t){
+  PROF_TAB=t;
+  renderProfTabs();
+  renderProfFeed();
+}
+
+function renderProfFeed(){
+  const el=$('profFeed');if(!el)return;
+  const isMe=!!(USER&&USER.id===PROF_UID);
+  let list=photos.filter(x=>x.user_id===PROF_UID);
+  list = isMe
+    ? list.filter(x=> PROF_TAB==='private' ? x.visibility==='private' : x.visibility!=='private')
+    : list.filter(x=>x.visibility!=='private');
+
+  if(!list.length){
+    el.innerHTML=(isMe&&PROF_TAB==='private')
+      ? '<div class="vault-empty">🔒 خزنتك فاضية<br><span style="font-size:12px">عند النشر اختر «خزنتي»</span></div>'
+      : '<div class="empty">ما نشر صوراً بعد</div>';
+    return;
+  }
+  el.innerHTML=list.map(p=>{
+    const isV=p.media_type==='video';
+    const src=isV?vidUrl(p.image_path):thumbUrl(p.image_path);
+    return `<div class="mcard" onclick="openSheet(${p.id})">
+      ${isV?`<video src="${src}#t=0.5" muted playsinline preload="metadata"></video>`
+           :`<img src="${src}" loading="lazy" alt="${esc(p.title)}">`}
+      ${p.visibility==='private'?'<div class="mc-lock">🔒</div>':''}
+      ${isV?'<div class="mc-vid">▶</div>':''}
       <div class="mc-overlay"><div class="mc-title">${esc(p.title)}</div></div>
-    </div>`).join(''):'<div class="empty">ما نشر صوراً بعد</div>';
+    </div>`;
+  }).join('');
 }
 /* ====== نصيحة الطقس للمصور ====== */
 
@@ -1354,6 +1402,7 @@ async function publishFromVault(pid){
   toast('انتشرت للجميع 🎉');
   await loadPhotos();
   renderVault();
+  if(typeof renderProfTabs==="function"&&PROF_UID){renderProfTabs();renderProfFeed();}
   if(typeof renderMyStats==='function')renderMyStats();
 }
 
