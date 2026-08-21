@@ -1438,6 +1438,12 @@ async function publishFromVault(pid){
   await loadPhotos();
   renderVault();
   if(typeof renderProfTabs==="function"&&PROF_UID){renderProfTabs();renderProfFeed();}
+  // حدّث النافذة المفتوحة إن كانت لنفس الصورة
+  if(curPhoto&&curPhoto.id===pid){
+    const fresh=photos.find(x=>x.id===pid);
+    if(fresh){curPhoto=fresh;openSheet(pid);}
+  }
+  render();
   if(typeof renderMyStats==='function')renderMyStats();
 }
 
@@ -1446,8 +1452,12 @@ async function moveToVault(pid){
   const {error}=await sb.from('photos').update({visibility:'private'}).eq('id',pid).eq('user_id',USER.id);
   if(error){toast('تعذر السحب',true);return}
   toast('انسحبت لخزنتك 🔒');
-  closeSheet();
   await loadPhotos();
+  renderVault();
+  if(typeof renderProfTabs==="function"&&PROF_UID){renderProfTabs();renderProfFeed();}
+  const fresh=photos.find(x=>x.id===pid);
+  if(fresh&&curPhoto&&curPhoto.id===pid){curPhoto=fresh;openSheet(pid);}
+  render();
 }
 
 /* ====== إرسال الإشعارات ====== */
