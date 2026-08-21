@@ -213,6 +213,16 @@ async function openSheet(id){
   renderFollow(p);
   renderVisits(p);
   renderClaim(p);
+  // تاريخ النشر
+  const dt=$('sDate');
+  if(dt){
+    const t=timeAgo(p.created_at);
+    if(t&&t.txt){
+      dt.style.display='block';
+      dt.innerHTML='📅 <span title="'+esc(t.full)+'">'+t.txt+'</span>';
+      dt.onclick=function(){toast(t.full)};
+    }else dt.style.display='none';
+  }
   // الفيديو: نص تقييم مختلف وإخفاء الأوسمة
   const rl=$('rateLabel');
   if(rl)rl.textContent=isVid?'وش تقييمك للمقطع؟':'وش تقييمك للصورة؟';
@@ -575,6 +585,7 @@ async function openProfile(uid){
         <div class="prof-stat"><b>${totV}</b><span>مشاهدة</span></div>
       </div>
       <div class="prof-badges" id="profBadges"></div>
+      <button class="prof-share" onclick="shareProfile('${uid}')">📤 شارك بروفايلي</button>
     </div>
     ${isMe?`<div class="prof-tabs" id="profTabs"></div>`:''}`;
 
@@ -1446,4 +1457,131 @@ async function pushNotify(payload){
     console.warn('push failed',e);
     return null;
   }
+}
+
+/* ====== الوقت النسبي بالعربي ====== */
+function timeAgo(iso){
+  if(!iso)return '';
+  const d=new Date(iso), now=new Date();
+  const s=Math.floor((now-d)/1000);
+  const full=d.toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
+  let txt;
+  if(s<60)txt='قبل لحظات';
+  else if(s<3600){const m=Math.floor(s/60);txt='قبل '+(m===1?'دقيقة':m===2?'دقيقتين':m<11?m+' دقائق':m+' دقيقة');}
+  else if(s<86400){const h=Math.floor(s/3600);txt='قبل '+(h===1?'ساعة':h===2?'ساعتين':h<11?h+' ساعات':h+' ساعة');}
+  else if(s<604800){const dd=Math.floor(s/86400);txt='قبل '+(dd===1?'يوم':dd===2?'يومين':dd+' أيام');}
+  else if(s<2592000){const w=Math.floor(s/604800);txt='قبل '+(w===1?'أسبوع':w===2?'أسبوعين':w+' أسابيع');}
+  else if(s<31536000){const mo=Math.floor(s/2592000);txt='قبل '+(mo===1?'شهر':mo===2?'شهرين':mo<11?mo+' أشهر':mo+' شهر');}
+  else {const y=Math.floor(s/31536000);txt='قبل '+(y===1?'سنة':y===2?'سنتين':y+' سنوات');}
+  return {txt,full};
+}
+
+/* ====== بطاقة مشاركة البروفايل ====== */
+async function shareProfile(uid){
+  toast('نجهّز البطاقة...');
+  try{
+    const r=await sb.from('profiles').select('display_name,bio,region').eq('id',uid).maybeSingle();
+    const pr=r.data||{};
+    const mine=photos.filter(x=>x.user_id===uid&&x.visibility!=='private');
+    const totV=mine.reduce((s,x)=>s+(x.views||0),0);
+    const fo=mine.length?(mine[0].followers_count||0):0;
+    const rk=mine.length?rankOf(mine[0]):{ic:'🌱',t:'مستكشف'};
+    const top=mine.slice().sort((a,b)=>(b.avg_stars||0)-(a.avg_stars||0)).slice(0,4);
+
+    const W=1080,H=1350;
+    const cv=document.createElement('canvas');
+    cv.width=W;cv.height=H;
+    const ctx=cv.getContext('2d');
+
+    // خلفية
+    ctx.fillStyle='#F7F1E3';ctx.fillRect(0,0,W,H);
+
+    // شريط القط علوي
+    const cols=['#D63A2F','#2E6FB7','#F2B33D','#2E8B57'];
+    const tw=W/16;
+    for(let i=0;i<16;i++){
+      ctx.beginPath();
+      ctx.moveTo(i*tw,54);ctx.lineTo(i*tw+tw/2,10);ctx.lineTo((i+1)*tw,54);
+      ctx.closePath();
+      ctx.fillStyle=cols[i%4];ctx.fill();
+      ctx.strokeStyle='#241F1C';ctx.lineWidth=3;ctx.stroke();
+    }
+
+    ctx.direction='rtl';ctx.textAlign='center';
+
+    // الاسم والرتبة
+    ctx.fillStyle='#8C2F23';
+    ctx.font='bold 74px Tajawal, sans-serif';
+    ctx.fillText(String(pr.display_name||'مصوّر').slice(0,22),W/2,180);
+
+    ctx.fillStyle='#6B6259';
+    ctx.font='40px Tajawal, sans-serif';
+    ctx.fillText(rk.ic+' '+rk.t,W/2,244);
+
+    if(pr.region){
+      ctx.font='34px Tajawal, sans-serif';
+      ctx.fillText('📍 '+pr.region,W/2,300);
+    }
+
+    // الإحصائيات
+    const sy=380;
+    const stats=[[mine.length,'صورة'],[fo,'متابع'],[totV,'مشاهدة']];
+    stats.forEach((s,i)=>{
+      const x=W/2+(i-1)*300;
+      ctx.fillStyle='#D63A2F';
+      ctx.font='bold 62px Tajawal, sans-serif';
+      ctx.fillText(String(s[0]),x,sy);
+      ctx.fillStyle='#6B6259';
+      ctx.font='30px Tajawal, sans-serif';
+      ctx.fillText(s[1],x,sy+46);
+    });
+
+    // شبكة أفضل ٤ صور
+    const gy=480, gs=250, gap=16;
+    const startX=(W-(gs*2+gap))/2;
+    await Promise.all(top.map((ph,i)=>new Promise(res=>{
+      const img=new Image();
+      img.crossOrigin='anonymous';
+      img.onload=()=>{
+        const cx=startX+(i%2)*(gs+gap);
+        const cy=gy+Math.floor(i/2)*(gs+gap);
+        ctx.save();
+        ctx.beginPath();
+        if(ctx.roundRect)ctx.roundRect(cx,cy,gs,gs,20);
+        else ctx.rect(cx,cy,gs,gs);
+        ctx.clip();
+        const rt=Math.max(gs/img.width,gs/img.height);
+        const dw=img.width*rt, dh=img.height*rt;
+        ctx.drawImage(img,cx+(gs-dw)/2,cy+(gs-dh)/2,dw,dh);
+        ctx.restore();
+        res();
+      };
+      img.onerror=()=>res();
+      img.src=thumbUrl(ph.image_path);
+    })));
+
+    // التذييل
+    ctx.fillStyle='#D63A2F';
+    ctx.font='bold 58px Tajawal, sans-serif';
+    ctx.fillText('صورة من بلدي',W/2,H-140);
+    ctx.fillStyle='#6B6259';
+    ctx.font='34px Tajawal, sans-serif';
+    ctx.fillText('عدسات أهل الديار · sowra.app',W/2,H-88);
+
+    cv.toBlob(async function(blob){
+      if(!blob){toast('تعذر إنشاء البطاقة',true);return}
+      const file=new File([blob],'sowra-profile.jpg',{type:'image/jpeg'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        try{
+          await navigator.share({files:[file],title:pr.display_name||'مصوّر',text:'عدستي في «صورة من بلدي» 📸 sowra.app'});
+          return;
+        }catch(e){}
+      }
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='sowra-profile.jpg';
+      a.click();
+      toast('انحفظت البطاقة');
+    },'image/jpeg',0.92);
+  }catch(e){toast('تعذر التجهيز',true)}
 }

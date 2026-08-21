@@ -34,14 +34,14 @@
 <meta property="og:description" content="عدسات أهل الديار — شارك أجمل صور منطقتك وخلّ الناس تقيّم">
 <meta property="og:type" content="website">
 <meta property="og:image" content="icon-512.png">
-<link rel="manifest" href="manifest.json?x=v1.2">
+<link rel="manifest" href="manifest.json?x=v1.1">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<script src="supabase.js?x=v1.2"></script>
-<script src="leaflet.js?x=v1.2"></script>
-<link rel="stylesheet" href="style.css?x=v1.2">
-<link rel="stylesheet" href="leaflet.css?x=v1.2">
+<script src="supabase.js?x=v1.1"></script>
+<script src="leaflet.js?x=v1.1"></script>
+<link rel="stylesheet" href="style.css?x=v1.1">
+<link rel="stylesheet" href="leaflet.css?x=v1.1">
 </head>
 <body>
 
@@ -227,6 +227,7 @@
     <div class="sheet-body">
       <div class="sheet-title" id="sTitle"></div>
       <div class="sheet-loc" id="sLoc"></div>
+      <div id="sDate" class="s-date" style="display:none"></div>
       <div id="sFollow" class="follow-row"></div>
       <div id="visitBox" style="display:none"></div>
       <div id="claimBox"></div>
@@ -373,7 +374,6 @@
           </div>
           <button class="btn" id="notifBtn" style="width:100%;font-size:13px;padding:10px" onclick="toggleNotifs()">🔔 فعّل الإشعارات</button>
           <div id="notifHint" style="font-size:11px;color:var(--txt-dim);margin-top:8px;line-height:1.8;display:none"></div>
-     
         </div>
       </div>
       <div id="vaultWrap" style="display:none;margin-top:20px">
@@ -483,16 +483,16 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="app.js?x=v1.2"></script>
-<script src="places.js?x=v1.2"></script>
-<script src="capture.js?x=v1.2"></script>
-<script src="photos.js?x=v1.2"></script>
-<script src="week.js?x=v1.2"></script>
-<script src="upload.js?x=v1.2"></script>
-<script src="auth.js?x=v1.2"></script>
-<script src="admin.js?x=v1.2"></script>
-<script src="main.js?x=v1.2"></script>
-<script src="main.js?x=v1.2"></script>
+<script src="app.js?x=v1.1"></script>
+<script src="places.js?x=v1.1"></script>
+<script src="capture.js?x=v1.1"></script>
+<script src="photos.js?x=v1.1"></script>
+<script src="week.js?x=v1.1"></script>
+<script src="upload.js?x=v1.1"></script>
+<script src="auth.js?x=v1.1"></script>
+<script src="admin.js?x=v1.1"></script>
+<script src="main.js?x=v1.1"></script>
+<script src="main.js?x=v1.1"></script>
 
 <script>
 if('serviceWorker' in navigator){

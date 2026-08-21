@@ -543,3 +543,10 @@ body.dark .race-row.top1{background:linear-gradient(135deg,#2E2519,var(--card))}
 .notif-card{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:14px}
 .notif-card.on{border-color:var(--palm);background:linear-gradient(135deg,#F1F8F4,var(--card))}
 body.dark .notif-card.on{background:linear-gradient(135deg,#1B2A21,var(--card))}
+
+/* ====== تاريخ النشر ====== */
+.s-date{font-size:12.5px;color:var(--txt-dim);margin:-8px 0 12px;cursor:pointer;display:inline-block}
+.s-date span{border-bottom:1px dashed var(--line)}
+.mc-date{position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,.55);color:#fff;border-radius:9px;padding:2px 8px;font-size:10px;font-family:'Tajawal';backdrop-filter:blur(3px)}
+.prof-share{background:var(--card2);border:1.5px solid var(--line);border-radius:12px;padding:9px 20px;font-family:'Tajawal';font-size:12.5px;font-weight:700;color:var(--txt);cursor:pointer;margin-top:12px}
+.prof-share:active{transform:scale(.97)}
