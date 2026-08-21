@@ -112,7 +112,7 @@ setInterval(()=>{
 },120000);
 
 /* ====== الإشعارات ====== */
-const VAPID_PUB='BCeGpOtX3WqUv7u0B8hoOJDdrp8PKUXG1pow2wWyM8sS7bnLJ3v8mzqczz-SmiQJgNeZXz1Z4VouYB9LAwsXe94';
+window.__VAPID_PUB='BCeGpOtX3WqUv7u0B8hoOJDdrp8PKUXG1pow2wWyM8sS7bnLJ3v8mzqczz-SmiQJgNeZXz1Z4VouYB9LAwsXe94';
 
 function urlB64ToUint8(b64){
   const pad='='.repeat((4-b64.length%4)%4);
@@ -202,7 +202,7 @@ async function toggleNotifs(){
 
     const sub=await reg.pushManager.subscribe({
       userVisibleOnly:true,
-      applicationServerKey:urlB64ToUint8(VAPID_PUB)
+      applicationServerKey:urlB64ToUint8(window.__VAPID_PUB)
     });
     const j=sub.toJSON();
     const {error}=await sb.from('push_subs').upsert({
