@@ -1400,6 +1400,20 @@ async function publishFromVault(pid){
   const {error}=await sb.from('photos').update({visibility:'public'}).eq('id',pid).eq('user_id',USER.id);
   if(error){toast('تعذر النشر: '+error.message,true);return}
   toast('انتشرت للجميع 🎉');
+  // إشعار للجميع
+  try{
+    const ph=photos.find(x=>x.id===pid);
+    const nm=(await sb.from('profiles').select('display_name').eq('id',USER.id).maybeSingle()).data?.display_name||'مصوّر';
+    if(ph){
+      const isV=ph.media_type==='video';
+      sb.functions.invoke('send-push',{body:{
+        title:isV?'🎬 مقطع جديد في الأضواء':('📸 صورة جديدة من '+(ph.city||ph.region||'الديرة')),
+        body:ph.title+' — عدسة '+nm,
+        url:'/',
+        exclude:USER.id
+      }}).then(()=>{},()=>{});
+    }
+  }catch(e){}
   await loadPhotos();
   renderVault();
   if(typeof renderProfTabs==="function"&&PROF_UID){renderProfTabs();renderProfFeed();}
