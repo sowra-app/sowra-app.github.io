@@ -1411,7 +1411,10 @@ async function publishFromVault(pid){
         body:ph.title+' — عدسة '+nm,
         url:'/',
         exclude:USER.id
-      }}).then(()=>{},()=>{});
+       }}).then(r=>{
+        if(r.error)toast('فشل الإشعار: '+r.error.message,true);
+        else toast('أُرسل الإشعار ✅');
+      },e=>toast('خطأ: '+e.message,true));
     }
   }catch(e){}
   await loadPhotos();
