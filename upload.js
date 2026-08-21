@@ -181,6 +181,17 @@ async function addPhoto(){
         await sb.storage.from('videos').remove([vpath]).catch(()=>{});
         throw insv.error;
       }
+      if(pendingVis==='public'){
+        try{
+          const nm2=(await sb.from('profiles').select('display_name').eq('id',USER.id).maybeSingle()).data?.display_name||'مصوّر';
+          sb.functions.invoke('send-push',{body:{
+            title:'🎬 مقطع جديد في الأضواء',
+            body:title+' — عدسة '+nm2,
+            url:'/',
+            exclude:USER.id
+          }}).then(()=>{},()=>{});
+        }catch(e){}
+      }
       pendingVideo=null;resetFilter();pendingVis='public';setVis('public');const _c1=$('clearDraft');if(_c1)_c1.style.display='none';
       const pv=$('videoPreview');if(pv){pv.src='';pv.style.display='none';}
       $('drop').style.display='none';$('geoCard').style.display='none';
@@ -223,6 +234,18 @@ async function addPhoto(){
         if(!cl.error){cp.value='';cr.value='';setTimeout(()=>toast('انسجّل سبقك 🏅'),1800);}
       }
     }catch(e){}
+    // إشعار للجميع عند نشر صورة عامة
+    if(pendingVis==='public'){
+      try{
+        const nm=(await sb.from('profiles').select('display_name').eq('id',USER.id).maybeSingle()).data?.display_name||'مصوّر';
+        sb.functions.invoke('send-push',{body:{
+          title:'📸 صورة جديدة من '+(city||region),
+          body:title+' — عدسة '+nm,
+          url:'/',
+          exclude:USER.id
+        }}).then(()=>{},()=>{});
+      }catch(e){}
+    }
     pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();pendingVis='public';setVis('public');const _c2=$('clearDraft');if(_c2)_c2.style.display='none';
     $('preview').style.display='none';$('drop').style.display='none';$('geoCard').style.display='none';
     $('aTitle').value='';$('aVillage').value='';
@@ -835,3 +858,4 @@ function syncClaimLabel(){
   if(!d||!l)return;
   l.textContent=d.open?'🏅 سجّل سبقك في هذا الموقع — اضغط للطي':'🏅 سجّل سبقك في هذا الموقع — اضغط للعرض';
 }
+

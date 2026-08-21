@@ -104,6 +104,18 @@ async function fbReply(id){
   if(t===null||!t.trim())return;
   const {error}=await sb.from('feedback').update({reply:t.trim(),status:'done'}).eq('id',id);
   if(error){toast('فشل الرد: '+error.message,true);return}
+  // إشعار لصاحب الرسالة
+  try{
+    const fb=(await sb.from('feedback').select('user_id').eq('id',id).maybeSingle()).data;
+    if(fb&&fb.user_id){
+      sb.functions.invoke('send-push',{body:{
+        title:'💬 رد من الإدارة',
+        body:t.trim().slice(0,90),
+        url:'/',
+        user_ids:[fb.user_id]
+      }}).then(()=>{},()=>{});
+    }
+  }catch(e){}
   toast('انرسل الرد 💬');loadFb();
 }
 async function fbDone(id){
