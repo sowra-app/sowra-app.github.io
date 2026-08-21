@@ -171,7 +171,7 @@ function render(){
       ?(b.avg_stars-a.avg_stars)||(b.ratings_count-a.ratings_count)
       :new Date(b.created_at)-new Date(a.created_at));
   }
-  $('totalPill').textContent=`${photos.length} صورة · V1.2`;
+  $('totalPill').textContent=`${photos.length} صورة · V1.1`;
   const feed=$('feed');
   if(!list.length){feed.innerHTML=`<div class="empty"><span class="big">🏜️</span>ما فيه صور بعد..<br>كن أول من يصوّر ديرته! اضغط + وشارك</div>`;return}
   feed.innerHTML=list.map((p,i)=>{
@@ -213,14 +213,6 @@ async function openSheet(id){
   renderFollow(p);
   renderVisits(p);
   renderClaim(p);
-  // الوصف
-  const dsc=$('sDesc');
-  if(dsc){
-    if(p.description&&p.description.trim()){
-      dsc.style.display='block';
-      dsc.textContent=p.description;
-    }else dsc.style.display='none';
-  }
   // تاريخ النشر
   const dt=$('sDate');
   if(dt){
@@ -852,12 +844,7 @@ async function shareCard(p){
       const file=new File([blob],'sowra-'+p.id+'.jpg',{type:'image/jpeg'});
       if(navigator.canShare&&navigator.canShare({files:[file]})){
         try{
-          await navigator.share({
-            files:[file],
-            title:p.title,
-            text:p.title+' — من «صورة من بلدي» 📸',
-            url:'https://sowra.app'
-          });
+          await navigator.share({files:[file],title:p.title,text:p.title+' — sowra.app'});
           return;
         }catch(e){}
       }
@@ -1162,11 +1149,7 @@ function reelShare(pid,e){
   if(!p)return;
   const url='https://sowra.app';
   if(navigator.share){
-    navigator.share({
-      title:p.title,
-      text:p.title+' — من عدسات أهل الديار 📍'+(p.village||p.city),
-      url:'https://sowra.app'
-    }).catch(()=>{});
+    navigator.share({title:p.title,text:p.title+' — من عدسات أهل الديار 📍'+(p.village||p.city),url}).catch(()=>{});
   }else{
     try{navigator.clipboard.writeText(url);toast('انسخ الرابط ✅')}catch(err){}
   }
@@ -1446,12 +1429,6 @@ async function publishFromVault(pid){
   await loadPhotos();
   renderVault();
   if(typeof renderProfTabs==="function"&&PROF_UID){renderProfTabs();renderProfFeed();}
-  // حدّث النافذة المفتوحة إن كانت لنفس الصورة
-  if(curPhoto&&curPhoto.id===pid){
-    const fresh=photos.find(x=>x.id===pid);
-    if(fresh){curPhoto=fresh;openSheet(pid);}
-  }
-  render();
   if(typeof renderMyStats==='function')renderMyStats();
 }
 
@@ -1460,12 +1437,8 @@ async function moveToVault(pid){
   const {error}=await sb.from('photos').update({visibility:'private'}).eq('id',pid).eq('user_id',USER.id);
   if(error){toast('تعذر السحب',true);return}
   toast('انسحبت لخزنتك 🔒');
+  closeSheet();
   await loadPhotos();
-  renderVault();
-  if(typeof renderProfTabs==="function"&&PROF_UID){renderProfTabs();renderProfFeed();}
-  const fresh=photos.find(x=>x.id===pid);
-  if(fresh&&curPhoto&&curPhoto.id===pid){curPhoto=fresh;openSheet(pid);}
-  render();
 }
 
 /* ====== إرسال الإشعارات ====== */
@@ -1601,12 +1574,7 @@ async function shareProfile(uid){
       const file=new File([blob],'sowra-profile.jpg',{type:'image/jpeg'});
       if(navigator.canShare&&navigator.canShare({files:[file]})){
         try{
-          await navigator.share({
-            files:[file],
-            title:pr.display_name||'مصوّر',
-            text:'عدستي في «صورة من بلدي» 📸\nشوف صور ديرتك وشارك عدستك:',
-            url:'https://sowra.app'
-          });
+          await navigator.share({files:[file],title:pr.display_name||'مصوّر',text:'عدستي في «صورة من بلدي» 📸 sowra.app'});
           return;
         }catch(e){}
       }

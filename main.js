@@ -70,7 +70,6 @@ function go(p){
   if(window.__BOOT_FAIL)return;
   initTheme();
   initEnBar();
-  initTour();
   initSelects();fillAddCities();
   const authP=ensureAuth().then(()=>{checkAdmin();loadFavs();}).catch(e=>toast('تعذر الاتصال بالحساب',true));
   try{
@@ -282,52 +281,4 @@ function dismissEnBar(){
   try{localStorage.setItem('sowra_en_dismissed','1')}catch(e){}
   const el=document.getElementById('enBar');
   if(el)el.classList.remove('show');
-}
-
-/* ====== جولة الترحيب ====== */
-let tourI=0;
-const TOUR_N=3;
-
-function tourSeen(){
-  try{return localStorage.getItem('sowra_tour')==='1'}catch(e){return true}
-}
-
-function initTour(){
-  if(tourSeen())return;
-  setTimeout(()=>{
-    const el=document.getElementById('tour');
-    if(!el)return;
-    tourI=0;
-    tourRender();
-    el.classList.add('show');
-  },900);
-}
-
-function tourRender(){
-  document.querySelectorAll('.tour-slide').forEach(s=>{
-    s.classList.toggle('on', +s.dataset.i===tourI);
-  });
-  const d=document.getElementById('tourDots');
-  if(d){
-    d.innerHTML='';
-    for(let i=0;i<TOUR_N;i++){
-      const dot=document.createElement('div');
-      dot.className='tour-dot'+(i===tourI?' on':'');
-      d.appendChild(dot);
-    }
-  }
-  const b=document.getElementById('tourNext');
-  if(b)b.textContent = tourI===TOUR_N-1 ? '📷 يلا نبدأ' : 'التالي →';
-}
-
-function tourNext(){
-  if(tourI<TOUR_N-1){tourI++;tourRender();return}
-  tourEnd(true);
-}
-
-function tourEnd(goAdd){
-  try{localStorage.setItem('sowra_tour','1')}catch(e){}
-  const el=document.getElementById('tour');
-  if(el)el.classList.remove('show');
-  if(goAdd===true&&typeof go==='function')go('add');
 }
