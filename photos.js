@@ -1432,7 +1432,7 @@ async function moveToVault(pid){
 /* ====== إرسال الإشعارات ====== */
 async function pushNotify(payload){
   try{
-    const url=(typeof SB_URL!=='undefined'?SB_URL:'https://gquzjaxpqeggknhipmzk.supabase.co')+'/functions/v1/send-push';
+    const url=(typeof SB_URL!=='undefined'?SB_URL:'https://gquzjaxpqeggknhipmzk.supabase.co')+'/functions/v1/smart-service';
     const key=(typeof SB_KEY!=='undefined')?SB_KEY:'sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX';
     const r=await fetch(url,{
       method:'POST',
@@ -1442,8 +1442,8 @@ async function pushNotify(payload){
     const j=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
     return j;
-    }catch(e){
-    toast('سبب الفشل: '+(e.message||e),true);
+  }catch(e){
+    console.warn('push failed',e);
     return null;
   }
 }
