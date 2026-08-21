@@ -820,6 +820,17 @@ function muPicked(){
 }
 async function testPush(){
   toast('نجرّب...');
-  const r=await pushNotify({title:'اختبار 🔔',body:'من التطبيق مباشرة'});
-  toast(r?('نجح: '+JSON.stringify(r)):'فشل — شوف الكونسول',!r);
+  try{
+    const url='https://gquzjaxpqeggknhipmzk.supabase.co/functions/v1/send-push';
+    const key='sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX';
+    const r=await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key},
+      body:JSON.stringify({title:'اختبار 🔔',body:'من التطبيق'})
+    });
+    const t=await r.text();
+    toast('HTTP '+r.status+' — '+t.slice(0,120), !r.ok);
+  }catch(e){
+    toast('استثناء: '+(e.message||e),true);
+  }
 }
