@@ -1025,6 +1025,12 @@ async function loadUserBadges(uid){
 }
 
 /* ====== تفعيل الفيديو ====== */
+function initCommBox(){
+  const el=$('commBox');if(!el)return;
+  const sp=window.__SPDATA;
+  el.style.display=(sp&&sp.commercial_enabled)?'block':'none';
+}
+
 function initVideoUpload(){
   const row=$('videoRow');if(!row)return;
   const sp=window.__SPDATA;

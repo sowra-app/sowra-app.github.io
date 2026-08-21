@@ -268,7 +268,7 @@ async function loadAdmWeek(){
       <div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px">
         <div style="flex:1"><b style="font-size:13px">#${p.id} · ${esc(p.title)}</b></div>
         <button class="btn" style="font-size:12px;padding:7px 12px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admWeekRemove(${p.id})">إزالة</button>
-      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + admChallengeBlock() + admVideoBlock() + admCleanupBlock() + await admSpBlock() + admSponsorsBtn() + admSponsorSideBlock() +  admGoogleLoginBlock() + admMaintBlock();
+      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + admChallengeBlock() + admVideoBlock() + admCommBlock() + admCleanupBlock() + await admSpBlock() + admSponsorsBtn() + admSponsorSideBlock() +  admGoogleLoginBlock() + admMaintBlock();
 }
 /* ====== بنر الراعي ====== */
 async function admSpBlock(){
@@ -838,4 +838,22 @@ async function loadCommercial(){
       ).join(''):'<div style="font-size:12px;color:var(--txt-dim)">ما فيه صور بعد</div>');
     el.appendChild(box);
   }catch(e){}
+}
+
+/* ====== تفعيل الاستخدام التجاري ====== */
+function admCommBlock(){
+  const b=window.__SPB||{};
+  const on=!!b.commercial_enabled;
+  return `<div style="background:var(--card);border:1.5px solid ${on?'var(--palm)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px">💼 الاستخدام التجاري <span style="font-size:11px;font-weight:700;color:${on?'var(--palm)':'var(--txt-dim)'}">${on?'● مفعّل':'○ مطفأ'}</span></div>
+    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px;line-height:1.8">يظهر للمصور خيار الموافقة على عرض صورته للجهات. فعّله حين تجهز لاستقبال الطلبات.</div>
+    <button class="btn" style="width:100%;${on?'background:var(--sadu)':'background:var(--palm)'}" onclick="admCommToggle()">${on?'🙈 إخفاء الخيار':'▶️ تفعيل الخيار'}</button>
+  </div>`;
+}
+async function admCommToggle(){
+  const b=window.__SPB||{};
+  const {error}=await sb.from('site_banner').update({commercial_enabled:!b.commercial_enabled}).eq('id',1);
+  if(error){toast('فشلت العملية: '+error.message,true);return}
+  toast(!b.commercial_enabled?'ظهر خيار الاستخدام التجاري 💼':'اختفى الخيار');
+  await loadSponsor();await loadAdmWeek();
 }
