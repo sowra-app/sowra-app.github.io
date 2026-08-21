@@ -844,7 +844,12 @@ async function shareCard(p){
       const file=new File([blob],'sowra-'+p.id+'.jpg',{type:'image/jpeg'});
       if(navigator.canShare&&navigator.canShare({files:[file]})){
         try{
-          await navigator.share({files:[file],title:p.title,text:p.title+' — sowra.app'});
+          await navigator.share({
+            files:[file],
+            title:p.title,
+            text:p.title+' — من «صورة من بلدي» 📸',
+            url:'https://sowra.app'
+          });
           return;
         }catch(e){}
       }
@@ -1149,7 +1154,11 @@ function reelShare(pid,e){
   if(!p)return;
   const url='https://sowra.app';
   if(navigator.share){
-    navigator.share({title:p.title,text:p.title+' — من عدسات أهل الديار 📍'+(p.village||p.city),url}).catch(()=>{});
+    navigator.share({
+      title:p.title,
+      text:p.title+' — من عدسات أهل الديار 📍'+(p.village||p.city),
+      url:'https://sowra.app'
+    }).catch(()=>{});
   }else{
     try{navigator.clipboard.writeText(url);toast('انسخ الرابط ✅')}catch(err){}
   }
@@ -1574,7 +1583,12 @@ async function shareProfile(uid){
       const file=new File([blob],'sowra-profile.jpg',{type:'image/jpeg'});
       if(navigator.canShare&&navigator.canShare({files:[file]})){
         try{
-          await navigator.share({files:[file],title:pr.display_name||'مصوّر',text:'عدستي في «صورة من بلدي» 📸 sowra.app'});
+          await navigator.share({
+            files:[file],
+            title:pr.display_name||'مصوّر',
+            text:'عدستي في «صورة من بلدي» 📸\nشوف صور ديرتك وشارك عدستك:',
+            url:'https://sowra.app'
+          });
           return;
         }catch(e){}
       }
