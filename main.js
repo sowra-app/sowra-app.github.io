@@ -53,6 +53,12 @@ function go(p){
     const adm=$('page-adm');
     if(adm&&adm.classList.contains('on')) adm.classList.remove('on');
   }
+  // أغلق نافذة الصورة عند أي تنقل
+  const _ov=document.getElementById('overlay');
+  if(_ov&&_ov.classList.contains('show')){
+    _ov.classList.remove('show');
+    document.body.style.overflow='';
+  }
   if(p!=='reels'&&typeof stopAllReels==='function')stopAllReels();
   if(p==='acc'&&typeof renderVault==='function')setTimeout(renderVault,150);
   if(p==='acc'&&typeof renderNotifBox==='function')setTimeout(renderNotifBox,150);
