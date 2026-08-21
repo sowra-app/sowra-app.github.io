@@ -1442,8 +1442,8 @@ async function pushNotify(payload){
     const j=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
     return j;
-  }catch(e){
-    console.warn('push failed',e);
+    }catch(e){
+    toast('سبب الفشل: '+(e.message||e),true);
     return null;
   }
 }
