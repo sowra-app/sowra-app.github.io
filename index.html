@@ -214,6 +214,15 @@
         <button type="button" class="vis-btn" id="visPrivate" onclick="setVis('private')">🔒<b>خزنتي</b><small>لك وحدك — تنشرها لاحقاً</small></button>
       </div>
     </div>
+    <div class="comm-box" id="commBox">
+      <label>
+        <input type="checkbox" id="aComm">
+        <div>
+          <b>💼 أوافق على عرض صورتي للاستخدام التجاري</b>
+          <span>هيئات سياحية · فنادق · مطبوعات — عند وصول أي طلب نتواصل معك للاتفاق على المقابل، ولك حق الرفض. واسمك يبقى على الصورة دائماً.</span>
+        </div>
+      </label>
+    </div>
     <details class="claim-form" id="claimForm" ontoggle="syncClaimLabel()">
       <summary id="claimLabel">🏅 سجّل سبقك في هذا الموقع — اضغط للعرض</summary>
       <div style="padding:12px 14px">
@@ -238,6 +247,7 @@
       <div class="sheet-title" id="sTitle"></div>
       <div class="sheet-loc" id="sLoc"></div>
       <div id="sDate" class="s-date" style="display:none"></div>
+      <div id="sComm" class="comm-badge" style="display:none">💼 متاحة للاستخدام التجاري</div>
       <div id="sDesc" class="s-desc" style="display:none"></div>
       <div id="sFollow" class="follow-row"></div>
       <div id="visitBox" style="display:none"></div>

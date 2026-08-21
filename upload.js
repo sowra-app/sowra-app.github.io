@@ -175,7 +175,7 @@ async function addPhoto(){
         abroad:isAbroad,country,
         village:isAbroad?'':$('aVillage').value.trim(),
         lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
-        image_path:vpath,media_type:'video',filter_key:curFilter,music_key:(pendingMusicName||''),visibility:pendingVis,description:''
+        image_path:vpath,media_type:'video',filter_key:curFilter,music_key:(pendingMusicName||''),visibility:pendingVis,description:'',commercial:!!($('aComm')&&$('aComm').checked)
       });
       if(insv.error){
         await sb.storage.from('videos').remove([vpath]).catch(()=>{});
@@ -195,7 +195,7 @@ async function addPhoto(){
       pendingVideo=null;resetFilter();pendingVis='public';setVis('public');const _c1=$('clearDraft');if(_c1)_c1.style.display='none';
       const pv=$('videoPreview');if(pv){pv.src='';pv.style.display='none';}
       $('drop').style.display='none';$('geoCard').style.display='none';
-      $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}
+      $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;
       toast('انرفع الفيديو 🎬');
       try{sortMode='new';_sort='new';}catch(e){}
       if(typeof maybeAskNotifs==='function')maybeAskNotifs();
@@ -216,7 +216,7 @@ async function addPhoto(){
       abroad:isAbroad,country,
       village:isAbroad?'':$('aVillage').value.trim(),
       lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
-      image_path:path,visibility:pendingVis,description:($('aDesc')?$('aDesc').value.trim():'')
+      image_path:path,visibility:pendingVis,description:($('aDesc')?$('aDesc').value.trim():''),commercial:!!($('aComm')&&$('aComm').checked)
     }).select('id').maybeSingle();
     if(ins.error){
       // فشل التسجيل — ننظف ملفات الصورة من المخزن حتى لا تبقى يتيمة
@@ -249,7 +249,7 @@ async function addPhoto(){
     }
     pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();pendingVis='public';setVis('public');const _c2=$('clearDraft');if(_c2)_c2.style.display='none';
     $('preview').style.display='none';$('drop').style.display='none';$('geoCard').style.display='none';
-    $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}
+    $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;
     toast(pendingVis==='private'?'انحفظت بخزنتك 🔒':'نُشرت صورتك 🎉');
     const wasAbroad=isAbroad;
     $('aCountry').value='';

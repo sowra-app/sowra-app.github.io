@@ -575,3 +575,12 @@ body.dark .notif-card.on{background:linear-gradient(135deg,#1B2A21,var(--card))}
 .s-desc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 15px;font-size:13.5px;line-height:2;margin-bottom:14px;white-space:pre-wrap;word-break:break-word}
 body.dark .s-desc{background:var(--card2)}
 
+
+/* ====== الاستخدام التجاري ====== */
+.comm-box{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:13px 15px;margin-bottom:16px}
+.comm-box label{display:flex;gap:11px;align-items:flex-start;cursor:pointer}
+.comm-box input{width:21px;height:21px;margin-top:3px;accent-color:var(--palm);flex:0 0 auto}
+.comm-box b{display:block;font-size:13.5px;margin-bottom:4px}
+.comm-box span{font-size:11.5px;color:var(--txt-dim);line-height:1.85}
+.comm-badge{display:inline-flex;align-items:center;gap:5px;background:#EFF7F1;border:1px solid var(--palm);color:var(--palm);border-radius:11px;padding:4px 11px;font-size:11.5px;font-weight:700;margin-bottom:12px}
+body.dark .comm-badge{background:#1B2A21}

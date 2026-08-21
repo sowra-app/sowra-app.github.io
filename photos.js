@@ -213,6 +213,9 @@ async function openSheet(id){
   renderFollow(p);
   renderVisits(p);
   renderClaim(p);
+  // شارة الاستخدام التجاري
+  const cb=$('sComm');
+  if(cb)cb.style.display=p.commercial?'inline-flex':'none';
   // الوصف
   const dsc=$('sDesc');
   if(dsc){

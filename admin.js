@@ -26,7 +26,7 @@ function admSetTab(t){
   $('admList').style.display=(t==='rep'||t==='all')?'block':'none';
   if(t==='plc')renderPlaces();
   else if(t==='fb')loadFb();
-  else if(t==='st')loadStats();
+  else if(t==='st'){loadStats();setTimeout(loadCommercial,400);}
   else if(t==='wk')loadAdmWeek();
   else if(t==='qs')loadAdmQuests();
   else if(t==='mu')loadAdmMusic();
@@ -817,4 +817,25 @@ function muPicked(){
   const f=$('muFile').files[0];
   const lbl=$('muFileName');
   if(lbl)lbl.textContent=f?(f.name+' · '+Math.round(f.size/1024)+' كيلو'):'اختر ملف صوتي';
+}
+
+/* ====== الصور المتاحة تجارياً ====== */
+async function loadCommercial(){
+  const el=$('admSt');if(!el)return;
+  try{
+    const r=await sb.from('photos_ranked').select('id,title,city,region,photographer,image_path,avg_stars,commercial')
+      .eq('commercial',true).eq('visibility','public').order('avg_stars',{ascending:false});
+    const list=r.data||[];
+    const box=document.createElement('div');
+    box.style.cssText='background:var(--card);border:1.5px solid var(--palm);border-radius:14px;padding:14px;margin-top:14px';
+    box.innerHTML='<div style="font-weight:700;font-size:14px;margin-bottom:6px">💼 متاحة للاستخدام التجاري <span style="color:var(--palm)">'+list.length+'</span></div>'
+      +'<div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px;line-height:1.8">صور وافق أصحابها على عرضها للجهات — تواصل معهم عند أي طلب</div>'
+      +(list.length?list.slice(0,20).map(p=>
+        '<div style="display:flex;align-items:center;gap:9px;background:var(--card2);border-radius:10px;padding:7px 10px;margin-bottom:5px;font-size:12px">'
+        +'<img src="'+thumbUrl(p.image_path)+'" style="width:34px;height:34px;border-radius:8px;object-fit:cover">'
+        +'<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(p.title)+' <span style="color:var(--txt-dim)">· '+esc(p.photographer||'')+'</span></span>'
+        +'<span style="color:var(--star);font-weight:700">★ '+Number(p.avg_stars).toFixed(1)+'</span></div>'
+      ).join(''):'<div style="font-size:12px;color:var(--txt-dim)">ما فيه صور بعد</div>');
+    el.appendChild(box);
+  }catch(e){}
 }
