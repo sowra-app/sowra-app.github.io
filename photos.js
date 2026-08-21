@@ -1406,15 +1406,12 @@ async function publishFromVault(pid){
     const nm=(await sb.from('profiles').select('display_name').eq('id',USER.id).maybeSingle()).data?.display_name||'مصوّر';
     if(ph){
       const isV=ph.media_type==='video';
-      sb.functions.invoke('send-push',{body:{
+      pushNotify({
         title:isV?'🎬 مقطع جديد في الأضواء':('📸 صورة جديدة من '+(ph.city||ph.region||'الديرة')),
         body:ph.title+' — عدسة '+nm,
         url:'/',
         exclude:USER.id
-       }}).then(r=>{
-        if(r.error)toast('فشل الإشعار: '+r.error.message,true);
-        else toast('أُرسل الإشعار ✅');
-      },e=>toast('خطأ: '+e.message,true));
+      });
     }
   }catch(e){}
   await loadPhotos();
@@ -1430,4 +1427,23 @@ async function moveToVault(pid){
   toast('انسحبت لخزنتك 🔒');
   closeSheet();
   await loadPhotos();
+}
+
+/* ====== إرسال الإشعارات ====== */
+async function pushNotify(payload){
+  try{
+    const url=(typeof SB_URL!=='undefined'?SB_URL:'https://gquzjaxpqeggknhipmzk.supabase.co')+'/functions/v1/send-push';
+    const key=(typeof SB_KEY!=='undefined')?SB_KEY:'sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX';
+    const r=await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key},
+      body:JSON.stringify(payload)
+    });
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
+    return j;
+  }catch(e){
+    console.warn('push failed',e);
+    return null;
+  }
 }

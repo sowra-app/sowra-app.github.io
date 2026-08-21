@@ -184,12 +184,12 @@ async function addPhoto(){
       if(pendingVis==='public'){
         try{
           const nm2=(await sb.from('profiles').select('display_name').eq('id',USER.id).maybeSingle()).data?.display_name||'مصوّر';
-          sb.functions.invoke('send-push',{body:{
+          pushNotify({
             title:'🎬 مقطع جديد في الأضواء',
             body:title+' — عدسة '+nm2,
             url:'/',
             exclude:USER.id
-          }}).then(()=>{},()=>{});
+          });
         }catch(e){}
       }
       pendingVideo=null;resetFilter();pendingVis='public';setVis('public');const _c1=$('clearDraft');if(_c1)_c1.style.display='none';
@@ -238,12 +238,12 @@ async function addPhoto(){
     if(pendingVis==='public'){
       try{
         const nm=(await sb.from('profiles').select('display_name').eq('id',USER.id).maybeSingle()).data?.display_name||'مصوّر';
-        sb.functions.invoke('send-push',{body:{
+        pushNotify({
           title:'📸 صورة جديدة من '+(city||region),
           body:title+' — عدسة '+nm,
           url:'/',
           exclude:USER.id
-        }}).then(()=>{},()=>{});
+        });
       }catch(e){}
     }
     pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();pendingVis='public';setVis('public');const _c2=$('clearDraft');if(_c2)_c2.style.display='none';

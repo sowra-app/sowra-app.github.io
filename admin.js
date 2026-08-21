@@ -108,12 +108,12 @@ async function fbReply(id){
   try{
     const fb=(await sb.from('feedback').select('user_id').eq('id',id).maybeSingle()).data;
     if(fb&&fb.user_id){
-      sb.functions.invoke('send-push',{body:{
+      pushNotify({
         title:'💬 رد من الإدارة',
         body:t.trim().slice(0,90),
         url:'/',
         user_ids:[fb.user_id]
-      }}).then(()=>{},()=>{});
+      });
     }
   }catch(e){}
   toast('انرسل الرد 💬');loadFb();
