@@ -223,3 +223,44 @@ async function toggleNotifs(){
     toast('تعذر التفعيل: '+(e.message||''),true);
   }finally{btn.disabled=false}
 }
+
+/* ====== دعوة تفعيل الإشعارات بعد أول نشر ====== */
+function askedBefore(){
+  try{return localStorage.getItem('sowra_notif_asked')==='1'}catch(e){return true}
+}
+function markAsked(){
+  try{localStorage.setItem('sowra_notif_asked','1')}catch(e){}
+}
+
+async function maybeAskNotifs(){
+  try{
+    if(askedBefore())return;
+    if(!USER||USER.is_anonymous)return;
+    if(!notifSupported())return;
+    if(Notification.permission!=='default')return;
+    const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+    if(isIOS&&!isStandalone())return;
+    // تحقق: هل مشترك أصلاً؟
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    if(sub)return;
+    setTimeout(()=>{
+      const el=document.getElementById('notifAsk');
+      if(el)el.classList.add('show');
+    },1800);
+  }catch(e){}
+}
+
+function notifAskNo(){
+  markAsked();
+  const el=document.getElementById('notifAsk');
+  if(el)el.classList.remove('show');
+  toast('تقدر تفعّلها من صفحة حسابي متى ما تبي');
+}
+
+async function notifAskYes(){
+  markAsked();
+  const el=document.getElementById('notifAsk');
+  if(el)el.classList.remove('show');
+  if(typeof toggleNotifs==='function')await toggleNotifs();
+}

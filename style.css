@@ -550,3 +550,15 @@ body.dark .notif-card.on{background:linear-gradient(135deg,#1B2A21,var(--card))}
 .mc-date{position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,.55);color:#fff;border-radius:9px;padding:2px 8px;font-size:10px;font-family:'Tajawal';backdrop-filter:blur(3px)}
 .prof-share{background:var(--card2);border:1.5px solid var(--line);border-radius:12px;padding:9px 20px;font-family:'Tajawal';font-size:12.5px;font-weight:700;color:var(--txt);cursor:pointer;margin-top:12px}
 .prof-share:active{transform:scale(.97)}
+
+/* ====== دعوة الإشعارات ====== */
+.notif-ask{display:none;position:fixed;inset:0;background:rgba(36,31,28,.6);z-index:120;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(3px)}
+.notif-ask.show{display:flex}
+.na-card{background:var(--card);border:2px solid var(--ink);border-radius:22px;padding:26px 22px;max-width:400px;width:100%;text-align:center;box-shadow:0 10px 34px rgba(0,0,0,.28);animation:naUp .3s ease}
+@keyframes naUp{from{transform:translateY(28px) scale(.96);opacity:0}to{transform:none;opacity:1}}
+.na-ic{font-size:46px;margin-bottom:10px}
+.na-title{font-family:'Reem Kufi',sans-serif;font-size:21px;color:var(--sand);margin-bottom:8px}
+.na-body{font-size:13.5px;color:var(--txt-dim);line-height:2;margin-bottom:20px}
+.na-acts{display:flex;gap:10px}
+.na-yes{flex:1;padding:12px;font-size:14px}
+.na-no{flex:1;padding:12px;font-size:14px;background:var(--card2);border:1px solid var(--line);color:var(--txt-dim)}

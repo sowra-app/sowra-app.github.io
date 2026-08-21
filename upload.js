@@ -198,7 +198,8 @@ async function addPhoto(){
       $('aTitle').value='';$('aVillage').value='';
       toast('انرفع الفيديو 🎬');
       try{sortMode='new';_sort='new';}catch(e){}
-      await loadPhotos();go('feed');
+      if(typeof maybeAskNotifs==='function')maybeAskNotifs();
+    await loadPhotos();go('feed');
       btn.disabled=false;btn.textContent=(pendingVideo?'انشر المقطع 🎬':'انشر الصورة 🚀');
       return;
     }
@@ -253,6 +254,7 @@ async function addPhoto(){
     const wasAbroad=isAbroad;
     $('aCountry').value='';
     try{sortMode=wasAbroad?'abroad':'new';_sort=sortMode;}catch(e){}
+    if(typeof maybeAskNotifs==='function')maybeAskNotifs();
     await loadPhotos();go('feed');
   }catch(e){
     if(e.message&&e.message.includes('row-level')){
@@ -854,3 +856,4 @@ function syncClaimLabel(){
   if(!d||!l)return;
   l.textContent=d.open?'🏅 سجّل سبقك في هذا الموقع — اضغط للطي':'🏅 سجّل سبقك في هذا الموقع — اضغط للعرض';
 }
+

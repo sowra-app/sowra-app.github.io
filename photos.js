@@ -1411,6 +1411,7 @@ async function publishFromVault(pid){
   const {error}=await sb.from('photos').update({visibility:'public'}).eq('id',pid).eq('user_id',USER.id);
   if(error){toast('تعذر النشر: '+error.message,true);return}
   toast('انتشرت للجميع 🎉');
+  if(typeof maybeAskNotifs==='function')maybeAskNotifs();
   // إشعار للجميع
   try{
     const ph=photos.find(x=>x.id===pid);
