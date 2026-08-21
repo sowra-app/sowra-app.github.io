@@ -818,21 +818,3 @@ function muPicked(){
   const lbl=$('muFileName');
   if(lbl)lbl.textContent=f?(f.name+' · '+Math.round(f.size/1024)+' كيلو'):'اختر ملف صوتي';
 }
-async function testPush(){
-  toast('نجرّب...');
-  try{
-    const r=await fetch('https://gquzjaxpqeggknhipmzk.supabase.co/functions/v1/smart-service',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'apikey':'sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX',
-        'Authorization':'Bearer sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX'
-      },
-      body:JSON.stringify({title:'اختبار 🔔',body:'من التطبيق مباشرة'})
-    });
-    const t=await r.text();
-    toast('HTTP '+r.status+' — '+t.slice(0,100), !r.ok);
-  }catch(e){
-    toast('استثناء: '+(e.message||e),true);
-  }
-}
