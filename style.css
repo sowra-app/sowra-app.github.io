@@ -562,3 +562,11 @@ body.dark .notif-card.on{background:linear-gradient(135deg,#1B2A21,var(--card))}
 .na-acts{display:flex;gap:10px}
 .na-yes{flex:1;padding:12px;font-size:14px}
 .na-no{flex:1;padding:12px;font-size:14px;background:var(--card2);border:1px solid var(--line);color:var(--txt-dim)}
+
+/* ====== اللغة الإنجليزية ====== */
+.en-bar{display:none;background:var(--ink);color:#F7F1E3;padding:9px 16px;font-family:'Tajawal',system-ui,sans-serif;font-size:13px;align-items:center;justify-content:center;gap:12px;direction:ltr;position:relative}
+.en-bar.show{display:flex}
+.en-bar a{color:var(--star);font-weight:700;text-decoration:none;white-space:nowrap}
+.en-bar button{position:absolute;right:10px;background:none;border:none;color:rgba(247,241,227,.6);font-size:15px;cursor:pointer;padding:2px 6px}
+.en-btn{background:var(--card);border:1px solid var(--line);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-family:'Outfit',system-ui,sans-serif;font-size:11.5px;font-weight:700;color:var(--txt-dim);text-decoration:none;flex-shrink:0;letter-spacing:.3px}
+.en-btn:active{transform:scale(.94)}

@@ -69,6 +69,7 @@ function go(p){
 (async()=>{
   if(window.__BOOT_FAIL)return;
   initTheme();
+  initEnBar();
   initSelects();fillAddCities();
   const authP=ensureAuth().then(()=>{checkAdmin();loadFavs();}).catch(e=>toast('تعذر الاتصال بالحساب',true));
   try{
@@ -263,4 +264,21 @@ async function notifAskYes(){
   const el=document.getElementById('notifAsk');
   if(el)el.classList.remove('show');
   if(typeof toggleNotifs==='function')await toggleNotifs();
+}
+
+/* ====== شريط اللغة للأجانب ====== */
+function initEnBar(){
+  try{
+    if(localStorage.getItem('sowra_en_dismissed')==='1')return;
+    const langs=(navigator.languages&&navigator.languages.length)?navigator.languages:[navigator.language||''];
+    const isAr=langs.some(l=>String(l).toLowerCase().startsWith('ar'));
+    if(isAr)return;
+    const el=document.getElementById('enBar');
+    if(el)el.classList.add('show');
+  }catch(e){}
+}
+function dismissEnBar(){
+  try{localStorage.setItem('sowra_en_dismissed','1')}catch(e){}
+  const el=document.getElementById('enBar');
+  if(el)el.classList.remove('show');
 }
