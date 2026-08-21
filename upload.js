@@ -666,21 +666,17 @@ function previewMusic(m){
     if(window.__actx.state==='suspended')window.__actx.resume();
   }catch(e){}
   const el=document.getElementById('musicPreview');
-  if(!el){toast('عنصر الصوت مفقود',true);return}
+  if(!el)return;
   try{
     el.pause();
     const src=m._local?URL.createObjectURL(ownMusicFile):musicUrl(m.path);
-    toast('تشغيل: '+src.slice(-28));
-    el.onerror=()=>toast('خطأ تحميل الصوت (code '+(el.error?el.error.code:'?')+')',true);
+    el.onerror=()=>{};
     el.src=src;
     el.volume=0.55;
     el.loop=true;
     el.load();
     const pr=el.play();
-    if(pr&&pr.catch)pr.catch(err=>{
-      toast('رُفض التشغيل: '+(err&&err.name?err.name:'?'),true);
-    });
-    if(pr&&pr.then)pr.then(()=>toast('✓ المعاينة شغّالة')).catch(()=>{});
+    if(pr&&pr.catch)pr.catch(()=>{});
     musicAudio=el;
   }catch(e){}
 }
@@ -858,4 +854,3 @@ function syncClaimLabel(){
   if(!d||!l)return;
   l.textContent=d.open?'🏅 سجّل سبقك في هذا الموقع — اضغط للطي':'🏅 سجّل سبقك في هذا الموقع — اضغط للعرض';
 }
-
