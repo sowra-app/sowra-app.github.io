@@ -55,6 +55,7 @@ function go(p){
   }
   if(p!=='reels'&&typeof stopAllReels==='function')stopAllReels();
   if(p==='acc'&&typeof renderVault==='function')setTimeout(renderVault,150);
+  if(p==='acc'&&typeof renderNotifBox==='function')setTimeout(renderNotifBox,150);
   $('nb-feed').classList.toggle('on',p==='feed');
   const nr=$('nb-reels');if(nr)nr.classList.toggle('on',p==='reels');
   $('nb-favs').classList.toggle('on',p==='favs');
@@ -109,3 +110,116 @@ document.addEventListener('visibilitychange',()=>{
 setInterval(()=>{
   if(document.visibilityState==='visible'&&typeof loadPhotos==='function')loadPhotos();
 },120000);
+
+/* ====== الإشعارات ====== */
+const VAPID_PUB='BCeGpOtX3WqUv7u0B8hoOJDdrp8PKUXG1pow2wWyM8sS7bnLJ3v8mzqczz-SmiQJgNeZXz1Z4VouYB9LAwsXe94';
+
+function urlB64ToUint8(b64){
+  const pad='='.repeat((4-b64.length%4)%4);
+  const s=(b64+pad).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(s);
+  const arr=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++)arr[i]=raw.charCodeAt(i);
+  return arr;
+}
+
+function notifSupported(){
+  return ('Notification' in window) && ('serviceWorker' in navigator) && ('PushManager' in window);
+}
+
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+}
+
+async function renderNotifBox(){
+  const box=$('notifBox');if(!box)return;
+  if(!USER||USER.is_anonymous){box.style.display='none';return}
+  box.style.display='block';
+
+  const card=box.querySelector('.notif-card');
+  const st=$('notifState'), btn=$('notifBtn'), hint=$('notifHint');
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  if(!notifSupported()){
+    st.textContent='غير مدعومة بهذا المتصفح';
+    btn.style.display='none';
+    hint.style.display='block';
+    hint.textContent=isIOS
+      ? 'على الأيفون: أضف التطبيق للشاشة الرئيسية أولاً (زر المشاركة ← إضافة إلى الشاشة الرئيسية)، ثم افتحه من الأيقونة.'
+      : 'جرّب متصفحاً أحدث.';
+    return;
+  }
+  if(isIOS && !isStandalone()){
+    st.textContent='تحتاج تثبيت التطبيق أولاً';
+    btn.style.display='none';
+    hint.style.display='block';
+    hint.textContent='اضغط زر المشاركة بسفاري ← «إضافة إلى الشاشة الرئيسية» ← افتح التطبيق من الأيقونة، وبعدها تقدر تفعّل الإشعارات.';
+    return;
+  }
+
+  hint.style.display='none';
+  btn.style.display='block';
+
+  let sub=null;
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    sub=await reg.pushManager.getSubscription();
+  }catch(e){}
+
+  const on=!!sub && Notification.permission==='granted';
+  if(card)card.classList.toggle('on',on);
+  st.textContent=on?'● مفعّلة على هذا الجهاز':'غير مفعّلة';
+  btn.textContent=on?'🔕 إيقاف الإشعارات':'🔔 فعّل الإشعارات';
+  btn.style.background=on?'var(--card2)':'var(--sadu)';
+  btn.style.color=on?'var(--txt)':'#fff';
+  btn.style.border=on?'1px solid var(--line)':'none';
+}
+
+async function toggleNotifs(){
+  if(!notifSupported()){toast('جهازك ما يدعم الإشعارات',true);return}
+  const btn=$('notifBtn');
+  btn.disabled=true;
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const existing=await reg.pushManager.getSubscription();
+
+    if(existing && Notification.permission==='granted'){
+      // إيقاف
+      const ep=existing.endpoint;
+      await existing.unsubscribe();
+      await sb.from('push_subs').delete().eq('endpoint',ep);
+      toast('اتوقفت الإشعارات');
+      renderNotifBox();
+      return;
+    }
+
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){
+      toast(perm==='denied'?'رفضت الإذن — فعّله من إعدادات المتصفح':'ما تم التفعيل',true);
+      renderNotifBox();
+      return;
+    }
+
+    const sub=await reg.pushManager.subscribe({
+      userVisibleOnly:true,
+      applicationServerKey:urlB64ToUint8(VAPID_PUB)
+    });
+    const j=sub.toJSON();
+    const {error}=await sb.from('push_subs').upsert({
+      user_id:USER.id,
+      endpoint:sub.endpoint,
+      p256dh:j.keys.p256dh,
+      auth:j.keys.auth
+    },{onConflict:'endpoint'});
+    if(error)throw error;
+
+    toast('انفعّلت الإشعارات 🔔');
+    reg.showNotification('صورة من بلدي 🇸🇦',{
+      body:'الإشعارات مفعّلة — بنوصلك أول ما يصير جديد',
+      icon:'icon-192.png',dir:'rtl',lang:'ar'
+    });
+    renderNotifBox();
+  }catch(e){
+    toast('تعذر التفعيل: '+(e.message||''),true);
+  }finally{btn.disabled=false}
+}

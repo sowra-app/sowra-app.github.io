@@ -538,3 +538,8 @@ body.dark .race-row.top1{background:linear-gradient(135deg,#2E2519,var(--card))}
 .prof-tab{flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px;font-family:'Tajawal';font-size:12.5px;font-weight:700;color:var(--txt-dim);cursor:pointer;transition:.15s}
 .prof-tab.on{background:var(--sadu);border-color:var(--sadu);color:#fff}
 #profFeed .mc-lock{position:absolute;top:6px;left:6px;background:rgba(36,31,28,.85);color:#fff;border-radius:9px;padding:2px 7px;font-size:11px}
+
+/* ====== الإشعارات ====== */
+.notif-card{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:14px}
+.notif-card.on{border-color:var(--palm);background:linear-gradient(135deg,#F1F8F4,var(--card))}
+body.dark .notif-card.on{background:linear-gradient(135deg,#1B2A21,var(--card))}
