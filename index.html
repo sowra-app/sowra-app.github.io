@@ -195,7 +195,7 @@
     <input type="file" id="fileLive" accept="image/*" capture="environment" style="display:none" onchange="pickImg(this,true)">
     <input type="file" id="fileGal" accept="image/*" style="display:none" onchange="pickImg(this,false)">
     <div class="f-group"><label id="lblTitle">عنوان الصورة</label><input id="aTitle" placeholder="مثال: غروب على جبال السودة"></div>
-    <div class="f-group"><label id="lblDesc">وصف الصورة (اختياري)</label>
+    <div class="f-group" id="descGroup"><label id="lblDesc">وصف الصورة (اختياري)</label>
       <textarea id="aDesc" rows="3" maxlength="600" placeholder="احكِ قصتها: متى صوّرتها · كيف تصل للمكان · أفضل وقت لزيارته..." oninput="descCount()"></textarea>
       <div id="descLen" style="font-size:11px;color:var(--txt-dim);text-align:left;margin-top:3px">0 / 600</div>
     </div>
@@ -492,7 +492,7 @@
   </div>
 </div>
 
-
+<!-- ====== دعوة تفعيل الإشعارات ====== -->
 <div id="notifAsk" class="notif-ask">
   <div class="na-card">
     <div class="na-ic">🔔</div>
