@@ -818,3 +818,8 @@ function muPicked(){
   const lbl=$('muFileName');
   if(lbl)lbl.textContent=f?(f.name+' · '+Math.round(f.size/1024)+' كيلو'):'اختر ملف صوتي';
 }
+async function testPush(){
+  toast('نجرّب...');
+  const r=await pushNotify({title:'اختبار 🔔',body:'من التطبيق مباشرة'});
+  toast(r?('نجح: '+JSON.stringify(r)):'فشل — شوف الكونسول',!r);
+}
