@@ -540,10 +540,10 @@ async function loadAdmQuests(){
     <div style="font-weight:700;font-size:14px;margin-bottom:10px">🗝️ رحلة جديدة</div>
     <input id="qTitle" placeholder="اسم الرحلة (مثال: صيف عسير)" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
     <input id="qSub" placeholder="وصف قصير" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
-    <div style="display:flex;gap:8px;margin-bottom:8px">
-      <input id="qIcon" placeholder="🏔️" value="🏆" style="flex:0 0 70px;text-align:center;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px;font-size:18px;outline:none">
-      <input id="qBadge" placeholder="اسم الشارة (مكتشف عسير)" style="flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none">
-    </div>
+    <input id="qBadge" placeholder="اسم الشارة (مكتشف عسير)" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px;box-sizing:border-box">
+    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:6px">أيقونة الشارة</div>
+    <div class="q-icons" id="qIcons"></div>
+    <input type="hidden" id="qIcon" value="🏆">
     <input id="qRegion" placeholder="المنطقة" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
     <div style="display:flex;gap:8px;margin-bottom:8px">
       <input id="qSponsor" placeholder="الراعي (اختياري)" style="flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none">
@@ -573,6 +573,23 @@ async function loadAdmQuests(){
       </div>
     </div>`;
   }).join(''):'<div class="empty" style="padding:20px">ما فيه رحلات بعد</div>'}`;
+  renderQIcons();
+}
+
+const QICONS=['🏆','🏔️','🕌','🌅','🐪','🌴','🏜️','🌊','⛰️','🗝️','🎖️','🌙','⭐','🦅','🏛️','🌾'];
+
+function renderQIcons(){
+  const el=$('qIcons');if(!el)return;
+  const cur=$('qIcon')?$('qIcon').value:'🏆';
+  el.innerHTML='';
+  QICONS.forEach(ic=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='q-icon'+(ic===cur?' on':'');
+    b.textContent=ic;
+    b.onclick=()=>{if($('qIcon'))$('qIcon').value=ic;renderQIcons()};
+    el.appendChild(b);
+  });
 }
 
 async function qCreate(){

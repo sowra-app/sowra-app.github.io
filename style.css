@@ -584,3 +584,9 @@ body.dark .s-desc{background:var(--card2)}
 .comm-box span{font-size:11.5px;color:var(--txt-dim);line-height:1.85}
 .comm-badge{display:inline-flex;align-items:center;gap:5px;background:#EFF7F1;border:1px solid var(--palm);color:var(--palm);border-radius:11px;padding:4px 11px;font-size:11.5px;font-weight:700;margin-bottom:12px}
 body.dark .comm-badge{background:#1B2A21}
+
+/* ====== أيقونات الشارة ====== */
+.q-icons{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:10px}
+.q-icon{background:var(--card2);border:1.5px solid var(--line);border-radius:10px;padding:7px 0;font-size:19px;cursor:pointer;line-height:1;transition:.15s}
+.q-icon.on{border-color:var(--sadu);border-width:2px;background:linear-gradient(160deg,var(--card),rgba(214,58,47,.1));transform:scale(1.06)}
+@media(max-width:420px){.q-icons{grid-template-columns:repeat(6,1fr)}}
