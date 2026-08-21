@@ -26,3 +26,36 @@ self.addEventListener('fetch',e=>{
     fetch(e.request).catch(()=>caches.match(e.request))
   );
 });
+/* ====== استقبال الإشعارات ====== */
+self.addEventListener('push', function(event){
+  let d={title:'صورة من بلدي',body:'',url:'/'};
+  try{ if(event.data) d=Object.assign(d,event.data.json()); }catch(e){
+    try{ d.body=event.data?event.data.text():''; }catch(_){}
+  }
+  event.waitUntil(
+    self.registration.showNotification(d.title,{
+      body:d.body,
+      icon:'icon-192.png',
+      badge:'icon-192.png',
+      dir:'rtl',
+      lang:'ar',
+      tag:d.tag||'sowra',
+      renotify:true,
+      data:{url:d.url||'/'},
+      vibrate:[60,40,60]
+    })
+  );
+});
+
+self.addEventListener('notificationclick', function(event){
+  event.notification.close();
+  const url=(event.notification.data&&event.notification.data.url)||'/';
+  event.waitUntil(
+    clients.matchAll({type:'window',includeUncontrolled:true}).then(function(list){
+      for(const c of list){
+        if('focus' in c){ c.navigate(url); return c.focus(); }
+      }
+      if(clients.openWindow) return clients.openWindow(url);
+    })
+  );
+});
