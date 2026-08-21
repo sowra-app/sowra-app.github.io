@@ -1,836 +1,1449 @@
-async function openAdmin(){
-  go('adm');
-  $('admList').innerHTML='<div class="empty">⏳ جاري التحميل...</div>';
-  const [ph,rp]=await Promise.all([
-    sb.from('photos').select('*, profiles!user_id(display_name, banned)').order('created_at',{ascending:false}),
-    sb.from('reports').select('photo_id')
-  ]);
-  if(ph.error){$('admList').innerHTML=`<div class="empty">⚠️ خطأ في جلب الصور:<br><span style="direction:ltr;display:inline-block;color:var(--sadu);font-size:12px">${ph.error.message}</span></div>`;return}
-  if(rp.error){$('admList').innerHTML=`<div class="empty">⚠️ خطأ في جلب البلاغات:<br><span style="direction:ltr;display:inline-block;color:var(--sadu);font-size:12px">${rp.error.message}</span></div>`;return}
-  admPhotos=ph.data||[];
-  admReps={};
-  (rp.data||[]).forEach(r=>admReps[r.photo_id]=(admReps[r.photo_id]||0)+1);
-  admSetTab(admTab);
+let _viewMode='grid';
+
+/* ====== الفلتر الموحد ====== */
+let _cat='all', _sort='top';
+function toggleFilter(){
+  const d=$('filterDrawer');
+  const open=d.style.display==='none';
+  d.style.display=open?'block':'none';
+  $('filterBtn').classList.toggle('active',open);
 }
-function admSetTab(t){
-  admTab=t;
-  ['Rep','All','Plc','Fb','St','Wk','Qs','Mu'].forEach(x=>{const e=$('admTab'+x);if(e)e.classList.remove('on')});
-  const m={rep:'Rep',all:'All',plc:'Plc',fb:'Fb',st:'St',wk:'Wk',qs:'Qs',mu:'Mu'};
-  const cur=$('admTab'+m[t]);if(cur)cur.classList.add('on');
-  $('admPlaces').style.display=t==='plc'?'block':'none';
-  $('admFb').style.display=t==='fb'?'block':'none';
-  $('admSt').style.display=t==='st'?'block':'none';
-  $('admWk').style.display=t==='wk'?'block':'none';
-  const aq=$('admQs');if(aq)aq.style.display=t==='qs'?'block':'none';
-  const am=$('admMu');if(am)am.style.display=t==='mu'?'block':'none';
-  $('admList').style.display=(t==='rep'||t==='all')?'block':'none';
-  if(t==='plc')renderPlaces();
-  else if(t==='fb')loadFb();
-  else if(t==='st')loadStats();
-  else if(t==='wk')loadAdmWeek();
-  else if(t==='qs')loadAdmQuests();
-  else if(t==='mu')loadAdmMusic();
-  else admRender();
+function fdSetCat(el,k){ 
+  _cat=k;
+  document.querySelectorAll('.fd-chips .fd-chip[data-k]').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+}
+function fdSetSort(el,s){
+  _sort=s;
+  document.querySelectorAll('.fd-chips .fd-chip[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
+}
+function applyFilter(){
+  catFilter=_cat; 
+  sortMode=_sort;
+  $('filterDrawer').style.display='none';
+  $('filterBtn').classList.remove('active'); 
+  const badge=$('filterBadge');
+  badge.style.display=(catFilter!=='all'||_sort!=='top')?'inline':'none';
+  $('abroadHint').style.display=sortMode==='abroad'?'block':'none';
+  if(_viewMode==='map'){renderMap();}else{render();}
+}
+function clearFilter(){
+  _cat='all';_sort='top';
+  document.querySelectorAll('.fd-chip[data-k]').forEach(b=>b.classList.toggle('on',b.dataset.k==='all'));
+  document.querySelectorAll('.fd-chip[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s==='top'));
+  catFilter='all';sortMode='top';
+  $('filterBadge').style.display='none';
+  $('abroadHint').style.display='none';
+  $('filterDrawer').style.display='none';
+  $('filterBtn').classList.remove('active');
+  render();
 }
 
-/* ====== الإحصائيات ====== */
-async function loadStats(){
-  $('admSt').innerHTML='<div class="empty">⏳</div>';
-  const [st,us]=await Promise.all([sb.rpc('admin_stats'),sb.rpc('admin_users')]);
-  if(st.error||!st.data){$('admSt').innerHTML=`<div class="empty">⚠️ ${st.error?.message||'نفّذ سكربت v7 أول'}</div>`;return}
-  const s=st.data;
-  const card=(n,l,ic)=>`<div style="background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:14px 8px;text-align:center">
-    <div style="font-size:22px">${ic}</div>
-    <div style="font-size:24px;font-weight:700;color:var(--sand)">${n}</div>
-    <div style="font-size:11px;color:var(--txt-dim)">${l}</div></div>`;
-  let html=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">
-    ${card(s.users,'مسجلين','👤')}${card(s.guests,'زوار','👀')}${card(s.photos,'صورة','📸')}
-    ${card(s.ratings,'تقييم','⭐')}${card(s.comments,'تعليق','💬')}${card(s.badges,'صوت وسام','🗳️')}
-    ${card(s.fb_new,'رسالة جديدة','📨')}${card(s.hidden,'مخفية','🙈')}${card(s.places,'مكان مضاف','📍')}
-  </div>
-  <div style="font-weight:700;font-size:15px;margin-bottom:10px">👥 المسجلون (${(us.data||[]).length})</div>`;
-  html+=(us.data||[]).length
-    ?(us.data.map(u=>`<div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <div style="min-width:0">
-          <b style="font-size:14px">${esc(u.display_name)}</b>
-          <div style="font-size:11.5px;color:var(--txt-dim);direction:ltr;text-align:right;overflow:hidden;text-overflow:ellipsis">${esc(u.email)}</div>
+/* ====== الأقرب إليك ====== */
+function showNearby(){
+  if(!navigator.geolocation){return}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const{latitude:lat,longitude:lng}=pos.coords;
+    window.__USER_LAT=lat;window.__USER_LNG=lng;
+    // لو الخريطة مفتوحة — أضف دبوس موقعك الآن
+    if(MAP)addUserPin(lat,lng);
+    loadWeatherTip();
+    if(typeof renderHomeHero==='function')renderHomeHero();
+    const distKm=(p)=>Math.hypot(((p.lat||0)-lat)*111,(((p.lng||0)-lng)*111*Math.cos(lat*Math.PI/180)));
+const near=photos.filter(p=>p.lat&&p.lng&&p.media_type!=='video'&&distKm(p)<=30).sort((a,b)=>distKm(a)-distKm(b)).slice(0,6);
+
+    if(!near.length)return;
+    $('nearbyWrap').style.display='block';
+    $('nearbyFeed').innerHTML=near.map(p=>`
+      <div class="card" onclick="openSheet(${p.id})">
+        <div class="ph"><img src="${thumbUrl(p.image_path)}" loading="lazy" alt="${esc(p.title)}">
+          <div class="loc-chip">📍 ${esc(p.village||p.city)}</div>
         </div>
-        <div style="text-align:center;flex:0 0 auto">
-          <div style="font-size:15px;font-weight:700;color:var(--sand)">${u.photos_count} 📸</div>
-          <div style="font-size:10px;color:var(--txt-dim)">${new Date(u.created_at).toLocaleDateString('ar-SA')}</div>
+        <div class="card-body">
+          <div class="card-title">${esc(p.title)}</div>
+          <div class="card-meta"><span>⭐ ${Number(p.avg_stars).toFixed(1)}</span></div>
         </div>
-      </div>`).join(''))
-    :'<div class="empty">ما فيه مسجلين بعد</div>';
-  $('admSt').innerHTML=html;
+      </div>`).join('');
+  },()=>{},{timeout:5000});
 }
 
-/* صورة من بلدي — admin.js | نسخة المختبر م1 */
-const KIND_AR={city:'مدينة',village:'قرية',landmark:'معلم'};
-/* ====== مراسلة الإدارة ====== */
-const FB_AR={suggestion:'💡 اقتراح',complaint:'⚠️ شكوى',question:'❓ استفسار',other:'📝 أخرى'};
-async function sendFeedback(){
-  const kind=$('fbKind').value,body=$('fbBody').value.trim();
-  if(body.length<3)return toast('اكتب رسالتك أول',true);
-  const b=$('fbGo');b.disabled=true;b.textContent='⏳';
-  const { error } = await sb.from('feedback').insert({user_id:USER.id,kind,body});
-  b.disabled=false;b.textContent='إرسال 📨';
-  if(error){toast('تعذر الإرسال: '+error.message,true);return}
-  $('fbBody').value='';
-  toast('وصلت رسالتك للإدارة، شكراً لك 🙏');
-}
-async function loadFb(){
-  $('admFb').innerHTML='<div class="empty">⏳</div>';
-  const { data, error } = await sb.from('feedback').select('*, profiles!user_id(display_name)').order('created_at',{ascending:false});
-  if(error){$('admFb').innerHTML=`<div class="empty">⚠️ ${error.message}</div>`;return}
-  if(!data.length){$('admFb').innerHTML='<div class="empty">📭 ما فيه رسائل بعد</div>';return}
-  $('admFb').innerHTML=data.map(f=>`
-    <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:10px;${f.status==='done'?'opacity:.55':''}">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:10px;background:var(--card2);border:1px solid var(--line)">${FB_AR[f.kind]||f.kind}</span>
-        <span style="font-size:11px;color:var(--txt-dim)">${esc(f.profiles?.display_name||'زائر')} · ${new Date(f.created_at).toLocaleDateString('ar-SA')}</span>
-      </div>
-      <div style="font-size:14px;line-height:1.8;margin-bottom:10px">${esc(f.body)}</div>
-      <div style="display:flex;gap:8px">
-        ${f.status==='new'
-          ?`<button class="btn" style="font-size:12px;padding:7px 14px;background:var(--qblue)" onclick="fbReply(${f.id})">💬 رد</button>
-           <button class="btn" style="font-size:12px;padding:7px 14px;background:var(--palm)" onclick="fbDone(${f.id})">✓ تم التعامل</button>`
-          :`<span style="font-size:12px;color:var(--palm);font-weight:700;padding:7px 0">✓ منتهية</span>`}
-        <button class="btn" style="font-size:12px;padding:7px 14px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="fbDel(${f.id})">🗑️ حذف</button>
-      </div>
-    </div>`).join('');
-}
-async function fbReply(id){
-  const t=prompt('اكتب رد الإدارة على الرسالة:');
-  if(t===null||!t.trim())return;
-  const {error}=await sb.from('feedback').update({reply:t.trim(),status:'done'}).eq('id',id);
-  if(error){toast('فشل الرد: '+error.message,true);return}
-  // إشعار لصاحب الرسالة
+/* ====== البنر الترحيبي مرة وحدة ====== */
+function initHero(){
+  const el=$('hero');if(!el)return;
   try{
-    const fb=(await sb.from('feedback').select('user_id').eq('id',id).maybeSingle()).data;
-    if(fb&&fb.user_id){
-      pushNotify({
-        title:'💬 رد من الإدارة',
-        body:t.trim().slice(0,90),
-        url:'/',
-        user_ids:[fb.user_id]
-      });
-    }
-  }catch(e){}
-  toast('انرسل الرد 💬');loadFb();
+    if(localStorage.getItem('sowra_hero_seen')){el.style.display='none';return;}
+    el.style.display='block';
+  }catch(e){el.style.display='block';}
 }
-async function fbDone(id){
-  const { error } = await sb.from('feedback').update({status:'done'}).eq('id',id);
-  if(error){toast('فشلت العملية',true);return}
-  loadFb();
+function closeHero(){
+  $('hero').style.display='none';
+  try{localStorage.setItem('sowra_hero_seen','1')}catch(e){}
 }
-async function fbDel(id){
-  if(!confirm('حذف الرسالة نهائياً؟'))return;
-  const { error } = await sb.from('feedback').delete().eq('id',id);
-  if(error){toast('فشل الحذف',true);return}
-  loadFb();
+
+/* ====== البنر الجانبي للراعي ====== */
+function renderSponsorSide(){
+  const el=$('sponsorSide');if(!el)return;
+  const sp=window.__SPDATA;
+  if(!sp||!sp.side_active){el.style.display='none';return}
+  el.style.display='flex';
+  el.innerHTML=(sp.image_path?`<img src="${imgUrl(sp.image_path)}" alt="${esc(sp.sponsor_name||'')}">`:'')+
+    `<div class="sp-info">
+      <div class="sp-name">${esc(sp.sponsor_name||'راعي المنصة')}</div>
+      <div class="sp-cat">${esc(sp.sponsor_cat||'')}</div>
+    </div>
+    <button class="sp-side-btn" onclick="openSponsorsPage()">عروضنا ←</button>`;
 }
-function plcFillCities(){
-  const r=$('plcRegion').value,c=$('plcCity');
-  c.innerHTML='<option value="">المدينة (اختياري)</option>';
-  if(r&&GEO[r])GEO[r].forEach(x=>c.innerHTML+=`<option>${x}</option>`);
+
+/* صورة من بلدي — photos.js | نسخة المختبر م1 */
+/* ============ الأوسمة ============ */
+const BADGES = [
+  {k:'wall',  label:'📱 خلفية شاشة'},
+  {k:'mine',  label:'❤️ بحطها خلفية جوالي'},
+  {k:'global',label:'🌍 تدخل مسابقات عالمية'},
+  {k:'face',  label:'🇸🇦 واجهة تشرّف السعودية'},
+  {k:'print', label:'🖼️ تستاهل تنطبع لوحة'}
+];
+function topBadge(p){
+  const b=p.badge_counts||{};let best=null,bv=0;
+  for(const bd of BADGES)if((b[bd.k]||0)>bv){bv=b[bd.k];best=bd}
+  return bv>=2?best:null;
 }
-function renderPlaces(){
-  const reg=$('plcRegion'),sel=reg.value;
-  reg.innerHTML='<option value="">اختر المنطقة</option>';
-  for(const r in BASE_GEO)reg.innerHTML+=`<option>${r}</option>`;
-  if(sel)reg.value=sel;
-  plcFillCities();
-  $('plcList').innerHTML=customPlaces.length
-    ?customPlaces.map(c=>`
-      <div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px">
-        <div style="flex:1">
-          <b style="font-size:14px">${esc(c.name)}</b>
-          <div style="font-size:11px;color:var(--txt-dim)">${KIND_AR[c.kind]}${c.city?' · '+esc(c.city):''} · ${esc(c.region)}</div>
-        </div>
-        <button class="btn" style="font-size:12px;padding:7px 12px" onclick="admDelPlace(${c.id},'${esc(c.name).replace(/'/g,"\\'")}')">🗑️ حذف</button>
-      </div>`).join('')
-    :`<div class="empty">ما فيه أماكن مضافة بعد — كل اللي تضيفه هنا يظهر فوراً بقوائم التطبيق</div>`;
+
+/* ============ الحالة ============ */
+let photos=[], sortMode='top', curId=null, curPhoto=null, catFilter='all';
+
+let myRating=0, myBadgeSet=new Set();
+const $=id=>document.getElementById(id);
+/* تعقيم النصوص — يمنع حقن أي كود في الصفحة */
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const starsTxt=v=>{let f=Math.round(v);return "★".repeat(f)+"☆".repeat(5-f)};
+function toast(m,err){const t=$('toast');t.textContent=m;t.className='toast'+(err?' err':'');t.style.display='block';setTimeout(()=>t.style.display='none',2600)}
+function imgUrl(path){return sb.storage.from('photos').getPublicUrl(path).data.publicUrl}
+function vidUrl(path){return sb.storage.from('videos').getPublicUrl(path).data.publicUrl}
+
+/* ============ تحميل الصور ============ */
+async function loadPhotos(){
+  const { data, error } = await sb.from('photos_ranked').select('*');
+  if(error){$('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${error.message}</div>`;return}
+  photos = data || [];
+  await loadVisitCounts();
+  await loadClaims();
+  if(typeof _viewMode!=='undefined'&&_viewMode==='map'){renderMap();}
+  else{render();}
 }
-async function admAddPlace(){
-  const region=$('plcRegion').value,city=$('plcCity').value,name=$('plcName').value.trim(),kind=$('plcKind').value;
-  if(!region)return toast('اختر المنطقة',true);
-  if(name.length<2)return toast('اكتب اسم المكان',true);
-  const { error } = await sb.from('custom_places').insert({region,city,name,kind});
-  if(error){
-    toast(error.code==='23505'?'المكان مضاف من قبل':'تعذرت الإضافة: '+error.message,true);
-    return;
+
+/* ============ الفلاتر والعرض ============ */
+function initSelects(){
+  const fr=$('fRegion'),ar=$('aRegion');
+  fr.innerHTML='<option value="">كل المناطق</option>';
+  ar.innerHTML='<option value="">اختر المنطقة</option>';
+  for(const r in GEO){fr.innerHTML+=`<option>${r}</option>`;ar.innerHTML+=`<option>${r}</option>`;}
+}
+function fillCities(){
+  const r=$('fRegion').value,c=$('fCity');
+  c.innerHTML='<option value="">كل المدن</option>';
+  if(r)GEO[r].forEach(x=>c.innerHTML+=`<option>${x}</option>`);
+}
+function fillAddCities(){
+  const r=$('aRegion').value,c=$('aCity');
+  c.innerHTML='<option value="">اختر المدينة</option>';
+  if(r)GEO[r].forEach(x=>c.innerHTML+=`<option>${x}</option>`);
+  $('villList').innerHTML=(r&&VILL[r]?VILL[r]:[]).map(v=>`<option value="${v}">`).join('');
+}
+
+
+function render(){
+  if(_viewMode==='map')return;
+  const q=$('q').value.trim(), r=$('fRegion').value, c=$('fCity').value;
+  const mw=$('mapWrap');if(mw)mw.style.display='none';
+  $('feed').style.display='';
+  const abroadView=sortMode==='abroad';
+  let list=photos.filter(p=>!!p.abroad===abroadView&&p.media_type!=='video');
+  if(catFilter!=='all')list=list.filter(p=>(p.category||'other')===catFilter);
+  if(abroadView){
+    list=list.filter(p=>!q||p.title.includes(q)||(p.country||'').includes(q));
+    list.sort((a,b)=>(b.avg_stars-a.avg_stars)||(b.ratings_count-a.ratings_count)||(new Date(b.created_at)-new Date(a.created_at)));
+  }else{
+    list=list.filter(p=>
+      (!r||p.region===r)&&(!c||p.city===c)&&
+      (!q||p.title.includes(q)||(p.village||'').includes(q)||p.city.includes(q)||p.region.includes(q))
+    );
+    list.sort((a,b)=>sortMode==='top'
+      ?(b.avg_stars-a.avg_stars)||(b.ratings_count-a.ratings_count)
+      :new Date(b.created_at)-new Date(a.created_at));
   }
-  $('plcName').value='';
-  toast('انضاف المكان ✅');
-  await loadPlaces();renderPlaces();
-}
-async function admDelPlace(id,name){
-  if(!confirm(`حذف «${name}» من القوائم؟ (الصور المنشورة عليه ما تتأثر)`))return;
-  const { error } = await sb.from('custom_places').delete().eq('id',id);
-  if(error){toast('تعذر الحذف',true);return}
-  toast('انحذف المكان');
-  await loadPlaces();renderPlaces();
-}
-function admRender(){
-  let list=admTab==='rep'?admPhotos.filter(p=>(admReps[p.id]||0)>0||p.hidden):admPhotos;
-  if(!list.length){$('admList').innerHTML=`<div class="empty">${admTab==='rep'?'✅ ما فيه بلاغات — الساحة نظيفة':'ما فيه صور'}</div>`;return}
-  $('admList').innerHTML=list.map(p=>{
-    const rc=admReps[p.id]||0;
-    return `<div class="card" style="margin-bottom:12px;cursor:default">
-      <div class="ph" style="height:150px"><img src="${imgUrl(p.image_path)}" loading="lazy"></div>
-      <div class="card-body">
-        <div class="card-title">#${p.id} · ${esc(p.title)}</div>
-        <div class="card-meta" style="margin-bottom:8px"><span>📷 ${p.profiles?.display_name||'?'} · 📍 ${p.city}</span></div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-          ${rc?`<span style="font-size:11px;padding:3px 9px;border-radius:10px;font-weight:700;background:rgba(242,179,61,.15);color:var(--star);border:1px solid var(--star)">🚩 ${rc} بلاغ</span>`:''}
-          ${p.hidden?`<span style="font-size:11px;padding:3px 9px;border-radius:10px;font-weight:700;background:rgba(192,57,43,.15);color:var(--sadu);border:1px solid var(--sadu)">مخفية</span>`:''}
-          ${p.profiles?.banned?`<span style="font-size:11px;padding:3px 9px;border-radius:10px;font-weight:700;background:rgba(192,57,43,.3);color:#fff;border:1px solid var(--sadu)">صاحبها محظور</span>`:''}
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn" style="font-size:12px;padding:8px 12px;${p.hidden?'background:var(--palm)':'background:var(--card2);border:1px solid var(--line)'}" onclick="admHide(${p.id},${!p.hidden})">${p.hidden?'👁️ إظهار':'🙈 إخفاء'}</button>
-          <button class="btn" style="font-size:12px;padding:8px 12px" onclick="admDel(${p.id},'${p.image_path}')">🗑️ حذف نهائي</button>
-          <button class="btn" style="font-size:12px;padding:8px 12px;background:var(--star);color:var(--ink)" onclick="admWeekAdd(${p.id})">🏆 رشّح</button>
-          <button class="btn" style="font-size:12px;padding:8px 12px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admClearBadges(${p.id})">🗳️ مسح الأوسمة</button>
-          <button class="btn" style="font-size:12px;padding:8px 12px;background:var(--star);color:var(--ink)" onclick="admAddToQuest(${p.id})">🗝️ لكنز</button>
-          <button class="btn" style="font-size:12px;padding:8px 12px;${p.profiles?.banned?'background:var(--palm)':'background:var(--card2);border:1px solid var(--line)'}" onclick="admBan('${p.user_id}',${!(p.profiles?.banned)})">${p.profiles?.banned?'فك الحظر':'⛔ حظر المصور'}</button>
-          ${rc?`<button class="btn" style="font-size:12px;padding:8px 12px;background:var(--card2);border:1px solid var(--line)" onclick="admClear(${p.id})">مسح البلاغات</button>`:''}
-        </div>
+  $('totalPill').textContent=`${photos.length} صورة · V1.1`;
+  const feed=$('feed');
+  if(!list.length){feed.innerHTML=`<div class="empty"><span class="big">🏜️</span>ما فيه صور بعد..<br>كن أول من يصوّر ديرته! اضغط + وشارك</div>`;return}
+  feed.innerHTML=list.map((p,i)=>{
+    const medal=((sortMode==='top'||sortMode==='abroad')&&i<3&&p.ratings_count>0)?['🥇','🥈','🥉'][i]:'';
+    const isV=p.media_type==='video';
+    return `<div class="mcard" onclick="openSheet(${p.id})">
+      ${isV
+        ? `<video src="${vidUrl(p.image_path)}#t=0.5" muted playsinline preload="metadata" style="width:100%;display:block;filter:${(p.filter_key&&p.filter_key!=='none'&&typeof filterCss==='function')?filterCss(p.filter_key):'none'}"></video>`
+        : `<img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="${esc(p.title)}">`}
+      ${medal?`<div class="mc-medal">${medal}</div>`:''}
+      ${VISIT_COUNTS[p.id]?`<div class="mc-visits">👣 ${VISIT_COUNTS[p.id]}</div>`:''}
+      ${CLAIM_MAP[p.id]?'<div class="mc-claim">🏅 سبق</div>':''}
+      ${p.visibility==='private'?'<div class="mc-lock">🔒 خاصة</div>':''}
+      ${p.media_type==='video'?'<div class="mc-vid">▶</div>':''}
+      <div class="mc-overlay">
+        <div class="mc-title">${esc(p.title)}</div>
+        <div class="mc-sub">${rankOf(p).ic} ${esc(p.photographer)} · ${p.abroad?esc(p.country||p.city):esc(p.village||p.city)} · 👁️ ${p.views||0}</div>
       </div>
     </div>`;
   }).join('');
 }
-async function admHide(id,hide){
-  const { error } = await sb.from('photos').update({hidden:hide}).eq('id',id);
-  if(error){toast('فشلت العملية',true);return}
-  toast(hide?'أُخفيت الصورة':'أُظهرت الصورة');
-  await openAdmin();await loadPhotos();
+
+/* ============ نافذة الصورة ============ */
+async function openSheet(id){
+  curId=id;curPhoto=photos.find(x=>x.id===id);
+   const p=curPhoto;
+  const isVid=p.media_type==='video';
+  const vfx=(p.filter_key&&p.filter_key!=='none'&&typeof filterCss==='function')?filterCss(p.filter_key):'none';
+  $('sPh').innerHTML=isVid
+    ? `<video controls playsinline webkit-playsinline preload="metadata" style="width:100%;height:100%;object-fit:contain;background:#000;filter:${vfx}"><source src="${vidUrl(p.image_path)}" type="video/mp4"></video>`
+    : `<img src="${imgUrl(p.image_path)}" onclick="zoomOpen(this.src)" alt="${esc(p.title)}">
+    <button class="zoombtn" id="zoomBtn" onclick="togglePhotoZoom()">⤢ عرض كامل</button>`;
+  if(!seenViews.has(p.id)){seenViews.add(p.id);try{sb.rpc('bump_view',{pid:p.id}).then(()=>{},()=>{})}catch(_){}}
+  $('sPh').classList.remove('full');
+  $('sTitle').textContent=p.title;
+  $('sLoc').innerHTML=(p.abroad?`🌍 عدسة مسافر · ${esc(p.country||p.city)} — عدسة ${esc(p.photographer)}`:`📍 ${esc(p.region)} · ${esc(p.city)}${p.village?' · '+esc(p.village):''} — عدسة ${esc(p.photographer)}`)
+    +`<br><a class="mapbtn" href="${p.lat?`https://maps.google.com/?q=${p.lat},${p.lng}`:`https://maps.google.com/?q=${encodeURIComponent(p.abroad?(p.country||p.city):((p.village?p.village+' ':'')+p.city+' '+p.region))}`}" target="_blank" rel="noopener">🗺️ افتح الموقع على قوقل ماب${p.lat?'':' (بحث بالاسم)'}</a>`;
+ 
+  renderFollow(p);
+  renderVisits(p);
+  renderClaim(p);
+  // الفيديو: نص تقييم مختلف وإخفاء الأوسمة
+  const rl=$('rateLabel');
+  if(rl)rl.textContent=isVid?'وش تقييمك للمقطع؟':'وش تقييمك للصورة؟';
+  const pb=$('pollBox');
+  if(pb)pb.style.display=isVid?'none':'block';
+  if(isVid&&p.music_key){
+    const lc=$('sLoc');
+    if(lc)lc.innerHTML+='<br><span style="font-size:12px;color:var(--txt-dim)">🎵 '+esc(p.music_key)+'</span>';
+  }
+  const shb=$('shareBtn');
+  if(shb)shb.onclick=function(){shareCard(p)};
+  const dbw=$('deleteBtn');
+  if(dbw){
+    const isMine=!!(USER && p.user_id===USER.id);
+    dbw.style.display=isMine?'block':'none';
+    if(isMine){
+      const dbi=$('deleteBtnInner');
+      if(dbi)dbi.onclick=function(){deleteMyPhoto(p.id,p.image_path)};
+      // زر السحب للخزنة
+      let vb=document.getElementById('vaultBtn');
+      if(!vb){
+        vb=document.createElement('button');
+        vb.id='vaultBtn';
+        vb.style.cssText="background:none;border:none;color:var(--txt-dim);font-family:'Tajawal';font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;display:block;margin:6px auto 0";
+        dbw.appendChild(vb);
+      }
+      const isPriv=p.visibility==='private';
+      vb.textContent=isPriv?'📢 انشرها للجميع':'🔒 اسحبها لخزنتي';
+      vb.onclick=function(){isPriv?publishFromVault(p.id):moveToVault(p.id)};
+    }
+  }
+  $('overlay').classList.add('show');
+  document.body.style.overflow='hidden';
+  // تقييمي وأوسمتي وتعليقات — من القاعدة
+  myRating=0;myBadgeSet=new Set();
+  drawStars();renderPoll();
+  $('cList').innerHTML='<div class="loader" style="padding:10px">⏳</div>';
+  const [rt,bd,cm]=await Promise.all([
+    sb.from('ratings').select('stars').eq('photo_id',id).eq('user_id',USER.id).maybeSingle(),
+    sb.from('badge_votes').select('badge_key').eq('photo_id',id).eq('user_id',USER.id),
+    sb.from('comments').select('body,created_at,profiles!user_id(display_name)').eq('photo_id',id).order('created_at')
+  ]);
+  myRating=rt.data?rt.data.stars:0;
+  (bd.data||[]).forEach(x=>myBadgeSet.add(x.badge_key));
+  curPhoto._comments=(cm.data||[]);
+  $('thanks').style.display=myRating?'block':'none';
+  drawStars();renderPoll();renderComments();
 }
-async function admDel(id,path){
-  if(!confirm('حذف نهائي؟ لا يمكن التراجع.'))return;
-  const it=(admPhotos||[]).find(x=>x.id===id)||photos.find(x=>x.id===id);
-  const isVid=it&&it.media_type==='video';
-  const { error } = await sb.from('photos').delete().eq('id',id);
-  if(error){toast('فشل الحذف',true);return}
+function rankOf(p){
+  const ph=p.photographer_photos||0, fo=p.followers_count||0;
+  if(ph>=15&&fo>=10)return{ic:'🏆',t:'عين الديرة',c:'gold'};
+  if(ph>=5||fo>=5)  return{ic:'📸',t:'عدسة الديرة',c:'silver'};
+  return{ic:'🌱',t:'مستكشف',c:'bronze'};
+}
+const seenViews=new Set();
+/* ====== المفضلة ====== */
+let favSet=new Set();
+async function loadFavs(){
+  if(!USER)return;
+  try{
+    const r=await sb.from('favorites').select('photo_id').eq('user_id',USER.id);
+    favSet=new Set((r.data||[]).map(x=>x.photo_id));
+  }catch(e){}
+}
+async function toggleFav(pid){
+  if(!USER){toast('تعذر الحفظ — أعد تحميل الصفحة',true);return}
+  if(favSet.has(pid)){
+    favSet.delete(pid);
+    await sb.from('favorites').delete().eq('user_id',USER.id).eq('photo_id',pid);
+    toast('انشالت من مفضلتك');
+  }else{
+    favSet.add(pid);
+    const {error}=await sb.from('favorites').insert({user_id:USER.id,photo_id:pid});
+    if(error){favSet.delete(pid);toast('تعذر الحفظ — نفّذ سكربت v15',true);return}
+    toast('انحفظت بمفضلتك ❤️');
+  }
+  if(curPhoto)renderFollow(curPhoto);
+  if($('page-favs').classList.contains('on'))renderFavs();
+}
+function openFavs(){
+  go('favs');
+  renderFavs();
+}
+function renderFavs(){
+  const list=photos.filter(p=>favSet.has(p.id));
+  $('favFeed').innerHTML=list.length?list.map(p=>`
+    <div class="card" onclick="openSheet(${p.id})">
+      <div class="ph"><img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" alt="${esc(p.title)}" loading="lazy">
+        <div class="loc-chip">${p.abroad?'🌍 '+esc(p.country||p.city):'📍 '+esc(p.village||p.city)}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${esc(p.title)}</div>
+        <div class="card-meta"><span class="who">${rankOf(p).ic} ${esc(p.photographer)}</span><span>⭐ ${Number(p.avg_stars).toFixed(1)}</span></div>
+      </div>
+    </div>`).join('')
+  :'<div class="empty" style="grid-column:1/-1"><span class="big">🤍</span>مفضلتك فاضية — افتح أي صورة واضغط «حفظ»</div>';
+}
+async function renderFollow(p){
+  const el=$('sFollow');if(!el)return;
+  const mine=USER&&p.user_id===USER.id;
+  let following=false;
+  if(USER&&!USER.is_anonymous&&!mine){
+    const r=await sb.from('follows').select('follower_id').eq('follower_id',USER.id).eq('followed_id',p.user_id).maybeSingle();
+    following=!!r.data;
+  }
+  const rk=rankOf(p);
+  el.innerHTML=`<span class="rankchip r-${rk.c}" style="cursor:pointer" onclick="closeSheet();openProfile('${p.user_id}')">${rk.ic} ${rk.t}</span><span class="fcount">👥 ${p.followers_count||0} متابع</span>`
+    +(mine?'':`<button class="fbtn ${following?'on':''}" onclick="toggleFollow('${p.user_id}',${following})">${following?'✓ متابَع':'＋ متابعة'}</button>`)
+    +`<button class="fbtn fav ${favSet.has(p.id)?'on':''}" onclick="toggleFav(${p.id})">${favSet.has(p.id)?'❤️ بالمفضلة':'🤍 حفظ'}</button>`;
+}
+async function toggleFollow(uid,isF){
+  if(!USER||USER.is_anonymous){toast('سجّل أول عشان تتابع المصورين 👥');closeSheet();openAcc();return}
+  if(isF){await sb.from('follows').delete().eq('follower_id',USER.id).eq('followed_id',uid);}
+  else{
+    const{error}=await sb.from('follows').insert({follower_id:USER.id,followed_id:uid});
+    if(error){toast('تعذرت المتابعة',true);return}
+    toast('صرت متابعاً 👥');
+  }
+  await refreshOne();
+  renderFollow(curPhoto);
+}
+function closeSheet(){$('overlay').classList.remove('show');document.body.style.overflow=''}
+function togglePhotoZoom(){
+  const full=$('sPh').classList.toggle('full');
+  $('zoomBtn').textContent=full?'⤡ تصغير':'⤢ عرض كامل';
+}
+
+function drawStars(){
+  $('bigStars').innerHTML=[1,2,3,4,5].map(n=>
+    `<button class="${n<=myRating?'lit':''}" onclick="rate(${n})">★</button>`).join('');
+  $('sAvg').textContent=`المتوسط ${Number(curPhoto.avg_stars).toFixed(1)} من 5 · ${curPhoto.ratings_count} تقييم`;
+}
+async function rate(n){
+  const prev=myRating;myRating=n;drawStars();
+  const { error } = await sb.from('ratings').upsert({photo_id:curId,user_id:USER.id,stars:n});
+  if(error){myRating=prev;drawStars();toast('تعذر حفظ التقييم',true);return}
+  $('thanks').style.display='block';
+  await refreshOne();
+}
+
+function renderPoll(){
+  const b=curPhoto.badge_counts||{};
+  $('pollChips').innerHTML=BADGES.map(bd=>
+    `<div class="chip ${myBadgeSet.has(bd.k)?'on':''}" onclick="voteBadge('${bd.k}')">${bd.label}<span class="n">${b[bd.k]||0}</span></div>`
+  ).join('');
+}
+async function voteBadge(k){
+  if(myBadgeSet.has(k)){
+    myBadgeSet.delete(k);renderPoll();
+    await sb.from('badge_votes').delete().eq('photo_id',curId).eq('user_id',USER.id).eq('badge_key',k);
+  }else{
+    myBadgeSet.add(k);renderPoll();
+    const { error } = await sb.from('badge_votes').insert({photo_id:curId,user_id:USER.id,badge_key:k});
+    if(error){myBadgeSet.delete(k);renderPoll();toast('تعذر التصويت',true);return}
+  }
+  await refreshOne();
+}
+
+function renderComments(){
+  const list=curPhoto._comments||[];
+  $('cCount').textContent=`(${list.length})`;
+  $('cList').innerHTML=list.length
+    ?list.map(c=>`<div class="comment"><b>${esc(c.profiles?.display_name||'زائر')}</b>${esc(c.body)}</div>`).join('')
+    :`<div style="color:var(--txt-dim);font-size:13px;padding:6px 2px">كن أول من يعلق ✍️</div>`;
+}
+async function reportPhoto(){
+  if(!confirm('هل أنت متأكد أن هذه الصورة مخالفة؟ البلاغات الكيدية قد تعرّض حسابك للحظر.'))return;
+  const { error } = await sb.from('reports').insert({photo_id:curId,user_id:USER.id});
+  if(error){
+    if(error.code==='23505')toast('سبق أن أبلغت عن هذه الصورة');
+    else toast('تعذر إرسال البلاغ',true);
+    return;
+  }
+  toast('وصل بلاغك، شكراً لحرصك 🙏');
+}
+
+async function addComment(){
+  if(!USER || USER.is_anonymous){toast('سجّل أول عشان تعلق ✍️');closeSheet();openAcc();return}
+  const t=$('cText').value.trim();if(!t)return;
+  const { error } = await sb.from('comments').insert({photo_id:curId,user_id:USER.id,body:t});
+  if(error){toast('تعذر إرسال التعليق',true);return}
+  $('cText').value='';
+  const cm=await sb.from('comments').select('body,created_at,profiles!user_id(display_name)').eq('photo_id',curId).order('created_at');
+  curPhoto._comments=cm.data||[];renderComments();
+}
+
+/* تحديث بيانات صورة واحدة من العرض المجمّع */
+async function refreshOne(){
+  const { data } = await sb.from('photos_ranked').select('*').eq('id',curId).single();
+  if(data){
+    const i=photos.findIndex(x=>x.id===curId);
+    if(i>-1)photos[i]={...data,_comments:curPhoto._comments};
+    curPhoto=photos[i];
+    drawStars();renderPoll();render();
+  }
+}
+
+/* ====== عارض الزوم ====== */
+let lbW=100;
+function zoomOpen(src){
+  lbW=100;
+  const im=$('lbImg');im.src=src;im.style.width='100%';
+  $('lightbox').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function zoomClose(){
+  $('lightbox').classList.remove('show');
+  document.body.style.overflow='';
+}
+function lbScaleBy(f){
+  lbW=Math.min(600,Math.max(100,lbW*f));
+  $('lbImg').style.width=lbW+'%';
+}
+function lbDbl(){lbW=lbW>100?100:250;$('lbImg').style.width=lbW+'%';}
+
+/* ====== الخريطة التفاعلية ====== */
+let MAP=null,MARKS=null;
+function renderMap(){
+  const wrap=$('mapWrap');
+  wrap.style.display='block';$('feed').style.display='none';
+  if(typeof L==='undefined'){wrap.innerHTML='<div class="empty">⚠️ تعذر تحميل الخريطة — تأكد من رفع leaflet.js وleaflet.css</div>';return}
+  if(!MAP){
+    MAP=L.map('map',{zoomControl:true,attributionControl:true}).setView([23.9,45.1],5);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(MAP);
+    MARKS=L.layerGroup().addTo(MAP);
+    // زر العودة لموقعي
+    const ZoomHome=L.Control.extend({
+      options:{position:'topright'},
+      onAdd:function(){
+        const b=L.DomUtil.create('button','');
+        b.innerHTML='📍';
+        b.title='موقعي';
+        b.style.cssText='width:38px;height:38px;background:#fff;border:2px solid rgba(0,0,0,.2);border-radius:8px;font-size:18px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2)';
+        b.onclick=function(e){
+          e.stopPropagation();
+          if(window.__USER_LAT)MAP.setView([window.__USER_LAT,window.__USER_LNG],13);
+          else toast('فعّل الموقع أولاً',true);
+        };
+        return b;
+      }
+    });
+    MAP.addControl(new ZoomHome());
+    // زر المناطق قليلة التغطية
+    const GapBtn=L.Control.extend({
+      options:{position:'topright'},
+      onAdd:function(){
+        const b=L.DomUtil.create('button','');
+        b.id='gapBtn';
+        b.innerHTML='🔍';
+        b.title='مناطق قليلة التغطية';
+        b.style.cssText='width:38px;height:38px;background:#fff;border:2px solid rgba(0,0,0,.2);border-radius:8px;font-size:17px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);margin-top:6px';
+        b.onclick=function(e){e.stopPropagation();toggleGaps();};
+        return b;
+      }
+    });
+    MAP.addControl(new GapBtn());
+  }
+  MARKS.clearLayers();
+  const q=($('q').value||'').trim();
+  const list=photos.filter(p=>p.lat&&p.lng&&p.media_type!=='video'
+    &&(catFilter==='all'||(p.category||'other')===catFilter)
+    &&(!q||p.title.includes(q)||(p.village||'').includes(q)||(p.city||'').includes(q)||(p.country||'').includes(q)));
+  const pts=[];
+  list.forEach(p=>{
+    const ic=L.divIcon({className:'',html:`<div class="pmark"><img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'"></div>`,iconSize:[46,46],iconAnchor:[23,23]});
+    L.marker([p.lat,p.lng],{icon:ic}).addTo(MARKS).on('click',()=>openSheet(p.id));
+    pts.push([p.lat,p.lng]);
+  });
+ // التمركز الذكي: موقع المستخدم أولاً، وإلا كل الصور
+  if(window.__USER_LAT && !MAP._userCentered){
+    MAP.setView([window.__USER_LAT,window.__USER_LNG],11);
+    MAP._userCentered=true;
+  } else if(pts.length && !MAP._userCentered){
+    MAP.fitBounds(pts,{padding:[46,46],maxZoom:12});
+  }
+  // دبوس الراعي
+  const spd=window.__SPDATA;
+  if(spd&&spd.active&&spd.image_path&&spd.sponsor_lat&&spd.sponsor_lng){
+    const sic=L.divIcon({className:'',html:`<div class="pmark sp-pin"><img src="${imgUrl(spd.image_path)}"><div class="sp-pin-label">${esc(spd.sponsor_name||'راعي')}</div></div>`,iconSize:[54,66],iconAnchor:[27,66]});
+    L.marker([spd.sponsor_lat,spd.sponsor_lng],{icon:sic,zIndexOffset:1000}).addTo(MARKS).on('click',()=>openSponsorsPage());
+  }
+  setTimeout(()=>{MAP.invalidateSize();if(window.__USER_LAT)addUserPin(window.__USER_LAT,window.__USER_LNG);},120);
+  const sp=window.__SPDATA;
+  $('mapSponsor').innerHTML=(sp&&sp.active&&sp.image_path)
+    ?((sp.link_url?`<a href="${esc(sp.link_url)}" target="_blank" rel="noopener">`:'')+`<img src="${imgUrl(spd.image_path)}" alt="راعي المنصة">`+(sp.link_url?'</a>':''))
+    :'';
+}
+
+/* ====== دبوس موقع المستخدم بالخريطة ====== */
+let _userPin=null;
+function addUserPin(lat,lng){
+  if(!MAP||typeof L==='undefined')return;
+  if(_userPin)_userPin.remove();
+  const ic=L.divIcon({className:'',html:'<div class="user-pin">📍<div class="user-pin-label">موقعي</div></div>',iconSize:[40,52],iconAnchor:[20,52]});
+  _userPin=L.marker([lat,lng],{icon:ic,zIndexOffset:2000}).addTo(MAP);
+}
+
+/* ====== تبديل العرض مع حفظ الحالة ====== */
+function setView(v){
+  _viewMode=v;
+  $('vtGrid').classList.toggle('on',v==='grid');
+  $('vtMap').classList.toggle('on',v==='map');
+  const feed=$('feed');
+  const map=$('mapWrap');
+  const nearby=$('nearbyWrap');
+  if(v==='map'){
+    if(feed)feed.style.display='none';
+    if(nearby)nearby.style.display='none';
+    if(map)map.style.display='block';
+    renderMap();
+  } else {
+    if(map)map.style.display='none';
+    if(feed)feed.style.display='';
+    render();
+  }
+}
+/* ====== حذف الصورة لصاحبها ====== */
+async function deleteMyPhoto(pid,path){
+  try{
+    const r=await sb.from('weekly_entries').select('id').eq('photo_id',pid).maybeSingle();
+    if(r&&r.data){toast('⚠️ الصورة مرشحة بمسابقة — لا يمكن حذفها الآن',true);return}
+  }catch(e){}
+  if(!confirm('حذف الصورة نهائياً؟ لا يمكن التراجع.'))return;
+  const ph=photos.find(x=>x.id===pid);
+  const isVid=ph&&ph.media_type==='video';
   try{
     if(isVid) await sb.storage.from('videos').remove([path]);
     else await sb.storage.from('photos').remove([path,path.replace('.jpg','_t.jpg')]);
   }catch(e){}
-  toast(isVid?'حُذف الفيديو نهائياً':'حُذفت الصورة نهائياً');
-  await openAdmin();await loadPhotos();
+  const {error}=await sb.from('photos').delete().eq('id',pid).eq('user_id',USER.id);
+  if(error){toast('تعذر الحذف: '+error.message,true);return}
+  toast(isVid?'انحذف الفيديو ✅':'انحذفت الصورة ✅');
+  closeSheet();
+  await loadPhotos();
 }
-async function admBan(uid,ban){
-  if(ban&&!confirm('حظر المصور؟ لن يستطيع النشر أو التعليق.'))return;
-  const { error } = await sb.from('profiles').update({banned:ban}).eq('id',uid);
-  if(error){toast('فشلت العملية',true);return}
-  toast(ban?'تم حظر المصور ⛔':'فُك الحظر');
-  await openAdmin();
-}
-async function admClear(id){
-  const { error } = await sb.from('reports').delete().eq('photo_id',id);
-  if(error){toast('فشلت العملية',true);return}
-  toast('مُسحت البلاغات');
-  await openAdmin();
-}
+/* ====== بروفايل المصور ====== */
+let PROF_UID='', PROF_TAB='public';
 
+async function openProfile(uid){
+  go('profile');
+  PROF_UID=uid;PROF_TAB='public';
+  $('profHead').innerHTML='<div class="loader">⏳</div>';
+  const r=await sb.from('profiles').select('display_name,bio,region').eq('id',uid).maybeSingle();
+  const pr=r.data||{};
+  const mine=photos.filter(x=>x.user_id===uid);
+  const totV=mine.reduce((s,x)=>s+(x.views||0),0);
+  const rk=mine.length?rankOf(mine[0]):{ic:'🌱',t:'مستكشف',c:'bronze'};
+  const fo=mine.length?(mine[0].followers_count||0):0;
+  const isMe=!!(USER&&USER.id===uid);
 
-/* ====== إدارة لقطة الأسبوع ====== */
-let CW=null;
-async function loadAdmWeek(){
-  $('admWk').innerHTML='<div class="empty">⏳</div>';
-  const c=await sb.from('weekly_contest').select('*').order('id',{ascending:false}).limit(1).maybeSingle();
-  CW=c.data||null;
-  let entries=[];
-  if(CW){
-    const en=await sb.from('weekly_entries').select('photo_id').eq('contest_id',CW.id);
-    const ids=(en.data||[]).map(e=>e.photo_id);
-    entries=admPhotos.filter(p=>ids.includes(p.id));
-    if(!admPhotos.length){
-      const ph=await sb.from('photos').select('id,title').in('id',ids.length?ids:[0]);
-      entries=ph.data||[];
-    }
-  }
-  $('admWk').innerHTML=`
-    <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px">
-      <div style="font-weight:700;font-size:14px;margin-bottom:10px">🏆 مسابقة لقطة الأسبوع ${CW?`<span style="font-size:11px;padding:3px 10px;border-radius:10px;font-weight:700;${CW.active?'background:rgba(46,139,87,.15);color:var(--palm);border:1px solid var(--palm)':'background:var(--card2);color:var(--txt-dim);border:1px solid var(--line)'}">${CW.ended_at?'🏁 منتهية — الفائز أُعلن':(CW.active?'● نشطة الآن':'○ متوقفة')}</span>`:''}</div>
-      <input id="wkLabel" placeholder="وسم الأسبوع (مثال: أسبوع الغروب)" value="${CW?esc(CW.week_label):''}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
-      <input id="wkSponsor" placeholder="اسم الراعي (اختياري)" value="${CW?esc(CW.sponsor_name):''}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
-      <input id="wkPrize" placeholder="الجائزة (اختياري)" value="${CW?esc(CW.prize):''}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:10px">
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${CW&&CW.ended_at?'':'<button class="btn" style="flex:1" onclick="admWeekSave()">'+(CW?'💾 حفظ البيانات':'➕ إنشاء المسابقة')+'</button>'}
-        ${CW&&!CW.ended_at?`<button class="btn" style="flex:1;${CW.active?'background:var(--card2);border:1px solid var(--line);color:var(--txt)':'background:var(--palm)'}" onclick="admWeekToggle()">${CW.active?'⏸️ إيقاف':'▶️ تفعيل للجمهور'}</button>`:''}
-        ${CW&&CW.active?`<button class="btn" style="flex:1;background:var(--star);color:var(--ink)" onclick="admWeekEnd()">🏁 إنهاء وإعلان الفائز</button>`:''}
-        ${CW&&CW.ended_at?`<button class="btn" style="flex:1;background:var(--palm)" onclick="admWeekNew()">➕ مسابقة جديدة</button>`:''}
-        ${CW?`<button class="btn" style="flex:0 0 auto;background:var(--sadu)" onclick="admWeekDelete()">🗑️</button>`:''}
+  $('profHead').innerHTML=`
+    <div class="prof-card">
+      <div class="prof-name">${esc(pr.display_name||'مصوّر')}</div>
+      <span class="rankchip r-${rk.c}">${rk.ic} ${rk.t}</span>
+      ${pr.region?`<div class="prof-bio">📍 ${esc(pr.region)}</div>`:''}
+      ${pr.bio?`<div class="prof-bio">${esc(pr.bio)}</div>`:''}
+      <div class="prof-stats">
+        <div class="prof-stat"><b>${mine.filter(x=>x.visibility!=='private').length}</b><span>صورة</span></div>
+        <div class="prof-stat"><b>${fo}</b><span>متابع</span></div>
+        <div class="prof-stat"><b>${totV}</b><span>مشاهدة</span></div>
       </div>
+      <div class="prof-badges" id="profBadges"></div>
     </div>
-    <div style="font-weight:700;font-size:14px;margin-bottom:8px">اللقطات المرشحة (${entries.length}/5) <span style="font-size:11px;color:var(--txt-dim);font-weight:400">— رشّح من تبويب 🗂️ بزر 🏆</span></div>
-    ${entries.length?entries.map(p=>`
-      <div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px">
-        <div style="flex:1"><b style="font-size:13px">#${p.id} · ${esc(p.title)}</b></div>
-        <button class="btn" style="font-size:12px;padding:7px 12px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admWeekRemove(${p.id})">إزالة</button>
-      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + admChallengeBlock() + admVideoBlock() + admCleanupBlock() + await admSpBlock() + admSponsorsBtn() + admSponsorSideBlock() +  admGoogleLoginBlock() + admMaintBlock();
-}
-/* ====== بنر الراعي ====== */
-async function admSpBlock(){
-  const r=await sb.from('site_banner').select('*').eq('id',1).maybeSingle();
-  const b=r.data||{active:false,image_path:'',link_url:''};
-  window.__SPB=b;
-  return `
-  <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:16px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:6px">📣 بنر الراعي (رأس الصفحة) ${b.active?'<span style="font-size:11px;color:var(--palm);font-weight:700">● ظاهر</span>':'<span style="font-size:11px;color:var(--txt-dim)">○ مخفي</span>'}</div>
-    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px;line-height:1.8">📐 مقاس التصميم: <b>1600 × 400 بكسل</b> (نسبة 4:1) · JPG أو PNG · يفضل أقل من 300KB</div>
-    ${b.image_path?`<img src="${imgUrl(b.image_path)}" style="width:100%;aspect-ratio:4/1;object-fit:cover;border-radius:10px;border:1px solid var(--line);margin-bottom:10px">`:''}
-    <input type="file" id="spFile" accept="image/*" style="display:none" onchange="admSpUpload(this.files[0])">
-    <input id="spName" placeholder="اسم الراعي (مثال: متجر عدسة)" value="${esc(b.sponsor_name||'')}"/>
-    <input id="spCat" placeholder="النشاط (مثال: معدات تصوير)" value="${esc(b.sponsor_cat||'')}"/>
-    <div style="display:flex;gap:8px;margin-bottom:8px">
-      <input id="spLat" placeholder="خط العرض (اختياري)" type="number" step="any" value="${b.sponsor_lat||''}" style="flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;direction:ltr">
-      <input id="spLng" placeholder="خط الطول (اختياري)" type="number" step="any" value="${b.sponsor_lng||''}" style="flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;direction:ltr">
-    </div>
-    <textarea id="spDeal" placeholder="عرض الراعي (اختياري — مثال: خصم 15% على معدات التصوير)" rows="2" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;resize:none;margin-bottom:8px">${esc(b.sponsor_deal||'')}</textarea>
-    <input id="spCode" placeholder="كود الخصم (اختياري — مثال: SOWRA15)" value="${esc(b.sponsor_code||'')}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px;direction:ltr;text-align:left;letter-spacing:1px">
-    <input id="spLink" placeholder="رابط الراعي عند الضغط (اختياري)" value="${esc(b.link_url)}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:10px;direction:ltr;text-align:left">
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn" style="flex:1" onclick="$('spFile').click()">📤 ${b.image_path?'تغيير الصورة':'رفع صورة البنر'}</button>
-      <button class="btn" style="flex:1;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admSpSaveLink()">💾 حفظ الرابط</button>
-      ${b.image_path?`<button class="btn" style="flex:1;${b.active?'background:var(--card2);border:1px solid var(--line);color:var(--txt)':'background:var(--palm)'}" onclick="admSpToggle()">${b.active?'🙈 إخفاء':'👁️ تفعيل'}</button>`:''}
-      ${b.image_path?`<button class="btn" style="flex:0 0 auto;background:var(--sadu)" onclick="admSpDelete()">🗑️ حذف</button>`:''}
-    </div>
-  </div>`;
-}
-async function admSpUpload(f){
-  if(!f)return;
-  toast('⏳ جاري رفع البنر...');
-  const blob=await compressTo(f,1600,0.88);
-  const path=`banners/sponsor_${Date.now()}.jpg`;
-  const up=await sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',cacheControl:'31536000'});
-  if(up.error){toast('فشل الرفع: '+up.error.message,true);return}
-  const {error}=await sb.from('site_banner').update({image_path:path,sponsor_name:$('spName').value.trim(),sponsor_cat:$('spCat').value.trim(),sponsor_lat:parseFloat($('spLat').value)||null,sponsor_lng:parseFloat($('spLng').value)||null,sponsor_deal:$('spDeal').value.trim(),sponsor_code:$('spCode').value.trim(),updated_at:new Date().toISOString()}).eq('id',1);
-  if(error){toast('فشل الحفظ',true);return}
-  toast('ارتفع البنر ✅ — فعّله متى ما جهزت');
-  await loadAdmWeek();loadSponsor();
-}
-async function admSpSaveLink(){
-  const {error}=await sb.from('site_banner').update({link_url:$('spLink').value.trim(),sponsor_name:$('spName').value.trim(),sponsor_cat:$('spCat').value.trim(),sponsor_lat:parseFloat($('spLat').value)||null,sponsor_lng:parseFloat($('spLng').value)||null,sponsor_deal:$('spDeal').value.trim(),sponsor_code:$('spCode').value.trim()}).eq('id',1);
-  if(error){toast('فشل الحفظ',true);return}
-  toast('انحفظ الرابط ✅');loadSponsor();
-}
-async function admSpToggle(){
-  const b=window.__SPB;
-  const {error}=await sb.from('site_banner').update({active:!b.active}).eq('id',1);
-  if(error){toast('فشلت العملية',true);return}
-  toast(b.active?'اختفى البنر':'انطلق البنر برأس الصفحة 📣');
-  await loadAdmWeek();loadSponsor();
-}
+    ${isMe?`<div class="prof-tabs" id="profTabs"></div>`:''}`;
 
-async function admWeekSave(){
-  const data={week_label:$('wkLabel').value.trim(),sponsor_name:$('wkSponsor').value.trim(),prize:$('wkPrize').value.trim()};
-  const q=CW?sb.from('weekly_contest').update(data).eq('id',CW.id):sb.from('weekly_contest').insert({...data,active:false});
-  const {error}=await q;
-  if(error){toast('تعذر الحفظ: '+error.message,true);return}
-  toast('انحفظت المسابقة ✅');await loadAdmWeek();await loadWeek();
-}
-async function admWeekToggle(){
-  const {error}=await sb.from('weekly_contest').update({active:!CW.active}).eq('id',CW.id);
-  if(error){toast('فشلت العملية',true);return}
-  toast(CW.active?'أُوقفت المسابقة':'انطلقت المسابقة للجمهور 🎉');
-  await loadAdmWeek();await loadWeek();
-}
-async function admWeekAdd(pid){
-  if(!CW){toast('أنشئ المسابقة أول من تبويب 🏆',true);return}
-  if(CW.ended_at){toast('المسابقة منتهية — أنشئ جديدة من تبويب 🏆',true);return}
-  const en=await sb.from('weekly_entries').select('photo_id').eq('contest_id',CW.id);
-  if((en.data||[]).length>=5){toast('اكتمل العدد — 5 لقطات كحد أقصى',true);return}
-  const {error}=await sb.from('weekly_entries').insert({contest_id:CW.id,photo_id:pid});
-  if(error){toast(error.code==='23505'?'مرشحة من قبل':'تعذر الترشيح',true);return}
-  toast('انضافت للترشيحات 🏆');
-}
-async function admWeekRemove(pid){
-  await sb.from('weekly_entries').delete().eq('contest_id',CW.id).eq('photo_id',pid);
-  toast('أُزيلت');await loadAdmWeek();
-}
-
-async function admWeekEnd(){
-  const bd=await sb.from('weekly_board').select('*').eq('contest_id',CW.id);
-  let win=null,mx=0;(bd.data||[]).forEach(r=>{if(r.votes>mx){mx=r.votes;win=r.photo_id}});
-  if(!win){if(!confirm('ما فيه أصوات بعد — إنهاء المسابقة بدون فائز؟'))return}
-  else if(!confirm('إنهاء المسابقة وإعلان الفائز؟ يظهر التتويج بالرئيسية لمدة أسبوع.'))return;
-  const {error}=await sb.from('weekly_contest').update({active:false,ended_at:new Date().toISOString(),winner_photo_id:win}).eq('id',CW.id);
-  if(error){toast('فشل الإنهاء: '+error.message,true);return}
-  toast(win?'أُعلن الفائز — مبروك للمتوّج 👑':'أُنهيت المسابقة');
-  await loadAdmWeek();await loadWeek();
-}
-async function admWeekNew(){
-  const {error}=await sb.from('weekly_contest').insert({active:false});
-  if(error){toast('تعذر الإنشاء',true);return}
-  toast('مسابقة جديدة جاهزة للتجهيز ✨');
-  await loadAdmWeek();
-}
-
-async function admSpDelete(){
-  const b=window.__SPB;
-  if(!confirm('حذف بنر الراعي نهائياً؟ الصورة تنمسح من المخزن والإعدادات تتصفّر.'))return;
-  if(b.image_path)await sb.storage.from('photos').remove([b.image_path]).catch(()=>{});
-  const {error}=await sb.from('site_banner').update({active:false,image_path:'',link_url:''}).eq('id',1);
-  if(error){toast('فشل الحذف',true);return}
-  toast('انحذف البنر نهائياً 🗑️');
-  await loadAdmWeek();loadSponsor();
-}
-
-async function admWeekDelete(){
-  if(!confirm(`حذف مسابقة «${CW.week_label||'بلا وسم'}» نهائياً؟ تنمسح بترشيحاتها وأصواتها، ويختفي أي تتويج مرتبط بها من الرئيسية.`))return;
-  const {error}=await sb.from('weekly_contest').delete().eq('id',CW.id);
-  if(error){toast('فشل الحذف: '+error.message,true);return}
-  toast('انحذفت المسابقة 🗑️');
-  await loadAdmWeek();await loadWeek();
-}
-
-async function admClearBadges(pid){
-  const pick=prompt(
-'مسح أوسمة الصورة #'+pid+' — اكتب الرقم:\n\n'+
-'0 = الكل (تصفير شامل)\n'+
-'1 = 📱 تصلح خلفية شاشة\n'+
-'2 = ❤️ بحطها خلفية جوالي\n'+
-'3 = 🌍 مسابقات عالمية\n'+
-'4 = 🇸🇦 واجهة تشرّف السعودية\n'+
-'5 = 🖼️ تستاهل تنطبع لوحة','0');
-  if(pick===null)return;
-  const keys={1:'wall',2:'mine',3:'global',4:'face',5:'print'};
-  let q=sb.from('badge_votes').delete().eq('photo_id',pid);
-  const k=keys[pick.trim()];
-  if(pick.trim()!=='0'&&!k){toast('اكتب رقماً من 0 إلى 5',true);return}
-  if(k)q=q.eq('badge_key',k);
-  const {error}=await q;
-  if(error){toast('فشل المسح: '+error.message,true);return}
-  toast(k?'انمسح الوسام المحدد 🗳️':'انصفرت كل أوسمة الصورة 🗳️');
-  await loadPhotos();openAdmin();
-}
-
-/* ====== وضع الصيانة ====== */
-function admSponsorsBtn(){
-  const b=window.__SPB||{};
-  const on=!!b.sponsors_btn;
-  return `<div style="background:var(--card);border:1.5px solid ${on?'var(--qblue)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🤝 زر الرعاة بالرئيسية <span style="font-size:11px;font-weight:700;color:${on?'var(--qblue)':'var(--txt-dim)'}">${on?'● ظاهر':'○ مخفي'}</span></div>
-    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">زر «🤝 الرعاة» في قائمة الفلتر.</div>
-    <button class="btn" style="width:100%;${on?'background:var(--sadu)':'background:var(--qblue)'}" onclick="admSponsorsBtnToggle()">${on?'🙈 إخفاء زر الرعاة':'👁️ إظهار زر الرعاة'}</button>
-  </div>`;
-}
-async function admSponsorsBtnToggle(){
-  const b=window.__SPB||{};
-  const{error}=await sb.from('site_banner').update({sponsors_btn:!b.sponsors_btn}).eq('id',1);
-  if(error){toast('فشلت العملية',true);return}
-  toast(!b.sponsors_btn?'زر الرعاة ظاهر 🤝':'اختفى الزر');
-  await loadAdmWeek();await loadSponsor();
-}
-function admSponsorSideBlock(){
-  const b=window.__SPB||{};
-  const on=!!b.side_active;
-  return `
-  <div style="background:var(--card);border:1.5px solid ${on?'var(--palm)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:6px">📌 بطاقة الراعي بالرئيسية ${on?'<span style="font-size:11px;color:var(--palm);font-weight:700">● ظاهرة</span>':'<span style="font-size:11px;color:var(--txt-dim)">○ مخفية</span>'}</div>
-    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">البطاقة الصغيرة (الاسم + النشاط) التي تظهر فوق الصور بالرئيسية.</div>
-    <button class="btn" style="width:100%;${on?'background:var(--sadu)':'background:var(--palm)'}" onclick="admSideBannerToggle()">${on?'🙈 إخفاء البطاقة':'👁️ إظهار البطاقة بالرئيسية'}</button>
-  </div>`;
-}
-async function admSideBannerToggle(){
-  const b=window.__SPB||{};
-  const {error}=await sb.from('site_banner').update({side_active:!b.side_active}).eq('id',1);
-  if(error){toast('فشلت العملية: '+error.message,true);return}
-  toast(!b.side_active?'البطاقة ظاهرة بالرئيسية 📌':'اختفت البطاقة');
-  await loadSponsor();await loadAdmWeek();
-}
-function admGoogleLoginBlock(){
-  const b=window.__SPB||{};
-  const on=!!b.google_login;
-  return `<div style="background:var(--card);border:1.5px solid ${on?'var(--qblue)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🔵 تسجيل الدخول بـ Google <span style="font-size:11px;font-weight:700;color:${on?'var(--qblue)':'var(--txt-dim)'}">${on?'● مفعّل للجميع':'○ مطفأ'}</span></div>
-    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">يظهر زر Google لكل الزوار في صفحة الحساب.</div>
-    <button class="btn" style="width:100%;${on?'background:var(--sadu)':'background:var(--qblue)'}" onclick="admGoogleToggle()">${on?'🙈 إخفاء الزر':'👁️ إظهار زر Google'}</button>
-  </div>`;
-}
-async function admGoogleToggle(){
-  const b=window.__SPB||{};
-  const {error}=await sb.from('site_banner').update({google_login:!b.google_login}).eq('id',1);
-  if(error){toast('فشلت العملية: '+error.message,true);return}
-  toast(!b.google_login?'زر Google ظاهر للجميع 🔵':'اختفى الزر');
-  await loadSponsor();await loadAdmWeek();
-}
-function admMaintBlock(){
-  const b=window.__SPB||{};
-  const on=!!b.maintenance;
-  return `
-  <div style="background:var(--card);border:1.5px solid ${on?'var(--star)':'var(--line)'};border-radius:14px;padding:14px;margin-top:16px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🚧 وضع الصيانة (تحت الإنشاء) ${on?'<span style="font-size:11px;color:#A87500;font-weight:700">● مفعل — الزوار محجوبون</span>':'<span style="font-size:11px;color:var(--txt-dim)">○ مطفأ</span>'}</div>
-    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px;line-height:1.8">عند التفعيل: الزوار يشوفون صفحة «تحت التطوير» — وأنت كمشرف تتصفح وتشتغل عادي.</div>
-    <input id="mtMsg" placeholder="رسالة اختيارية للزوار (مثال: نرجع لكم الساعة 9)" value="${esc(b.maintenance_msg||'')}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:10px">
-    <div style="display:flex;gap:8px">
-      <button class="btn" style="flex:1;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admMaintSaveMsg()">💾 حفظ الرسالة</button>
-      <button class="btn" style="flex:1;${on?'background:var(--palm)':'background:var(--star);color:var(--ink)'}" onclick="admMaintToggle()">${on?'▶️ إعادة فتح الموقع':'🚧 تفعيل الصيانة'}</button>
-    </div>
-  </div>`;
-}
-async function admMaintToggle(){
-  const b=window.__SPB||{};
-  const to=!b.maintenance;
-  if(to&&!confirm('تفعيل وضع الصيانة؟ كل الزوار (عدا المشرفين) بيشوفون صفحة تحت التطوير.'))return;
-  const {error}=await sb.from('site_banner').update({maintenance:to,maintenance_msg:$('mtMsg').value.trim()}).eq('id',1);
-  if(error){toast('فشلت العملية: '+error.message,true);return}
-  toast(to?'الموقع دخل وضع الصيانة 🚧':'الموقع رجع مفتوحاً للجميع 🎉');
-  await loadAdmWeek();
-}
-async function admMaintSaveMsg(){
-  const {error}=await sb.from('site_banner').update({maintenance_msg:$('mtMsg').value.trim()}).eq('id',1);
-  if(error){toast('فشل الحفظ',true);return}
-  toast('انحفظت الرسالة ✅');
-}
-
-/* ====== تحدي الأسبوع ====== */
-function admChallengeBlock(){
-  const c=window.__CH||{};
-  const on=!!c.active;
-  return `<div style="background:var(--card);border:1.5px solid ${on?'var(--qblue)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🎯 تحدي الأسبوع <span style="font-size:11px;font-weight:700;color:${on?'var(--qblue)':'var(--txt-dim)'}">${on?'● نشط':'○ مطفأ'}</span></div>
-    <input id="chTitle" placeholder="موضوع التحدي (مثال: الأبواب القديمة)" value="${esc(c.title||'')}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
-    <input id="chHint" placeholder="وصف أو تلميح (اختياري)" value="${esc(c.hint||'')}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
-    <input id="chEnds" type="date" value="${c.ends_at||''}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
-    <div style="display:flex;gap:8px">
-      <button class="btn" style="flex:1;font-size:12px;padding:9px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admChSave()">💾 حفظ</button>
-      <button class="btn" style="flex:1;font-size:12px;padding:9px;${on?'background:var(--sadu)':'background:var(--qblue)'}" onclick="admChToggle()">${on?'🙈 إيقاف':'▶️ تفعيل'}</button>
-    </div>
-  </div>`;
-}
-async function admChSave(){
-  const {error}=await sb.from('challenge').update({
-    title:$('chTitle').value.trim(),
-    hint:$('chHint').value.trim(),
-    ends_at:$('chEnds').value||null,
-    updated_at:new Date().toISOString()
-  }).eq('id',1);
-  if(error){toast('فشل الحفظ: '+error.message,true);return}
-  toast('انحفظ التحدي ✅');
-  await loadChallenge();await loadAdmWeek();
-}
-async function admChToggle(){
-  const c=window.__CH||{};
-  if(!c.active&&!$('chTitle').value.trim()){toast('اكتب موضوع التحدي أولاً',true);return}
-  const {error}=await sb.from('challenge').update({active:!c.active}).eq('id',1);
-  if(error){toast('فشلت العملية',true);return}
-  toast(!c.active?'التحدي نشط 🎯':'اتوقف التحدي');
-  await loadChallenge();await loadAdmWeek();
-}
-
-/* ====== إدارة كنوز الديرة ====== */
-let ADMQ=[],ADMQS={};
-
-async function loadAdmQuests(){
-  const el=$('admQs');if(!el)return;
-  el.innerHTML='<div class="loader">⏳</div>';
-  const q=await sb.from('quests').select('*').order('created_at',{ascending:false});
-  ADMQ=q.data||[];
-  const s=await sb.from('quest_stops').select('*');
-  ADMQS={};
-  (s.data||[]).forEach(x=>{(ADMQS[x.quest_id]=ADMQS[x.quest_id]||[]).push(x)});
-  const c=await sb.from('quest_completions').select('quest_id');
-  const done={};
-  (c.data||[]).forEach(x=>{done[x.quest_id]=(done[x.quest_id]||0)+1});
-
-  el.innerHTML=`
-  <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:10px">🗝️ رحلة جديدة</div>
-    <input id="qTitle" placeholder="اسم الرحلة (مثال: صيف عسير)" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
-    <input id="qSub" placeholder="وصف قصير" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
-    <div style="display:flex;gap:8px;margin-bottom:8px">
-      <input id="qIcon" placeholder="🏔️" value="🏆" style="flex:0 0 70px;text-align:center;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px;font-size:18px;outline:none">
-      <input id="qBadge" placeholder="اسم الشارة (مكتشف عسير)" style="flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none">
-    </div>
-    <input id="qRegion" placeholder="المنطقة" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
-    <div style="display:flex;gap:8px;margin-bottom:8px">
-      <input id="qSponsor" placeholder="الراعي (اختياري)" style="flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none">
-      <input id="qPrize" placeholder="الجائزة" style="flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none">
-    </div>
-    <input id="qEnds" type="date" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
-    <button class="btn" style="width:100%" onclick="qCreate()">➕ إنشاء الرحلة</button>
-  </div>
-  ${ADMQ.length?ADMQ.map(q=>{
-    const stops=ADMQS[q.id]||[];
-    return `<div style="background:var(--card);border:1.5px solid ${q.active?'var(--palm)':'var(--line)'};border-radius:14px;padding:14px;margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div style="font-weight:700;font-size:15px">${q.badge_icon||'🏆'} ${esc(q.title)}</div>
-        <span style="font-size:11px;font-weight:700;color:${q.active?'var(--palm)':'var(--txt-dim)'}">${q.active?'● نشطة':'○ مسودة'}</span>
-      </div>
-      <div style="font-size:12px;color:var(--txt-dim);margin-bottom:8px">${stops.length} كنز · ${done[q.id]||0} أكملوها${q.region?' · '+esc(q.region):''}</div>
-      <div style="margin:8px 0">${stops.map(s=>{
-        const ph=photos.find(p=>p.id===s.photo_id);
-        return `<div style="display:flex;align-items:center;gap:8px;background:var(--card2);border-radius:10px;padding:7px 10px;margin-bottom:5px;font-size:12px">
-          <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph?esc(ph.title):'#'+s.photo_id}</span>
-          <button onclick="qDelStop(${s.id})" style="background:none;border:none;cursor:pointer;font-size:13px">🗑️</button>
-        </div>`;
-      }).join('')||'<div style="font-size:12px;color:var(--txt-dim)">أضف كنوزاً من تبويب 🗂️ الصور</div>'}</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn" style="flex:1;font-size:12px;padding:8px;${q.active?'background:var(--sadu)':'background:var(--palm)'}" onclick="qToggle(${q.id},${q.active})">${q.active?'🙈 إيقاف':'▶️ تفعيل'}</button>
-        <button class="btn" style="flex:1;font-size:12px;padding:8px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="qDelete(${q.id})">🗑️ حذف</button>
-      </div>
-    </div>`;
-  }).join(''):'<div class="empty" style="padding:20px">ما فيه رحلات بعد</div>'}`;
-}
-
-async function qCreate(){
-  const title=$('qTitle').value.trim();
-  if(!title){toast('اكتب اسم الرحلة',true);return}
-  const {error}=await sb.from('quests').insert({
-    title,subtitle:$('qSub').value.trim(),badge_icon:$('qIcon').value.trim()||'🏆',
-    badge_name:$('qBadge').value.trim(),region:$('qRegion').value.trim(),
-    sponsor:$('qSponsor').value.trim(),prize:$('qPrize').value.trim(),
-    ends_at:$('qEnds').value||null
+  loadUserBadges(uid).then(bs=>{
+    const be=$('profBadges');if(!be)return;
+    be.innerHTML=bs.map(b=>`<span class="prof-badge">${b.badge_icon||'🏆'} ${esc(b.badge_name||b.title)}</span>`).join('');
   });
-  if(error){toast('فشل: '+error.message,true);return}
-  toast('انشئت الرحلة 🗝️');loadAdmQuests();
-}
-async function qToggle(id,cur){
-  const {error}=await sb.from('quests').update({active:!cur}).eq('id',id);
-  if(error){toast('فشلت العملية',true);return}
-  toast(!cur?'الرحلة نشطة 🗝️':'اتوقفت الرحلة');loadAdmQuests();
-}
-async function qDelete(id){
-  if(!confirm('حذف الرحلة وكنوزها؟'))return;
-  await sb.from('quests').delete().eq('id',id);
-  toast('انحذفت');loadAdmQuests();
-}
-async function qDelStop(sid){
-  await sb.from('quest_stops').delete().eq('id',sid);
-  loadAdmQuests();
-}
-async function admAddToQuest(pid){
-  if(!ADMQ.length){await loadAdmQuests();}
-  if(!ADMQ.length){toast('أنشئ رحلة أولاً من تبويب 🗝️',true);return}
-  const list=ADMQ.map((q,i)=>`${i+1} = ${q.title} (${(ADMQS[q.id]||[]).length} كنز)`).join('\n');
-  const pick=prompt('أضف الصورة لأي رحلة؟\n\n'+list);
-  if(pick===null)return;
-  const idx=parseInt(pick.trim())-1;
-  if(isNaN(idx)||!ADMQ[idx]){toast('رقم غير صحيح',true);return}
-  const {error}=await sb.from('quest_stops').insert({quest_id:ADMQ[idx].id,photo_id:pid});
-  if(error){toast(error.code==='23505'?'موجودة بالرحلة':'فشلت الإضافة',true);return}
-  toast('انضافت لـ'+ADMQ[idx].title+' 🗝️');
-  loadAdmQuests();
+
+  renderProfTabs();
+  renderProfFeed();
 }
 
-/* ====== تفعيل رفع الفيديو ====== */
-function admVideoBlock(){
-  const b=window.__SPB||{};
-  const on=!!b.video_enabled;
-  return `<div style="background:var(--card);border:1.5px solid ${on?'var(--qblue)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🎬 رفع الفيديوهات <span style="font-size:11px;font-weight:700;color:${on?'var(--qblue)':'var(--txt-dim)'}">${on?'● مفعّل':'○ مطفأ'}</span></div>
-    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">يظهر خيار «فيديو قصير» بصفحة النشر. ⚠️ الفيديو يستهلك التخزين بسرعة.</div>
-    <button class="btn" style="width:100%;${on?'background:var(--sadu)':'background:var(--qblue)'}" onclick="admVideoToggle()">${on?'🙈 إيقاف الفيديو':'▶️ تفعيل الفيديو'}</button>
-  </div>`;
-}
-async function admVideoToggle(){
-  const b=window.__SPB||{};
-  const {error}=await sb.from('site_banner').update({video_enabled:!b.video_enabled}).eq('id',1);
-  if(error){toast('فشلت العملية: '+error.message,true);return}
-  toast(!b.video_enabled?'رفع الفيديو مفعّل 🎬':'اتوقف رفع الفيديو');
-  await loadSponsor();await loadAdmWeek();
-}
-
-/* ====== تنظيف الملفات اليتيمة ====== */
-let ORPHANS={v:[],p:[]};
-
-function admCleanupBlock(){
-  return `<div style="background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:14px;margin-top:12px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🧹 تنظيف التخزين</div>
-    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">الملفات اليتيمة: موجودة بالتخزين وما لها صف بالقاعدة.</div>
-    <div style="display:flex;gap:8px;margin-bottom:8px">
-      <button class="btn" style="flex:1;font-size:12px;padding:9px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admScanOrphans('videos')">🎬 فحص الفيديو</button>
-      <button class="btn" style="flex:1;font-size:12px;padding:9px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admScanOrphans('photos')">🖼️ فحص الصور</button>
-    </div>
-    <button class="btn" style="width:100%;font-size:12px;padding:9px;background:var(--qblue)" onclick="admScanOrphans('all')">🔍 فحص الكل</button>
-    <div id="cleanResult" style="font-size:12px;color:var(--txt-dim);margin-top:10px;line-height:1.9"></div>
-  </div>`;
-}
-
-async function admScanOrphans(mode){
-  const box=$('cleanResult');
-  if(box)box.innerHTML='⏳ نفحص...';
-  ORPHANS={v:[],p:[]};
-  try{
-    const r=await sb.from('photos').select('image_path,media_type');
-    if(r.error){if(box)box.innerHTML='⚠️ تعذر قراءة القاعدة: '+r.error.message;return}
-    const rows=r.data||[];
-    // حماية: لا نفحص لو القاعدة رجعت فاضية (خطر حذف كل شيء)
-    if(!rows.length){if(box)box.innerHTML='⚠️ القاعدة رجعت فاضية — أُوقف الفحص حمايةً للملفات';return}
-    const keepVid=new Set(rows.filter(x=>x.media_type==='video').map(x=>x.image_path));
-    const keepImg=new Set();
-    rows.filter(x=>x.media_type!=='video').forEach(x=>{
-      keepImg.add(x.image_path);
-      keepImg.add(x.image_path.replace('.jpg','_t.jpg'));
-    });
-    // بنر الراعي وملفات الإدارة — مسجّلة بجداول أخرى
-    try{
-      const sbn=await sb.from('site_banner').select('image_path').eq('id',1).maybeSingle();
-      if(sbn.data&&sbn.data.image_path)keepImg.add(sbn.data.image_path);
-    }catch(e){}
-
-    if(mode==='videos'||mode==='all'){
-      const uv=await listBucketAll('videos');
-      ORPHANS.v=uv.filter(p=>!keepVid.has(p));
-    }
-    if(mode==='photos'||mode==='all'){
-      const up=await listBucketAll('photos');
-      ORPHANS.p=up.filter(p=>!keepImg.has(p)&&!p.startsWith('banners/')&&!p.startsWith('admin/'));
-    }
-
-    const tv=ORPHANS.v.length, tp=ORPHANS.p.length, tot=tv+tp;
-    if(!tot){if(box)box.innerHTML='✅ نظيف — ما فيه ملفات يتيمة';return}
-
-    let html=(tp>keepImg.size?'<div style="background:#FFF4D6;border:1px solid var(--star);border-radius:8px;padding:8px 11px;margin-bottom:8px;font-size:11.5px;line-height:1.8">⚠️ العدد أكبر من المسجّل — راجع القائمة بعناية قبل الحذف</div>':'')
-      +'<div style="font-weight:700;color:var(--sadu);margin-bottom:6px">لقينا '+tot+' ملفاً يتيماً:</div>'
-      +'<div style="font-size:11px;color:var(--txt-dim);margin-bottom:8px">(قُرئ '+rows.length+' صفاً من القاعدة · '+keepVid.size+' فيديو · '+keepImg.size+' مسار صورة)</div>';
-    if(tv){
-      html+='<div style="margin-bottom:6px"><b>🎬 فيديو ('+tv+'):</b></div>';
-      html+=ORPHANS.v.map(x=>'<div style="background:var(--card2);border-radius:8px;padding:5px 9px;margin-bottom:4px;font-size:11px;direction:ltr;text-align:left;word-break:break-all">'+esc(x)+'</div>').join('');
-      html+='<button class="btn" style="width:100%;font-size:12px;padding:8px;margin:6px 0;background:var(--sadu)" onclick="admDelOrphans(\'v\')">🗑️ احذف الفيديوهات اليتيمة ('+tv+')</button>';
-    }
-    if(tp){
-      html+='<div style="margin:8px 0 6px"><b>🖼️ صور ('+tp+'):</b></div>';
-      html+=ORPHANS.p.map(x=>'<div style="background:var(--card2);border-radius:8px;padding:5px 9px;margin-bottom:4px;font-size:11px;direction:ltr;text-align:left;word-break:break-all">'+esc(x)+'</div>').join('');
-      html+='<button class="btn" style="width:100%;font-size:12px;padding:8px;margin:6px 0;background:var(--sadu)" onclick="admDelOrphans(\'p\')">🗑️ احذف الصور اليتيمة ('+tp+')</button>';
-    }
-    html+='<div style="font-size:11px;color:var(--txt-dim);margin-top:6px">⚠️ راجع القائمة قبل الحذف — العملية نهائية</div>';
-    if(box)box.innerHTML=html;
-  }catch(e){
-    if(box)box.innerHTML='⚠️ تعذر الفحص: '+(e.message||'');
-  }
-}
-
-async function admDelOrphans(kind){
-  const list=kind==='v'?ORPHANS.v:ORPHANS.p;
-  const bucket=kind==='v'?'videos':'photos';
-  if(!list.length)return;
-  if(!confirm('حذف '+list.length+' ملفاً نهائياً من دلو '+bucket+'؟'))return;
-  const box=$('cleanResult');
-  if(box)box.innerHTML='⏳ نحذف...';
-  let done=0;
-  try{
-    for(let i=0;i<list.length;i+=50){
-      const chunk=list.slice(i,i+50);
-      const {error}=await sb.storage.from(bucket).remove(chunk);
-      if(error)throw error;
-      done+=chunk.length;
-    }
-    if(kind==='v')ORPHANS.v=[];else ORPHANS.p=[];
-    if(box)box.innerHTML='✅ انحذف '+done+' ملفاً';
-    toast('انتهى التنظيف 🧹');
-  }catch(e){
-    if(box)box.innerHTML='⚠️ انحذف '+done+' — توقف: '+(e.message||'');
-  }
-}
-
-/* سرد كل ملفات دلو (يمشي على مجلدات المستخدمين) */
-async function listBucketAll(bucket){
-  const out=[];
-  const skip=n=>!n||n.startsWith('.')||n==='.emptyFolderPlaceholder';
-  const root=await sb.storage.from(bucket).list('',{limit:1000});
-  const folders=(root.data||[]).filter(x=>!x.id);
-  const files=(root.data||[]).filter(x=>x.id);
-  files.forEach(f=>{if(!skip(f.name))out.push(f.name)});
-  for(const fo of folders){
-    const sub=await sb.storage.from(bucket).list(fo.name,{limit:1000});
-    (sub.data||[]).forEach(f=>{if(f.id&&!skip(f.name))out.push(fo.name+'/'+f.name)});
-  }
-  return out;
-}
-
-/* ====== مكتبة الموسيقى ====== */
-let MUSIC=[];
-
-async function loadAdmMusic(){
-  const el=$('admMu');if(!el)return;
-  el.innerHTML='<div class="loader">⏳</div>';
-  const r=await sb.from('music').select('*').order('created_at',{ascending:false});
-  MUSIC=r.data||[];
+function renderProfTabs(){
+  const el=$('profTabs');if(!el)return;
+  const mine=photos.filter(x=>x.user_id===PROF_UID);
+  const pub=mine.filter(x=>x.visibility!=='private').length;
+  const prv=mine.filter(x=>x.visibility==='private').length;
   el.innerHTML=`
-  <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:8px">🎵 إضافة مقطع</div>
-    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">MP3 خالٍ من الحقوق · حتى 5 ميجا · يُفضّل 30-60 ثانية</div>
-    <input id="muName" placeholder="اسم المقطع (مثال: عود هادئ)" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
-    <input type="file" id="muFile" accept="audio/*,.mp3,.m4a,.wav" style="display:none" onchange="muPicked()">
-    <button class="btn" style="width:100%;background:var(--card2);border:1.5px dashed var(--line);color:var(--txt);margin-bottom:8px" onclick="document.getElementById('muFile').click()">📁 <span id="muFileName">اختر ملف صوتي</span></button>
-    <button class="btn" style="width:100%" id="muUpBtn" onclick="muUpload()">📤 رفع المقطع</button>
-  </div>
-  ${MUSIC.length?MUSIC.map(m=>`
-    <div style="background:var(--card);border:1.5px solid ${m.active?'var(--palm)':'var(--line)'};border-radius:14px;padding:12px 14px;margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <span style="font-size:20px">🎵</span>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.name)}</div>
-          <div style="font-size:11px;color:${m.active?'var(--palm)':'var(--txt-dim)'};font-weight:700">${m.active?'● متاح للأعضاء':'○ مخفي'}</div>
+    <button class="prof-tab ${PROF_TAB==='public'?'on':''}" onclick="switchProfTab('public')">🌍 عامة (${pub})</button>
+    <button class="prof-tab ${PROF_TAB==='private'?'on':''}" onclick="switchProfTab('private')">🔒 خزنتي (${prv})</button>`;
+}
+
+function switchProfTab(t){
+  PROF_TAB=t;
+  renderProfTabs();
+  renderProfFeed();
+}
+
+function renderProfFeed(){
+  const el=$('profFeed');if(!el)return;
+  const isMe=!!(USER&&USER.id===PROF_UID);
+  let list=photos.filter(x=>x.user_id===PROF_UID);
+  list = isMe
+    ? list.filter(x=> PROF_TAB==='private' ? x.visibility==='private' : x.visibility!=='private')
+    : list.filter(x=>x.visibility!=='private');
+
+  if(!list.length){
+    el.innerHTML=(isMe&&PROF_TAB==='private')
+      ? '<div class="vault-empty">🔒 خزنتك فاضية<br><span style="font-size:12px">عند النشر اختر «خزنتي»</span></div>'
+      : '<div class="empty">ما نشر صوراً بعد</div>';
+    return;
+  }
+  el.innerHTML=list.map(p=>{
+    const isV=p.media_type==='video';
+    const src=isV?vidUrl(p.image_path):thumbUrl(p.image_path);
+    return `<div class="mcard" onclick="openSheet(${p.id})">
+      ${isV?`<video src="${src}#t=0.5" muted playsinline preload="metadata"></video>`
+           :`<img src="${src}" loading="lazy" alt="${esc(p.title)}">`}
+      ${p.visibility==='private'?'<div class="mc-lock">🔒</div>':''}
+      ${isV?'<div class="mc-vid">▶</div>':''}
+      <div class="mc-overlay"><div class="mc-title">${esc(p.title)}</div></div>
+    </div>`;
+  }).join('');
+}
+/* ====== نصيحة الطقس للمصور ====== */
+
+async function loadWeatherTip(){
+  const wel=$('weatherTip');
+  if(!window.__USER_LAT){if(wel)wel.style.display='none';return;}
+  const el=$('weatherTip');if(!el)return;
+  try{
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${window.__USER_LAT}&longitude=${window.__USER_LNG}&current=temperature_2m,weather_code,cloud_cover,is_day&daily=sunset,sunrise&timezone=auto`;
+    const r=await fetch(u);
+    const d=await r.json();
+    const c=d.current;if(!c)return;
+    const code=c.weather_code, temp=Math.round(c.temperature_2m), cloud=c.cloud_cover;
+    const isDay=c.is_day===1;
+    const now=new Date();
+    const sunset=d.daily&&d.daily.sunset?new Date(d.daily.sunset[0]):null;
+    const sunrise=d.daily&&d.daily.sunrise?new Date(d.daily.sunrise[0]):null;
+    const minsToSunset=sunset?Math.round((sunset-now)/60000):null;
+    const minsToSunrise=sunrise?Math.round((sunrise-now)/60000):null;
+
+    let ic,state,adv;
+
+    // ═══ الليل ═══
+    if(!isDay){
+      ic='🌙';state='ليل';
+      if(cloud<30) adv='سماء صافية — فرصة لتصوير النجوم ودرب التبانة ✨';
+      else if(cloud<70) adv='غيوم متفرقة — جرّب تصوير أضواء المدينة';
+      else adv='سماء غائمة — التصوير الليلي صعب الليلة';
+      if(code>=45&&code<=48){ic='🌫️';state='ضباب ليلي';adv='الضباب مع أضواء الشارع = لقطات غامضة جميلة';}
+      if(minsToSunrise!==null&&minsToSunrise>0&&minsToSunrise<90){
+        ic='🌄';state='قبل الشروق';adv='الشروق بعد '+minsToSunrise+' دقيقة — استعد للساعة الذهبية';
+      }
+    }
+    // ═══ النهار ═══
+    else {
+      ic='☀️';state='صافٍ';adv='إضاءة قوية — صوّر في الظل أو انتظر الساعة الذهبية';
+      if(code>=45&&code<=48){ic='🌫️';state='ضباب';adv='الضباب فرصة ذهبية للقطات دراماتيكية — اخرج الآن!';}
+      else if(code>=51&&code<=67){ic='🌧️';state='مطر';adv='بعد المطر: انعكاسات وألوان مشبعة';}
+      else if(code>=71&&code<=77){ic='🌨️';state='ثلج';adv='مشهد نادر — وثّقه قبل ما يذوب';}
+      else if(code>=95){ic='⛈️';state='عاصفة';adv='السلامة أولاً — صوّر من مكان آمن';}
+      else if(cloud>70){ic='☁️';state='غائم';adv='إضاءة ناعمة مثالية للتفاصيل والبورتريه';}
+      else if(cloud>30){ic='⛅';state='غيوم متفرقة';adv='سماء درامية — وقت ممتاز للمناظر الواسعة';}
+
+      if(minsToSunset!==null&&minsToSunset>0&&minsToSunset<90){
+        ic='🌅';state='قبل الغروب';adv='الساعة الذهبية — بعد '+minsToSunset+' دقيقة أجمل ضوء لليوم';
+      }
+      if(temp>=42){adv='الحر شديد ('+temp+'°) — صوّر بالصباح الباكر أو قبل المغرب';}
+    }
+
+    el.style.display='flex';
+    el.innerHTML=`<div class="wt-ic">${ic}</div>
+      <div class="wt-txt">
+        <div class="wt-now">${state} · ${temp}°</div>
+        <div class="wt-adv">${adv}</div>
+      </div>`;
+  }catch(e){}
+}
+/* ====== الزيارات الميدانية ====== */
+async function renderVisits(p){
+  const el=$('visitBox');if(!el)return;
+  if(!p.lat||!p.lng){el.style.display='none';return}
+  el.style.display='block';
+  el.className='visit-box';
+  el.innerHTML='<div class="visit-far">⏳</div>';
+
+  const r=await sb.from('visits').select('user_id,note,created_at,profiles!user_id(display_name)').eq('photo_id',p.id).order('created_at',{ascending:false});
+  const list=r.data||[];
+  const mine=USER?list.find(v=>v.user_id===USER.id):null;
+
+  // احسب المسافة
+  let near=false, dist=null;
+  if(window.__USER_LAT){
+    dist=Math.hypot((p.lat-window.__USER_LAT)*111000,(p.lng-window.__USER_LNG)*111000*Math.cos(p.lat*Math.PI/180));
+    near=dist<=500;
+  }
+
+  let btn='';
+  if(mine){
+    btn=`<button class="visit-btn done" onclick="removeVisit(${p.id})">✓ زرته — إلغاء</button>`;
+  } else if(near){
+    btn=`<button class="visit-btn" onclick="addVisit(${p.id})">✅ زرت هذا المكان</button>`;
+  } else if(dist!==null){
+    btn=`<span class="visit-far">📍 تبعد ${dist>1000?(dist/1000).toFixed(1)+' كم':Math.round(dist)+' م'} — اقترب لتسجيل زيارتك</span>`;
+  } else {
+    btn=`<span class="visit-far">فعّل الموقع لتسجيل زيارتك</span>`;
+  }
+
+  el.innerHTML=`
+    <div class="visit-head">
+      <span class="visit-count">👣 ${list.length} ${list.length===1?'زائر':'زائرين'}</span>
+      ${btn}
+    </div>
+    ${mine?`<div style="display:flex;gap:6px;margin-top:6px">
+      <input id="vNote" placeholder="انطباعك عن المكان (اختياري)" value="${esc(mine.note||'')}" style="flex:1;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-family:'Tajawal';font-size:12.5px;color:var(--txt);outline:none">
+      <button class="btn" style="font-size:12px;padding:7px 13px" onclick="saveVisitNote(${p.id})">حفظ</button>
+    </div>`:''}
+    ${list.filter(v=>v.note).map(v=>`<div class="visit-note"><b>${esc(v.profiles?.display_name||'زائر')}</b>${esc(v.note)}</div>`).join('')}`;
+}
+
+async function addVisit(pid){
+  if(!USER||USER.is_anonymous){toast('سجّل أول عشان توثّق زيارتك',true);return}
+  const {error}=await sb.from('visits').insert({photo_id:pid,user_id:USER.id});
+  if(error){toast('تعذر التسجيل: '+error.message,true);return}
+  toast('انسجّلت زيارتك 👣');
+  await loadVisitCounts();render();
+  renderVisits(curPhoto);
+}
+
+async function removeVisit(pid){
+  await sb.from('visits').delete().eq('photo_id',pid).eq('user_id',USER.id);
+  toast('انشالت الزيارة');
+  await loadVisitCounts();render();
+  renderVisits(curPhoto);
+}
+
+async function saveVisitNote(pid){
+  const t=$('vNote').value.trim();
+  const {error}=await sb.from('visits').update({note:t}).eq('photo_id',pid).eq('user_id',USER.id);
+  if(error){toast('تعذر الحفظ',true);return}
+  toast('انحفظ انطباعك ✅');
+  renderVisits(curPhoto);
+}
+/* ====== عدادات الزيارات للشبكة ====== */
+let VISIT_COUNTS={};
+async function loadVisitCounts(){
+  try{
+    const r=await sb.from('visits').select('photo_id');
+    VISIT_COUNTS={};
+    (r.data||[]).forEach(v=>{VISIT_COUNTS[v.photo_id]=(VISIT_COUNTS[v.photo_id]||0)+1});
+  }catch(e){}
+}
+
+/* ====== بطاقة المشاركة ====== */
+async function shareCard(p){
+  toast('نجهّز البطاقة...');
+  try{
+    const img=new Image();
+    img.crossOrigin='anonymous';
+    img.src=imgUrl(p.image_path);
+    await new Promise((res,rej)=>{img.onload=res;img.onerror=rej});
+
+    const W=1080,H=1350,ih=1110;
+    const cv=document.createElement('canvas');
+    cv.width=W;cv.height=H;
+    const ctx=cv.getContext('2d');
+
+    ctx.fillStyle='#F7F1E3';ctx.fillRect(0,0,W,H);
+
+    const ratio=Math.max(W/img.width,ih/img.height);
+    const dw=img.width*ratio, dh=img.height*ratio;
+    ctx.save();
+    ctx.beginPath();ctx.rect(0,0,W,ih);ctx.clip();
+    ctx.drawImage(img,(W-dw)/2,(ih-dh)/2,dw,dh);
+    ctx.restore();
+
+    const g=ctx.createLinearGradient(0,ih-300,0,ih);
+    g.addColorStop(0,'rgba(10,8,6,0)');
+    g.addColorStop(1,'rgba(10,8,6,.85)');
+    ctx.fillStyle=g;ctx.fillRect(0,ih-300,W,300);
+
+    ctx.direction='rtl';
+    ctx.textAlign='right';
+
+    ctx.fillStyle='#fff';
+    ctx.font='bold 58px Tajawal, sans-serif';
+    ctx.fillText(String(p.title).slice(0,28),W-60,ih-110);
+
+    ctx.fillStyle='rgba(255,255,255,.85)';
+    ctx.font='36px Tajawal, sans-serif';
+    const loc=p.abroad?(p.country||p.city):((p.village?p.village+' · ':'')+p.city);
+    ctx.fillText(loc+'  ·  عدسة '+p.photographer,W-60,ih-50);
+
+    const colors=['#D63A2F','#2E6FB7','#F2B33D','#2E8B57'];
+    const tw=W/16;
+    for(let i=0;i<16;i++){
+      ctx.beginPath();
+      ctx.moveTo(i*tw,ih+42);
+      ctx.lineTo(i*tw+tw/2,ih+8);
+      ctx.lineTo((i+1)*tw,ih+42);
+      ctx.closePath();
+      ctx.fillStyle=colors[i%4];ctx.fill();
+      ctx.strokeStyle='#241F1C';ctx.lineWidth=2.5;ctx.stroke();
+    }
+
+    if(p.ratings_count>0){
+      ctx.textAlign='right';
+      ctx.fillStyle='#E8A020';
+      ctx.font='bold 40px Tajawal, sans-serif';
+      ctx.fillText('★ '+Number(p.avg_stars).toFixed(1),W-60,ih+108);
+    }
+
+    ctx.textAlign='center';
+    ctx.fillStyle='#D63A2F';
+    ctx.font='bold 52px Tajawal, sans-serif';
+    ctx.fillText('صورة من بلدي',W/2,ih+168);
+
+    ctx.fillStyle='#6B6259';
+    ctx.font='30px Tajawal, sans-serif';
+    ctx.fillText('عدسات أهل الديار  ·  sowra.app',W/2,ih+212);
+
+    cv.toBlob(async function(blob){
+      if(!blob){toast('تعذر إنشاء البطاقة',true);return}
+      const file=new File([blob],'sowra-'+p.id+'.jpg',{type:'image/jpeg'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        try{
+          await navigator.share({files:[file],title:p.title,text:p.title+' — sowra.app'});
+          return;
+        }catch(e){}
+      }
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='sowra-'+p.id+'.jpg';
+      a.click();
+      toast('انحفظت البطاقة');
+    },'image/jpeg',0.92);
+
+  }catch(e){toast('تعذر تجهيز البطاقة',true)}
+}
+
+/* ====== مناطق قليلة التغطية ====== */
+let GAP_LAYERS=[], GAPS_ON=false;
+
+function drawCoverageGaps(){
+  if(!MAP||typeof L==='undefined')return;
+  GAP_LAYERS.forEach(l=>{try{MAP.removeLayer(l)}catch(e){}});
+  GAP_LAYERS=[];
+  if(!GAPS_ON)return;
+
+  const LAT_MIN=16.5, LAT_MAX=32.0, LNG_MIN=34.5, LNG_MAX=55.5;
+  const STEP=0.75;
+
+  const geo=photos.filter(p=>p.lat&&p.lng&&!p.abroad);
+  const filled=new Set();
+  geo.forEach(p=>{
+    const gy=Math.floor((p.lat-LAT_MIN)/STEP);
+    const gx=Math.floor((p.lng-LNG_MIN)/STEP);
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)filled.add((gy+dy)+'_'+(gx+dx));
+  });
+
+  const rows=Math.ceil((LAT_MAX-LAT_MIN)/STEP);
+  const cols=Math.ceil((LNG_MAX-LNG_MIN)/STEP);
+  let count=0;
+
+  for(let y=0;y<rows;y++){
+    for(let x=0;x<cols;x++){
+      if(filled.has(y+'_'+x))continue;
+      const clat=LAT_MIN+y*STEP+STEP/2;
+      const clng=LNG_MIN+x*STEP+STEP/2;
+      if(clng<36.5&&clat>28)continue;
+      if(clng>51.5&&clat>26.5)continue;
+
+      const c=L.circle([clat,clng],{
+        radius:38000,
+        color:'#8A7B6A',weight:1.5,dashArray:'6,6',
+        fillColor:'#8A7B6A',fillOpacity:.12
+      }).addTo(MAP);
+      c.bindPopup('<div style="font-family:Tajawal;text-align:center;min-width:170px">'+
+        '<div style="font-weight:700;font-size:14px;color:#8C2F23;margin-bottom:4px">📍 منطقة قليلة التغطية</div>'+
+        '<div style="font-size:12px;color:#666;line-height:1.8">ما فيها صور بعد — كن أول من يوثّق جمالها 📸</div></div>');
+      GAP_LAYERS.push(c);
+      count++;
+    }
+  }
+  if(count)toast(count+' منطقة تنتظر عدستك 📸');
+}
+
+function toggleGaps(){
+  GAPS_ON=!GAPS_ON;
+  const b=$('gapBtn');
+  if(b){b.style.background=GAPS_ON?'#8C2F23':'#fff';b.style.color=GAPS_ON?'#fff':'#000';}
+  drawCoverageGaps();
+  if(!GAPS_ON)toast('اختفت المناطق الفارغة');
+}
+
+/* ====== كنوز الديرة — رحلات الاكتشاف ====== */
+let QUESTS=[], QSTOPS={}, QDONE=new Set();
+
+async function loadQuests(){
+  try{
+    const q=await sb.from('quests').select('*').eq('active',true).order('created_at',{ascending:false});
+    QUESTS=q.data||[];
+    if(!QUESTS.length)return;
+    const s=await sb.from('quest_stops').select('*');
+    QSTOPS={};
+    (s.data||[]).forEach(x=>{(QSTOPS[x.quest_id]=QSTOPS[x.quest_id]||[]).push(x.photo_id)});
+    if(USER&&!USER.is_anonymous){
+      const c=await sb.from('quest_completions').select('quest_id').eq('user_id',USER.id);
+      QDONE=new Set((c.data||[]).map(x=>x.quest_id));
+    }
+  }catch(e){}
+}
+
+async function openQuests(){
+  go('quests');
+  $('questList').innerHTML='<div class="loader">⏳</div>';
+  await loadQuests();
+  if(!QUESTS.length){
+    $('questList').innerHTML='<div class="empty"><span class="big">🗺️</span>ما فيه رحلات نشطة حالياً<br>ترقّب رحلة الموسم القادم</div>';
+    return;
+  }
+  // زياراتي
+  let myVisits=new Set();
+  if(USER&&!USER.is_anonymous){
+    const v=await sb.from('visits').select('photo_id').eq('user_id',USER.id);
+    myVisits=new Set((v.data||[]).map(x=>x.photo_id));
+  }
+
+  $('questList').innerHTML=QUESTS.map(q=>{
+    const stops=QSTOPS[q.id]||[];
+    const done=stops.filter(id=>myVisits.has(id)).length;
+    const pct=stops.length?Math.round(done/stops.length*100):0;
+    const finished=done>=stops.length&&stops.length>0;
+    let left='';
+    if(q.ends_at){
+      const d=Math.ceil((new Date(q.ends_at)-new Date())/86400000);
+      left=d>0?`باقي ${d} ${d===1?'يوم':'أيام'}`:'انتهت';
+    }
+    return `<div class="quest-card ${finished?'done':''}">
+      <div class="q-head">
+        <span class="q-badge">${q.badge_icon||'🏆'}</span>
+        <div class="q-info">
+          <div class="q-title">${esc(q.title)}</div>
+          <div class="q-sub">${esc(q.subtitle||'')}${q.region?' · '+esc(q.region):''}</div>
         </div>
       </div>
-      <audio controls preload="none" src="${muUrl(m.path)}" style="width:100%;height:36px;margin-bottom:8px"></audio>
-      <div style="display:flex;gap:8px">
-        <button class="btn" style="flex:1;font-size:12px;padding:7px;${m.active?'background:var(--sadu)':'background:var(--palm)'}" onclick="muToggle(${m.id},${m.active})">${m.active?'🙈 إخفاء':'▶️ إتاحة'}</button>
-        <button class="btn" style="flex:1;font-size:12px;padding:7px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="muDelete(${m.id},'${m.path}')">🗑️ حذف</button>
+      ${q.sponsor?`<div class="q-sponsor">برعاية <b>${esc(q.sponsor)}</b>${q.prize?` · 🎁 ${esc(q.prize)}`:''}</div>`:''}
+      <div class="q-bar"><div class="q-fill" style="width:${pct}%"></div></div>
+      <div class="q-meta">
+        <span>${done} من ${stops.length} كنز</span>
+        ${left?`<span>${left}</span>`:''}
       </div>
-    </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه مقاطع بعد</div>'}`;
+      ${finished?`<div class="q-win">🎉 أكملت الرحلة — شارة «${esc(q.badge_name||q.title)}» لك!</div>`:''}
+      <div class="q-stops">${stops.map(id=>{
+        const p=photos.find(x=>x.id===id);
+        if(!p)return '';
+        const got=myVisits.has(id);
+        return `<div class="q-stop ${got?'got':''}" onclick="openSheet(${id})">
+          <img src="${thumbUrl(p.image_path)}" loading="lazy" alt="${esc(p.title)}">
+          ${got?'<div class="q-check">✓</div>':''}
+          <div class="q-stop-name">${esc(p.village||p.city)}</div>
+        </div>`;
+      }).join('')}</div>
+    </div>`;
+  }).join('');
+
+  // سجّل الإكمال تلقائياً
+  QUESTS.forEach(async q=>{
+    const stops=QSTOPS[q.id]||[];
+    if(!stops.length||QDONE.has(q.id))return;
+    const done=stops.filter(id=>myVisits.has(id)).length;
+    if(done>=stops.length&&USER&&!USER.is_anonymous){
+      await sb.from('quest_completions').insert({quest_id:q.id,user_id:USER.id});
+      QDONE.add(q.id);
+      toast('🎉 أكملت رحلة «'+q.title+'» — مبروك الشارة!');
+    }
+  });
 }
 
-function muUrl(path){return sb.storage.from('music').getPublicUrl(path).data.publicUrl}
-
-async function muUpload(){
-  const name=$('muName').value.trim();
-  const f=$('muFile').files[0];
-  if(!name){toast('اكتب اسم المقطع',true);return}
-  if(!f){toast('اختر ملف MP3',true);return}
-  if(f.size>5*1024*1024){toast('الملف كبير — الحد 5 ميجا',true);return}
-  const btn=$('muUpBtn');btn.disabled=true;btn.textContent='⏳ نرفع...';
+/* شارات المستخدم بالبروفايل */
+async function loadUserBadges(uid){
   try{
-    const ext=(f.name.split('.').pop()||'mp3').toLowerCase();
-    const path=Date.now()+'.'+ext;
-    const up=await sb.storage.from('music').upload(path,f,{contentType:f.type||'audio/mpeg',cacheControl:'31536000'});
-    if(up.error)throw up.error;
-    const ins=await sb.from('music').insert({name,path});
-    if(ins.error){await sb.storage.from('music').remove([path]).catch(()=>{});throw ins.error}
-    $('muName').value='';$('muFile').value='';
-    toast('انرفع المقطع 🎵');
-    loadAdmMusic();
-  }catch(e){toast('فشل الرفع: '+(e.message||''),true)}
-  finally{btn.disabled=false;btn.textContent='📤 رفع المقطع'}
+    const c=await sb.from('quest_completions').select('quest_id').eq('user_id',uid);
+    const ids=(c.data||[]).map(x=>x.quest_id);
+    if(!ids.length)return [];
+    const q=await sb.from('quests').select('id,badge_icon,badge_name,title').in('id',ids);
+    return q.data||[];
+  }catch(e){return []}
 }
 
-async function muToggle(id,cur){
-  const {error}=await sb.from('music').update({active:!cur}).eq('id',id);
-  if(error){toast('فشلت العملية',true);return}
-  toast(!cur?'المقطع متاح 🎵':'اختفى المقطع');
-  loadAdmMusic();
+/* ====== تفعيل الفيديو ====== */
+function initVideoUpload(){
+  const row=$('videoRow');if(!row)return;
+  const sp=window.__SPDATA;
+  const on=!!(sp&&sp.video_enabled);
+  row.style.display=on?'flex':'none';
+  if(on&&typeof initRecBtn==='function')initRecBtn();
 }
 
-async function muDelete(id,path){
-  if(!confirm('حذف المقطع نهائياً؟'))return;
-  await sb.from('music').delete().eq('id',id);
-  try{await sb.storage.from('music').remove([path])}catch(e){}
-  toast('انحذف المقطع');
-  loadAdmMusic();
+/* ====== أضواء الديرة — منصة الفيديو ====== */
+let REELS=[], reelObserver=null, reelsMuted=true;
+
+async function openReels(){
+  go('reels');
+  const wrap=$('reelsWrap');if(!wrap)return;
+  wrap.innerHTML='<div class="reels-empty"><span class="big">⏳</span></div>';
+  REELS=photos.filter(p=>p.media_type==='video');
+  if(!REELS.length){
+    wrap.innerHTML=`<div class="reels-empty">
+      <span class="big">🎬</span>
+      <div style="font-size:16px;font-weight:700">ما فيه مقاطع بعد</div>
+      <div style="font-size:13px;line-height:1.9;color:rgba(255,255,255,.65)">كن أول من يوثّق صوت المكان<br>اضغط الزر الأحمر وسجّل ٣٠ ثانية</div>
+    </div>`;
+    return;
+  }
+  renderReels();
 }
 
-function muPicked(){
-  const f=$('muFile').files[0];
-  const lbl=$('muFileName');
-  if(lbl)lbl.textContent=f?(f.name+' · '+Math.round(f.size/1024)+' كيلو'):'اختر ملف صوتي';
+function renderReels(){
+  const wrap=$('reelsWrap');if(!wrap)return;
+  wrap.innerHTML=REELS.map(p=>{
+    const fx=(p.filter_key&&p.filter_key!=='none'&&typeof filterCss==='function')?filterCss(p.filter_key):'none';
+    const loc=p.abroad?(p.country||p.city):((p.village?p.village+' · ':'')+p.city);
+    const fav=favSet.has(p.id);
+    const mine=!!(USER&&p.user_id===USER.id);
+    const rk=rankOf(p);
+    return `<div class="reel" data-id="${p.id}">
+      <video src="${vidUrl(p.image_path)}" loop playsinline webkit-playsinline preload="none" muted style="filter:${fx}"></video>
+      <div class="reel-shade"></div>
+      <div class="reel-prog"><div class="reel-prog-fill"></div></div>
+      <div class="reel-time">0:00</div>
+      <button class="reel-mute" onclick="toggleReelMute(event)">🔇</button>
+      <button class="reel-back" onclick="go('feed')">✕</button>
+      <div class="reel-side">
+        <button class="reel-avatar" onclick="reelProfile('${p.user_id}',event)" title="${esc(p.photographer)}">
+          <span>${rk.ic}</span>
+        </button>
+        <button class="reel-act ${fav?'on':''}" onclick="reelFav(${p.id},event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          حفظ
+        </button>
+        <button class="reel-act" onclick="openSheet(${p.id})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          ${p.comments_count||0}
+        </button>
+        <button class="reel-act" onclick="reelShare(${p.id},event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          مشاركة
+        </button>
+        <button class="reel-act" onclick="openSheet(${p.id})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 9 22 9.3 16.5 13.8 18.5 21 12 17 5.5 21 7.5 13.8 2 9.3 9 9"/></svg>
+          ${Number(p.avg_stars).toFixed(1)}
+        </button>
+        ${mine?`<button class="reel-act del" onclick="reelDelete(${p.id},'${p.image_path}',event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          حذف
+        </button>`:`<button class="reel-act" onclick="reelReport(${p.id},event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          إبلاغ
+        </button>`}
+      </div>
+      <div class="reel-info">
+        <div class="reel-user" onclick="reelProfile('${p.user_id}',event)">${rk.ic} ${esc(p.photographer)}</div>
+        <div class="reel-title">${esc(p.title)}</div>
+        <div class="reel-loc" onclick="reelToMap(${p.lat||0},${p.lng||0},event)">📍 ${esc(loc)}</div>
+        ${p.music_key?`<div class="reel-music">🎵 ${esc(p.music_key)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  setupReelPlayback();
 }
-async function testPush(){
-  toast('نجرّب...');
+
+function setupReelPlayback(){
+  if(reelObserver)reelObserver.disconnect();
+  const vids=document.querySelectorAll('#reelsWrap video');
+  reelObserver=new IntersectionObserver(entries=>{
+    entries.forEach(en=>{
+      const v=en.target;
+      if(en.isIntersecting&&en.intersectionRatio>0.6){
+        v.muted=reelsMuted;
+        v.play().catch(()=>{});
+        const pid=v.closest('.reel')?.dataset.id;
+        if(pid&&!seenViews.has(+pid)){
+          seenViews.add(+pid);
+          try{sb.rpc('bump_view',{pid:+pid}).then(()=>{},()=>{})}catch(e){}
+        }
+      }else{
+        try{v.pause()}catch(e){}
+      }
+    });
+  },{threshold:[0,0.6,1]});
+  vids.forEach(v=>{
+    reelObserver.observe(v);
+    v.addEventListener('click',()=>{v.paused?v.play().catch(()=>{}):v.pause()});
+    v.addEventListener('timeupdate',()=>{
+      const reel=v.closest('.reel');if(!reel)return;
+      const fill=reel.querySelector('.reel-prog-fill');
+      const tm=reel.querySelector('.reel-time');
+      const d=v.duration||0;
+      if(d>0){
+        const left=Math.max(0,d-v.currentTime);
+        if(fill)fill.style.width=(v.currentTime/d*100)+'%';
+        if(tm)tm.textContent='0:'+String(Math.ceil(left)).padStart(2,'0');
+      }
+    });
+  });
+  // شغّل الأول فوراً
+  if(vids[0]){vids[0].muted=reelsMuted;vids[0].play().catch(()=>{})}
+}
+
+function toggleReelMute(e){
+  e.stopPropagation();
+  reelsMuted=!reelsMuted;
+  document.querySelectorAll('#reelsWrap video').forEach(v=>v.muted=reelsMuted);
+  document.querySelectorAll('.reel-mute').forEach(b=>b.textContent=reelsMuted?'🔇':'🔊');
+  toast(reelsMuted?'الصوت مكتوم':'الصوت شغّال 🔊');
+}
+
+async function reelFav(pid,e){
+  e.stopPropagation();
+  await toggleFav(pid);
+  const btn=e.currentTarget;
+  if(btn)btn.classList.toggle('on',favSet.has(pid));
+}
+
+function reelShare(pid,e){
+  e.stopPropagation();
+  const p=photos.find(x=>x.id===pid);
+  if(!p)return;
+  const url='https://sowra.app';
+  if(navigator.share){
+    navigator.share({title:p.title,text:p.title+' — من عدسات أهل الديار 📍'+(p.village||p.city),url}).catch(()=>{});
+  }else{
+    try{navigator.clipboard.writeText(url);toast('انسخ الرابط ✅')}catch(err){}
+  }
+}
+
+function reelToMap(lat,lng,e){
+  e.stopPropagation();
+  if(!lat||!lng){toast('ما فيه موقع مسجّل لهذا المقطع',true);return}
+  window.open('https://maps.google.com/?q='+lat+','+lng,'_blank');
+}
+
+function reelsRecord(){
+  if(typeof recSupported==='function'&&recSupported()){
+    if(typeof recOpen==='function')recOpen();
+  }else{
+    toast('جهازك ما يدعم التسجيل — استخدم صفحة النشر',true);
+    go('add');
+  }
+}
+
+function stopAllReels(){
   try{
-    const url='https://gquzjaxpqeggknhipmzk.supabase.co/functions/v1/send-push';
-    const key='sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX';
+    if(reelObserver){reelObserver.disconnect();reelObserver=null}
+    document.querySelectorAll('#reelsWrap video').forEach(v=>{try{v.pause()}catch(e){}});
+  }catch(e){}
+}
+
+/* ====== إجراءات الأضواء ====== */
+function reelProfile(uid,e){
+  e.stopPropagation();
+  stopAllReels();
+  openProfile(uid);
+}
+
+async function reelDelete(pid,path,e){
+  e.stopPropagation();
+  if(!confirm('حذف المقطع نهائياً؟ لا يمكن التراجع.'))return;
+  try{await sb.storage.from('videos').remove([path])}catch(err){}
+  const {error}=await sb.from('photos').delete().eq('id',pid).eq('user_id',USER.id);
+  if(error){toast('تعذر الحذف: '+error.message,true);return}
+  toast('انحذف المقطع ✅');
+  await loadPhotos();
+  REELS=photos.filter(x=>x.media_type==='video');
+  if(REELS.length)renderReels();
+  else openReels();
+}
+
+async function reelReport(pid,e){
+  e.stopPropagation();
+  if(!confirm('إبلاغ عن هذا المقطع؟'))return;
+  try{
+    const {error}=await sb.from('reports').insert({photo_id:pid});
+    if(error)throw error;
+    toast('وصل بلاغك — شكراً 🚩');
+  }catch(err){toast('تعذر الإبلاغ',true)}
+}
+
+/* ====== السبق على الموقع ====== */
+let CLAIM_MAP={};
+
+async function loadClaims(){
+  try{
+    const r=await sb.from('claims').select('photo_id,place_name').eq('active',true);
+    CLAIM_MAP={};
+    (r.data||[]).forEach(c=>{CLAIM_MAP[c.photo_id]=c.place_name});
+  }catch(e){}
+}
+
+async function renderClaim(p){
+  const el=$('claimBox');if(!el)return;
+  el.innerHTML='';
+  try{
+    const r=await sb.from('claims').select('*').eq('photo_id',p.id).eq('active',true).maybeSingle();
+    const c=r.data;
+    if(!c)return;
+
+    const v=await sb.from('claim_votes').select('user_id,stance,note,profiles!user_id(display_name)').eq('claim_id',c.id);
+    const votes=v.data||[];
+    const sup=votes.filter(x=>x.stance==='support').length;
+    const dbt=votes.filter(x=>x.stance==='doubt').length;
+    const tot=sup+dbt||1;
+    const mine=USER?votes.find(x=>x.user_id===USER.id):null;
+    const isOwner=!!(USER&&c.user_id===USER.id);
+
+    const days=Math.ceil((new Date(c.expires_at)-new Date())/86400000);
+    const notes=votes.filter(x=>x.note&&x.note.trim());
+
+    el.innerHTML=`<div class="claim-box">
+      <div class="claim-head">
+        <span class="claim-badge">🏅 سبق</span>
+        <span class="claim-place">${esc(c.place_name)}</span>
+      </div>
+      <div class="claim-reason">${esc(c.reason)}</div>
+      ${(c.lat&&c.lng)?`<a class="mapbtn" href="https://maps.google.com/?q=${c.lat},${c.lng}" target="_blank" rel="noopener" style="margin-bottom:10px">🗺️ إحداثيات السبق</a>`:''}
+      <div class="claim-bar">
+        <div class="sup" style="width:${sup/tot*100}%"></div>
+        <div class="dbt" style="width:${dbt/tot*100}%"></div>
+      </div>
+      <div class="claim-nums">
+        <span class="s">✅ ${sup} مؤيّد</span>
+        <span class="d">${dbt} مشكّك ❓</span>
+      </div>
+      ${isOwner?`<div style="font-size:12px;color:var(--txt-dim);text-align:center;padding:6px">هذا سبقك — الجمهور يحكم
+        <button onclick="claimDelete(${c.id})" style="background:none;border:none;color:var(--sadu);font-family:'Tajawal';font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;margin-right:8px">سحب السبق</button></div>`
+      :`<div class="claim-acts">
+        <button class="claim-btn sup ${mine&&mine.stance==='support'?'on':''}" onclick="claimVote(${c.id},'support',${p.id})">✅ أؤيد</button>
+        <button class="claim-btn dbt ${mine&&mine.stance==='doubt'?'on':''}" onclick="claimVote(${c.id},'doubt',${p.id})">❓ أشكك</button>
+      </div>`}
+      ${notes.length?`<div class="claim-notes">${notes.map(n=>`
+        <div class="claim-note ${n.stance==='support'?'s':'d'}">
+          <b>${n.stance==='support'?'✅':'❓'} ${esc(n.profiles?.display_name||'زائر')}</b>${esc(n.note)}
+        </div>`).join('')}</div>`:''}
+      <div class="claim-left">${days>0?'باقي '+days+' يوم على انتهاء السبق':'انتهت مدة السبق'}</div>
+    </div>`;
+  }catch(e){}
+}
+
+async function claimVote(cid,stance,pid){
+  if(!USER||USER.is_anonymous){toast('سجّل أول عشان تشارك بالحكم',true);return}
+  const note=prompt(stance==='support'?'تؤيد السبق — تبي تضيف سبباً؟ (اختياري)':'تشكك بالسبق — وش سببك؟ (اختياري)');
+  if(note===null)return;
+  const {error}=await sb.from('claim_votes').upsert({
+    claim_id:cid,user_id:USER.id,stance,note:(note||'').trim()
+  });
+  if(error){toast('تعذر التصويت: '+error.message,true);return}
+  toast(stance==='support'?'سُجّل تأييدك ✅':'سُجّل تشكيكك ❓');
+  const p=photos.find(x=>x.id===pid);
+  if(p)renderClaim(p);
+}
+
+async function claimDelete(cid){
+  if(!confirm('سحب السبق؟ سيختفي مع كل الأصوات.'))return;
+  const {error}=await sb.from('claims').delete().eq('id',cid);
+  if(error){toast('تعذر السحب',true);return}
+  toast('انسحب السبق');
+  await loadClaims();
+  if(curPhoto)renderClaim(curPhoto);
+  render();
+}
+
+/* ====== سباق الديار ====== */
+let RACE=[], MY_REGION='';
+
+async function loadRace(){
+  try{
+    const r=await sb.from('region_scores').select('*').order('total',{ascending:false});
+    RACE=r.data||[];
+  }catch(e){RACE=[]}
+}
+
+function detectMyRegion(){
+  // من موقع المستخدم: أقرب صورة له
+  if(!window.__USER_LAT||!photos.length)return '';
+  const d=p=>Math.hypot((p.lat-window.__USER_LAT)*111,(p.lng-window.__USER_LNG)*111*Math.cos(window.__USER_LAT*Math.PI/180));
+  const geo=photos.filter(p=>p.lat&&p.lng&&!p.abroad&&p.region);
+  if(!geo.length)return '';
+  const near=geo.slice().sort((a,b)=>d(a)-d(b))[0];
+  return (near&&d(near)<=120)?near.region:'';
+}
+
+async function openRace(){
+  go('race');
+  const el=$('raceList');if(!el)return;
+  el.innerHTML='<div class="loader">⏳</div>';
+  await loadRace();
+  if(!RACE.length){
+    el.innerHTML='<div class="empty"><span class="big">🏁</span>السباق ما بدأ بعد<br><span style="font-size:13px;color:var(--txt-dim)">انشر أول صورة وافتح السباق لمنطقتك</span></div>';
+    return;
+  }
+  MY_REGION=MY_REGION||detectMyRegion();
+  const medals=['🥇','🥈','🥉'];
+  let html='';
+  RACE.forEach((r,i)=>{
+    const mine=MY_REGION&&r.region===MY_REGION;
+    html+=`<div class="race-row ${i===0?'top1':''} ${mine?'mine':''}">
+      <div class="race-pos">${medals[i]||(i+1)}</div>
+      <div class="race-info">
+        <div class="race-name">${esc(r.region)}${mine?' <span style="font-size:11px;color:var(--sadu)">· ديرتك</span>':''}</div>
+        <div class="race-sub">📸 ${r.photos} صورة · 🎖️ ${r.photographers} مصوّر</div>
+      </div>
+      <div class="race-pts">${r.total} <span>نقطة</span></div>
+    </div>`;
+    // فجوة المنطقة التالية لديرتك
+    if(mine&&i>0){
+      const gap=RACE[i-1].total-r.total;
+      const need=Math.ceil(gap/10);
+      html+=`<div class="race-gap">🔥 تحتاج <b>${need}</b> ${need===1?'صورة':'صور'} لتتجاوز <b>${esc(RACE[i-1].region)}</b></div>`;
+    }
+  });
+  el.innerHTML=html;
+}
+
+/* ====== ديرتك أولاً — بنر الافتتاح ====== */
+async function renderHomeHero(){
+  const el=$('homeHero');if(!el)return;
+  if(!window.__USER_LAT){el.style.display='none';return}
+  MY_REGION=detectMyRegion();
+  if(!MY_REGION){
+    // خارج التغطية — دعوة للتوثيق
+    el.style.display='block';
+    el.innerHTML=`<div class="hh-place">📍 منطقتك بلا صور بعد</div>
+      <div class="hh-line">ما وثّق أحدٌ ما حولك — <b>كن أول من يصوّرها</b></div>
+      <button class="hh-cta" onclick="go('add')">📷 انشر أول صورة</button>`;
+    return;
+  }
+
+  const d=p=>Math.hypot((p.lat-window.__USER_LAT)*111,(p.lng-window.__USER_LNG)*111*Math.cos(window.__USER_LAT*Math.PI/180));
+  const mine=photos.filter(p=>p.region===MY_REGION&&!p.abroad);
+  const near=photos.filter(p=>p.lat&&p.lng&&!p.abroad&&d(p)<=50);
+
+  await loadRace();
+  const idx=RACE.findIndex(r=>r.region===MY_REGION);
+  const rank=idx>=0?idx+1:null;
+  const gapTxt=(idx>0)?`تحتاج <b>${Math.ceil((RACE[idx-1].total-RACE[idx].total)/10)}</b> صور لتتجاوز <b>${esc(RACE[idx-1].region)}</b>`:'';
+
+  el.style.display='block';
+  el.innerHTML=`<div class="hh-place">📍 أنت في ${esc(MY_REGION)}</div>
+    <div class="hh-line">${mine.length} صورة من ديرتك · ${near.length} حولك ضمن ٥٠ كم</div>
+    ${rank?`<div class="hh-line" style="margin-top:4px">🏁 ترتيب منطقتك: <b>#${rank}</b>${gapTxt?' — '+gapTxt:''}</div>`:''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="hh-cta" onclick="go('add')">📷 وثّق ديرتك</button>
+      ${rank?`<span class="hh-rank" onclick="openRace()">🏆 شوف السباق</span>`:''}
+    </div>`;
+}
+
+/* ====== خزنتي — الصور الخاصة ====== */
+async function renderVault(){
+  const wrap=$('vaultWrap'), el=$('vaultFeed');
+  if(!wrap||!el)return;
+  if(!USER||USER.is_anonymous){wrap.style.display='none';return}
+  try{
+    const r=await sb.from('photos').select('id,title,city,village,country,abroad,image_path,media_type,created_at')
+      .eq('user_id',USER.id).eq('visibility','private').order('created_at',{ascending:false});
+    const list=r.data||[];
+    wrap.style.display='block';
+    if(!list.length){
+      el.innerHTML='<div class="vault-empty">🔒 خزنتك فاضية<br><span style="font-size:12px">عند النشر اختر «خزنتي» لتحفظ صورك لنفسك أولاً</span></div>';
+      return;
+    }
+    el.innerHTML=list.map(p=>{
+      const isV=p.media_type==='video';
+      const loc=p.abroad?(p.country||p.city):((p.village?p.village+' · ':'')+p.city);
+      const src=isV?vidUrl(p.image_path):thumbUrl(p.image_path);
+      return `<div class="vault-item">
+        ${isV?`<video src="${src}#t=0.5" muted playsinline preload="metadata"></video>`
+             :`<img src="${src}" loading="lazy" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'">`}
+        <div class="vault-info">
+          <div class="vault-title">${isV?'🎬 ':''}${esc(p.title)}</div>
+          <div class="vault-loc">📍 ${esc(loc)}</div>
+        </div>
+        <button class="vault-pub" onclick="publishFromVault(${p.id})">📢 انشرها</button>
+      </div>`;
+    }).join('');
+  }catch(e){wrap.style.display='none'}
+}
+
+async function publishFromVault(pid){
+  if(!confirm('نشرها للجميع؟ ستدخل الشبكة وتُحتسب لسباق ديرتك.'))return;
+  const {error}=await sb.from('photos').update({visibility:'public'}).eq('id',pid).eq('user_id',USER.id);
+  if(error){toast('تعذر النشر: '+error.message,true);return}
+  toast('انتشرت للجميع 🎉');
+  // إشعار للجميع
+  try{
+    const ph=photos.find(x=>x.id===pid);
+    const nm=(await sb.from('profiles').select('display_name').eq('id',USER.id).maybeSingle()).data?.display_name||'مصوّر';
+    if(ph){
+      const isV=ph.media_type==='video';
+      pushNotify({
+        title:isV?'🎬 مقطع جديد في الأضواء':('📸 صورة جديدة من '+(ph.city||ph.region||'الديرة')),
+        body:ph.title+' — عدسة '+nm,
+        url:'/',
+        exclude:USER.id
+      });
+    }
+  }catch(e){}
+  await loadPhotos();
+  renderVault();
+  if(typeof renderProfTabs==="function"&&PROF_UID){renderProfTabs();renderProfFeed();}
+  if(typeof renderMyStats==='function')renderMyStats();
+}
+
+async function moveToVault(pid){
+  if(!confirm('سحبها لخزنتك؟ ما راح يشوفها أحد غيرك.'))return;
+  const {error}=await sb.from('photos').update({visibility:'private'}).eq('id',pid).eq('user_id',USER.id);
+  if(error){toast('تعذر السحب',true);return}
+  toast('انسحبت لخزنتك 🔒');
+  closeSheet();
+  await loadPhotos();
+}
+
+/* ====== إرسال الإشعارات ====== */
+async function pushNotify(payload){
+  try{
+    const url=(typeof SB_URL!=='undefined'?SB_URL:'https://gquzjaxpqeggknhipmzk.supabase.co')+'/functions/v1/smart-service';
+    const key=(typeof SB_KEY!=='undefined')?SB_KEY:'sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX';
     const r=await fetch(url,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key},
-      body:JSON.stringify({title:'اختبار 🔔',body:'من التطبيق'})
+      body:JSON.stringify(payload)
     });
-    const t=await r.text();
-    toast('HTTP '+r.status+' — '+t.slice(0,120), !r.ok);
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
+    return j;
   }catch(e){
-    toast('استثناء: '+(e.message||e),true);
+    console.warn('push failed',e);
+    return null;
   }
 }
