@@ -175,7 +175,7 @@ async function addPhoto(){
         abroad:isAbroad,country,
         village:isAbroad?'':$('aVillage').value.trim(),
         lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
-        image_path:vpath,media_type:'video',filter_key:curFilter,music_key:(pendingMusicName||''),visibility:pendingVis
+        image_path:vpath,media_type:'video',filter_key:curFilter,music_key:(pendingMusicName||''),visibility:pendingVis,description:($('aDesc')?$('aDesc').value.trim():'')
       });
       if(insv.error){
         await sb.storage.from('videos').remove([vpath]).catch(()=>{});
@@ -195,7 +195,7 @@ async function addPhoto(){
       pendingVideo=null;resetFilter();pendingVis='public';setVis('public');const _c1=$('clearDraft');if(_c1)_c1.style.display='none';
       const pv=$('videoPreview');if(pv){pv.src='';pv.style.display='none';}
       $('drop').style.display='none';$('geoCard').style.display='none';
-      $('aTitle').value='';$('aVillage').value='';
+      $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}
       toast('انرفع الفيديو 🎬');
       try{sortMode='new';_sort='new';}catch(e){}
       if(typeof maybeAskNotifs==='function')maybeAskNotifs();
@@ -216,7 +216,7 @@ async function addPhoto(){
       abroad:isAbroad,country,
       village:isAbroad?'':$('aVillage').value.trim(),
       lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
-      image_path:path,visibility:pendingVis
+      image_path:path,visibility:pendingVis,description:($('aDesc')?$('aDesc').value.trim():'')
     }).select('id').maybeSingle();
     if(ins.error){
       // فشل التسجيل — ننظف ملفات الصورة من المخزن حتى لا تبقى يتيمة
@@ -249,7 +249,7 @@ async function addPhoto(){
     }
     pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();pendingVis='public';setVis('public');const _c2=$('clearDraft');if(_c2)_c2.style.display='none';
     $('preview').style.display='none';$('drop').style.display='none';$('geoCard').style.display='none';
-    $('aTitle').value='';$('aVillage').value='';
+    $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}
     toast(pendingVis==='private'?'انحفظت بخزنتك 🔒':'نُشرت صورتك 🎉');
     const wasAbroad=isAbroad;
     $('aCountry').value='';
@@ -839,6 +839,8 @@ function syncPublishBtn(){
   if(lt)lt.textContent=isV?'عنوان المقطع':'عنوان الصورة';
   const lc=$('lblCat');
   if(lc)lc.textContent=isV?'تصنيف المقطع':'تصنيف الصورة';
+  const ld=$('lblDesc');
+  if(ld)ld.textContent=isV?'وصف المقطع (اختياري)':'وصف الصورة (اختياري)';
   const ti=$('aTitle');
   if(ti)ti.placeholder=isV?'مثال: ضباب الصباح على السودة':'مثال: غروب على جبال السودة';
   const cf=$('claimForm');
@@ -857,3 +859,8 @@ function syncClaimLabel(){
   l.textContent=d.open?'🏅 سجّل سبقك في هذا الموقع — اضغط للطي':'🏅 سجّل سبقك في هذا الموقع — اضغط للعرض';
 }
 
+
+function descCount(){
+  const t=$('aDesc'), l=$('descLen');
+  if(t&&l)l.textContent=t.value.length+' / 600';
+}

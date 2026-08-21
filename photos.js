@@ -213,6 +213,14 @@ async function openSheet(id){
   renderFollow(p);
   renderVisits(p);
   renderClaim(p);
+  // الوصف
+  const dsc=$('sDesc');
+  if(dsc){
+    if(p.description&&p.description.trim()){
+      dsc.style.display='block';
+      dsc.textContent=p.description;
+    }else dsc.style.display='none';
+  }
   // تاريخ النشر
   const dt=$('sDate');
   if(dt){

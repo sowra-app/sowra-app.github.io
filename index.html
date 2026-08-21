@@ -195,6 +195,10 @@
     <input type="file" id="fileLive" accept="image/*" capture="environment" style="display:none" onchange="pickImg(this,true)">
     <input type="file" id="fileGal" accept="image/*" style="display:none" onchange="pickImg(this,false)">
     <div class="f-group"><label id="lblTitle">عنوان الصورة</label><input id="aTitle" placeholder="مثال: غروب على جبال السودة"></div>
+    <div class="f-group"><label id="lblDesc">وصف الصورة (اختياري)</label>
+      <textarea id="aDesc" rows="3" maxlength="600" placeholder="احكِ قصتها: متى صوّرتها · كيف تصل للمكان · أفضل وقت لزيارته..." oninput="descCount()"></textarea>
+      <div id="descLen" style="font-size:11px;color:var(--txt-dim);text-align:left;margin-top:3px">0 / 600</div>
+    </div>
     <div class="f-group"><label id="lblCat">تصنيف الصورة</label>
       <select id="aCat">
         <option value="nature">🌿 طبيعة</option><option value="arch">🏛️ عمارة</option><option value="wildlife">🦅 طيور وحيوانات</option><option value="people">👥 أشخاص</option><option value="bw">⬛ أبيض وأسود</option><option value="landmark">🕌 معلم</option><option value="other" selected>📷 أخرى</option>
@@ -234,6 +238,7 @@
       <div class="sheet-title" id="sTitle"></div>
       <div class="sheet-loc" id="sLoc"></div>
       <div id="sDate" class="s-date" style="display:none"></div>
+      <div id="sDesc" class="s-desc" style="display:none"></div>
       <div id="sFollow" class="follow-row"></div>
       <div id="visitBox" style="display:none"></div>
       <div id="claimBox"></div>
@@ -488,6 +493,34 @@
 </div>
 
 <!-- ====== دعوة تفعيل الإشعارات ====== -->
+<!-- ====== جولة الترحيب ====== -->
+<div id="tour" class="tour">
+  <div class="tour-card">
+    <button class="tour-skip" onclick="tourEnd()">تخطّي</button>
+
+    <div class="tour-slide on" data-i="0">
+      <div class="tour-ic">📸</div>
+      <div class="tour-title">صوّر ديرتك</div>
+      <div class="tour-body">التقط أجمل ما حولك — وادياً، بيتاً تراثياً، غروباً. الموقع يُسجّل تلقائياً مع صورتك.</div>
+    </div>
+
+    <div class="tour-slide" data-i="1">
+      <div class="tour-ic">⭐</div>
+      <div class="tour-title">الناس تحكم</div>
+      <div class="tour-body">الجمهور يقيّم بالنجوم، والأجمل يتصدر — لا الخوارزمية ولا عدد المتابعين.</div>
+    </div>
+
+    <div class="tour-slide" data-i="2">
+      <div class="tour-ic">🏁</div>
+      <div class="tour-title">ديرتك تصعد</div>
+      <div class="tour-body">كل صورة وزيارة وتقييم يرفع ترتيب منطقتك في سباق الديار. صوّر… وخلّ ديرتك بالمقدمة.</div>
+    </div>
+
+    <div class="tour-dots" id="tourDots"></div>
+    <button class="btn tour-next" id="tourNext" onclick="tourNext()">التالي →</button>
+  </div>
+</div>
+
 <div id="notifAsk" class="notif-ask">
   <div class="na-card">
     <div class="na-ic">🔔</div>
