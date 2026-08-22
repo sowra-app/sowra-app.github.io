@@ -930,7 +930,7 @@ async function translateFields(){
     btn.textContent='✅ تُرجم — اضغط لإعادة الترجمة';
     toast('انترجم ✅');
   }catch(e){
-    alert('تعذرت الترجمة:\n\n'+(e.message||e));
+    toast('تعذرت الترجمة — جرّب مرة ثانية',true);
     btn.textContent='🌐 ترجم العنوان والوصف للإنجليزية';
   }finally{btn.disabled=false}
 }
