@@ -608,3 +608,14 @@ body.dark .comm-badge{background:#1B2A21}
 .tr-preview .d{margin-top:7px;color:var(--txt-dim)}
 .s-en{background:var(--card2);border-right:3px solid var(--qblue);border-radius:10px;padding:10px 13px;margin-bottom:12px;direction:ltr;text-align:left;font-size:13px;line-height:1.8}
 .s-en b{display:block;font-size:13.5px;color:var(--qblue);margin-bottom:3px}
+
+/* ====== الفاحص الذكي ====== */
+.inspect-box{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 15px;margin-bottom:14px;font-size:13px;line-height:1.9}
+.inspect-box b{display:inline}
+.inspect-box span{font-size:12px;color:var(--txt-dim);display:block;margin-top:3px}
+.inspect-box.ok{border-color:var(--palm);background:linear-gradient(135deg,#F1F8F4,var(--card))}
+.inspect-box.warn{border-color:var(--star);background:linear-gradient(135deg,#FFF7E0,var(--card))}
+.inspect-box.bad{border-color:var(--sadu);background:#FBEAE8}
+body.dark .inspect-box.ok{background:linear-gradient(135deg,#1B2A21,var(--card))}
+body.dark .inspect-box.warn{background:linear-gradient(135deg,#2E2519,var(--card))}
+body.dark .inspect-box.bad{background:#33201D}

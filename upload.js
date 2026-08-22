@@ -218,6 +218,11 @@ async function addPhoto(){
       return;
     }
     const blob=pendingBlob||await compress(pendingFile);
+    // الفاحص الذكي
+    if(typeof INSPECT_ON!=='undefined'&&INSPECT_ON&&typeof runInspection==='function'){
+      const ok=await runInspection(blob);
+      if(!ok){btn.disabled=false;btn.textContent=(pendingVis==='private'?'🔒 احفظ بخزنتي':'انشر الصورة 🚀');return}
+    }
     const thumb=await compressTo(pendingFile,420,0.7);
     const path=`${USER.id}/${Date.now()}.jpg`;
     const [up,upT]=await Promise.all([
@@ -939,4 +944,94 @@ function resetTranslation(){
   trTitle='';trDesc='';
   const pv=$('trPreview');if(pv){pv.style.display='none';pv.innerHTML=''}
   const b=$('trBtn');if(b)b.textContent='🌐 ترجم العنوان والوصف للإنجليزية';
+}
+
+/* ====== الفاحص الذكي ====== */
+async function inspectPhoto(blob){
+  try{
+    // تصغير للفحص (توفير تكلفة وسرعة)
+    const dataUrl=await new Promise((res,rej)=>{
+      const img=new Image();
+      img.onload=()=>{
+        try{
+          const s=Math.min(1,640/Math.max(img.width,img.height));
+          const cv=document.createElement('canvas');
+          cv.width=Math.round(img.width*s);cv.height=Math.round(img.height*s);
+          cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+          URL.revokeObjectURL(img.src);
+          res(cv.toDataURL('image/jpeg',0.7));
+        }catch(e){rej(e)}
+      };
+      img.onerror=rej;
+      img.src=URL.createObjectURL(blob);
+    });
+
+    let data=null,err=null;
+    try{
+      const r=await sb.functions.invoke('translate',{body:{action:'inspect',image:dataUrl}});
+      data=r.data;err=r.error;
+    }catch(e){err=e}
+
+    if(!data||err){
+      const sess=await sb.auth.getSession();
+      const tok=sess?.data?.session?.access_token;
+      const r=await fetch('https://gquzjaxpqeggknhipmzk.supabase.co/functions/v1/translate',{
+        method:'POST',
+        headers:Object.assign(
+          {'Content-Type':'application/json','apikey':'sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX'},
+          tok?{'Authorization':'Bearer '+tok}:{}
+        ),
+        body:JSON.stringify({action:'inspect',image:dataUrl})
+      });
+      if(!r.ok)return null;
+      data=await r.json();
+    }
+    return (data&&!data.error)?data:null;
+  }catch(e){return null}
+}
+
+/* يرجع true إذا يُسمح بالمتابعة */
+async function runInspection(blob){
+  const st=$('inspectStatus');
+  if(st){st.style.display='block';st.className='inspect-box';st.innerHTML='🤖 نفحص الصورة...'}
+  const res=await inspectPhoto(blob);
+  if(!res){if(st)st.style.display='none';return true}
+
+  // منع صريح
+  if(res.nsfw||res.violence){
+    if(st){
+      st.className='inspect-box bad';
+      st.innerHTML='⛔ <b>الصورة مرفوضة</b><br><span>فيها محتوى مخالف لإرشادات النشر</span>';
+    }
+    return false;
+  }
+
+  // تحذيرات
+  const warns=[];
+  if(res.face)warns.push('👤 فيها وجه واضح — تأكد من إذن صاحبه');
+  if(res.plate)warns.push('🚗 فيها لوحة مركبة مقروءة');
+  if(res.indoor_private)warns.push('🏠 تبدو من داخل منزل خاص');
+
+  if(warns.length){
+    if(st){
+      st.className='inspect-box warn';
+      st.innerHTML='⚠️ <b>تنبيه قبل النشر</b><br><span>'+warns.join('<br>')+'</span>';
+    }
+    return confirm('تنبيه:\n\n'+warns.join('\n')+'\n\nتبي تكمل النشر؟');
+  }
+
+  // نظيفة — نقترح التصنيف
+  if(st){
+    st.className='inspect-box ok';
+    st.innerHTML='✅ <b>الصورة سليمة</b>';
+    setTimeout(()=>{if(st)st.style.display='none'},2500);
+  }
+  if(res.category&&$('aCat')){
+    const opt=Array.from($('aCat').options).find(o=>o.value===res.category);
+    if(opt)$('aCat').value=res.category;
+  }
+  if(res.suggested_title_ar&&$('aTitle')&&!$('aTitle').value.trim()){
+    $('aTitle').placeholder='اقتراح: '+res.suggested_title_ar;
+  }
+  return true;
 }

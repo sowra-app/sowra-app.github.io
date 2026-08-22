@@ -1051,6 +1051,10 @@ async function loadUserBadges(uid){
 }
 
 /* ====== تفعيل الفيديو ====== */
+function initInspect(){
+  window.INSPECT_ON=!!(window.__SPDATA&&window.__SPDATA.inspect_enabled);
+}
+
 function initCommBox(){
   const el=$('commBox');if(!el)return;
   const sp=window.__SPDATA;

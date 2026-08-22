@@ -89,6 +89,7 @@ async function loadSponsor(){
     if(typeof initGoogleBtn==='function')initGoogleBtn();
     if(typeof initVideoUpload==='function')initVideoUpload();
     if(typeof initCommBox==='function')initCommBox();
+    if(typeof initInspect==='function')initInspect();
   }catch(e){}
 }
 
