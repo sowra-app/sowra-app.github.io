@@ -775,6 +775,30 @@ async function renderVisits(p){
 
 async function addVisit(pid){
   if(!USER||USER.is_anonymous){toast('سجّل أول عشان توثّق زيارتك',true);return}
+  const ph=photos.find(x=>x.id===pid);
+  if(!ph||!ph.lat||!ph.lng){toast('ما فيه موقع مسجّل لهذه الصورة',true);return}
+
+  // قراءة الموقع لحظة الضغط
+  toast('📍 نتحقق من موقعك...');
+  const pos=await new Promise(res=>{
+    if(!navigator.geolocation)return res(null);
+    navigator.geolocation.getCurrentPosition(
+      p2=>res(p2.coords),
+      ()=>res(null),
+      {enableHighAccuracy:true,timeout:12000,maximumAge:0}
+    );
+  });
+  if(!pos){toast('تعذر تحديد موقعك — فعّل الموقع وحاول ثانية',true);return}
+
+  window.__USER_LAT=pos.latitude;window.__USER_LNG=pos.longitude;
+  const dist=Math.hypot((ph.lat-pos.latitude)*111000,(ph.lng-pos.longitude)*111000*Math.cos(ph.lat*Math.PI/180));
+  if(dist>500){
+    const txt=dist>1000?((dist/1000).toFixed(1)+' كم'):(Math.round(dist)+' متراً');
+    toast('لا زلت بعيداً — '+txt+' عن الموقع',true);
+    renderVisits(ph);
+    return;
+  }
+
   const {error}=await sb.from('visits').insert({photo_id:pid,user_id:USER.id});
   if(error){toast('تعذر التسجيل: '+error.message,true);return}
   toast('انسجّلت زيارتك 👣');
