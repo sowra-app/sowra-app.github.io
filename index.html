@@ -434,7 +434,6 @@
     <div id="admSt" style="display:none"></div>
     <div id="admWk" style="display:none"></div>
     <div id="admQs" style="display:none"></div>
-    <button class="btn" style="width:100%;margin-top:10px" onclick="testTr()">🌐 اختبار الترجمة</button>
     <div id="admMu" style="display:none"></div>
     <div id="admFb" style="display:none"></div>
     <div id="admPlaces" style="display:none">
@@ -522,6 +521,8 @@
       <label>الوصف</label>
       <textarea id="edDesc" rows="4" maxlength="600"></textarea>
     </div>
+    <button type="button" class="tr-btn" id="edTrBtn" onclick="translateEdit()" style="margin-bottom:12px">🌐 ترجم للإنجليزية</button>
+    <div id="edTrPreview" class="tr-preview" style="display:none;margin-bottom:12px"></div>
     <div class="eb-acts">
       <button class="btn" id="edSave" onclick="saveEdit()">💾 احفظ</button>
       <button class="btn eb-cancel" onclick="closeEdit()">إلغاء</button>

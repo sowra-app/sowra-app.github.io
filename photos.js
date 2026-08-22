@@ -1721,6 +1721,20 @@ function openEdit(pid){
   if(dg)dg.style.display=isV?'none':'block';
   if($('edDesc'))$('edDesc').value=p.description||'';
   $('edLabel').textContent=isV?'عدّل عنوان المقطع':'عدّل عنوان الصورة ووصفها';
+  edTrTitle=p.title_en||'';edTrDesc=p.description_en||'';
+  const pv=$('edTrPreview');
+  if(pv){
+    if(edTrTitle||edTrDesc){
+      pv.style.display='block';
+      pv.innerHTML=(edTrTitle?'<b>Title</b>'+esc(edTrTitle):'')
+        +(edTrDesc?'<div class="d">'+esc(edTrDesc)+'</div>':'');
+    }else{pv.style.display='none';pv.innerHTML=''}
+  }
+  const tb=$('edTrBtn');
+  if(tb){
+    tb.style.display=isV?'none':'block';
+    tb.textContent=(edTrTitle||edTrDesc)?'🌐 أعد الترجمة':'🌐 ترجم للإنجليزية';
+  }
   el.dataset.pid=pid;
   el.classList.add('show');
 }
@@ -1742,7 +1756,7 @@ async function saveEdit(){
   if(bd){toast('الوصف: '+bd,true);return}
 
   const btn=$('edSave');btn.disabled=true;btn.textContent='⏳';
-  const {error}=await sb.from('photos').update({title,description:desc}).eq('id',pid).eq('user_id',USER.id);
+  const {error}=await sb.from('photos').update({title,description:desc,title_en:edTrTitle,description_en:edTrDesc}).eq('id',pid).eq('user_id',USER.id);
   btn.disabled=false;btn.textContent='💾 احفظ';
   if(error){toast('تعذر الحفظ: '+error.message,true);return}
   toast('انحفظ التعديل ✅');
@@ -1751,4 +1765,50 @@ async function saveEdit(){
   const fresh=photos.find(x=>x.id===pid);
   if(fresh&&curPhoto&&curPhoto.id===pid){curPhoto=fresh;openSheet(pid);}
   render();
+}
+
+/* ====== ترجمة نافذة التعديل ====== */
+let edTrTitle='', edTrDesc='';
+
+async function translateEdit(){
+  const t=$('edTitle')?$('edTitle').value.trim():'';
+  const d=$('edDesc')?$('edDesc').value.trim():'';
+  if(!t&&!d){toast('اكتب العنوان أول',true);return}
+  const btn=$('edTrBtn');btn.disabled=true;btn.textContent='⏳ نترجم...';
+  try{
+    let data=null,err=null;
+    try{
+      const res=await sb.functions.invoke('translate',{body:{title:t,description:d}});
+      data=res.data;err=res.error;
+    }catch(e){err=e}
+    if(!data||err){
+      const sess=await sb.auth.getSession();
+      const tok=sess?.data?.session?.access_token;
+      const r=await fetch('https://gquzjaxpqeggknhipmzk.supabase.co/functions/v1/translate',{
+        method:'POST',
+        headers:Object.assign(
+          {'Content-Type':'application/json','apikey':'sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX'},
+          tok?{'Authorization':'Bearer '+tok}:{}
+        ),
+        body:JSON.stringify({title:t,description:d})
+      });
+      const raw=await r.text();
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      data=JSON.parse(raw);
+    }
+    if(data&&data.error)throw new Error(data.error);
+    edTrTitle=(data&&data.title_en)||'';
+    edTrDesc=(data&&data.description_en)||'';
+    const pv=$('edTrPreview');
+    if(pv&&(edTrTitle||edTrDesc)){
+      pv.style.display='block';
+      pv.innerHTML=(edTrTitle?'<b>Title</b>'+esc(edTrTitle):'')
+        +(edTrDesc?'<div class="d">'+esc(edTrDesc)+'</div>':'');
+    }
+    btn.textContent='✅ تُرجم — اضغط للإعادة';
+    toast('انترجم ✅');
+  }catch(e){
+    toast('تعذرت الترجمة — جرّب مرة ثانية',true);
+    btn.textContent='🌐 ترجم للإنجليزية';
+  }finally{btn.disabled=false}
 }
