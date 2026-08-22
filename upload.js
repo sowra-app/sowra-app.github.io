@@ -892,22 +892,37 @@ async function translateFields(){
   if(!t&&!d){toast('اكتب العنوان أول',true);return}
   const btn=$('trBtn');btn.disabled=true;btn.textContent='⏳ نترجم...';
   try{
-    const r=await fetch('https://gquzjaxpqeggknhipmzk.supabase.co/functions/v1/translate',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'apikey':'sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX',
-        'Authorization':'Bearer sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX'
-      },
-      body:JSON.stringify({title:t,description:d})
-    });
-    const raw=await r.text();
-    if(!r.ok){toast('HTTP '+r.status+' — '+raw.slice(0,110),true);btn.disabled=false;btn.textContent='🌐 ترجم العنوان والوصف للإنجليزية';return}
-    let j={};
-    try{j=JSON.parse(raw)}catch(_){toast('رد غير متوقع: '+raw.slice(0,80),true)}
-    trTitle=j.title_en||'';trDesc=j.description_en||'';
+    // المسار الأول: مكتبة Supabase
+    let data=null, err=null;
+    try{
+      const res=await sb.functions.invoke('translate',{body:{title:t,description:d}});
+      data=res.data; err=res.error;
+    }catch(e){err=e}
+
+    // المسار الثاني: fetch مباشر إن فشل الأول
+    if(!data||err){
+      const sess=await sb.auth.getSession();
+      const tok=sess?.data?.session?.access_token;
+      const r=await fetch('https://gquzjaxpqeggknhipmzk.supabase.co/functions/v1/translate',{
+        method:'POST',
+        headers:Object.assign(
+          {'Content-Type':'application/json','apikey':'sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX'},
+          tok?{'Authorization':'Bearer '+tok}:{}
+        ),
+        body:JSON.stringify({title:t,description:d})
+      });
+      const raw=await r.text();
+      if(!r.ok)throw new Error('HTTP '+r.status+' — '+raw.slice(0,100));
+      data=JSON.parse(raw);
+    }
+
+    if(data&&data.error)throw new Error(data.error);
+    trTitle=(data&&data.title_en)||'';
+    trDesc=(data&&data.description_en)||'';
+    if(!trTitle&&!trDesc)throw new Error('رد فاضي');
+
     const pv=$('trPreview');
-    if(pv&&(trTitle||trDesc)){
+    if(pv){
       pv.style.display='block';
       pv.innerHTML=(trTitle?'<b>Title</b>'+esc(trTitle):'')
         +(trDesc?'<div class="d">'+esc(trDesc)+'</div>':'');
@@ -915,7 +930,7 @@ async function translateFields(){
     btn.textContent='✅ تُرجم — اضغط لإعادة الترجمة';
     toast('انترجم ✅');
   }catch(e){
-    toast('تعذرت الترجمة: '+(e.message||''),true);
+    toast('تعذرت الترجمة: '+(e.message||e),true);
     btn.textContent='🌐 ترجم العنوان والوصف للإنجليزية';
   }finally{btn.disabled=false}
 }
