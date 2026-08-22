@@ -263,6 +263,16 @@ async function openSheet(id){
       const isPriv=p.visibility==='private';
       vb.textContent=isPriv?'📢 انشرها للجميع':'🔒 اسحبها لخزنتي';
       vb.onclick=function(){isPriv?publishFromVault(p.id):moveToVault(p.id)};
+      // زر تعديل العنوان والوصف
+      let eb=document.getElementById('editBtn');
+      if(!eb){
+        eb=document.createElement('button');
+        eb.id='editBtn';
+        eb.style.cssText="background:none;border:none;color:var(--qblue);font-family:'Tajawal';font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;display:block;margin:6px auto 0";
+        dbw.appendChild(eb);
+      }
+      eb.textContent='✏️ عدّل العنوان والوصف';
+      eb.onclick=function(){openEdit(p.id)};
     }
   }
   $('overlay').classList.add('show');
@@ -1689,4 +1699,47 @@ async function checkRate(kind){
 async function logRate(kind){
   if(!USER||USER.is_anonymous)return;
   try{await sb.from('rate_log').insert({user_id:USER.id,kind})}catch(e){}
+}
+
+/* ====== تعديل العنوان والوصف ====== */
+function openEdit(pid){
+  const p=photos.find(x=>x.id===pid);
+  if(!p)return;
+  const isV=p.media_type==='video';
+  const el=$('editBox');if(!el)return;
+  $('edTitle').value=p.title||'';
+  const dg=$('edDescGroup');
+  if(dg)dg.style.display=isV?'none':'block';
+  if($('edDesc'))$('edDesc').value=p.description||'';
+  $('edLabel').textContent=isV?'عدّل عنوان المقطع':'عدّل عنوان الصورة ووصفها';
+  el.dataset.pid=pid;
+  el.classList.add('show');
+}
+
+function closeEdit(){
+  const el=$('editBox');
+  if(el)el.classList.remove('show');
+}
+
+async function saveEdit(){
+  const el=$('editBox');if(!el)return;
+  const pid=+el.dataset.pid;
+  const title=$('edTitle').value.trim();
+  const desc=$('edDesc')?$('edDesc').value.trim():'';
+  if(!title){toast('العنوان ما يصير فاضي',true);return}
+  const bt=checkText(title);
+  if(bt){toast('العنوان: '+bt,true);return}
+  const bd=checkText(desc,{allowLink:true});
+  if(bd){toast('الوصف: '+bd,true);return}
+
+  const btn=$('edSave');btn.disabled=true;btn.textContent='⏳';
+  const {error}=await sb.from('photos').update({title,description:desc}).eq('id',pid).eq('user_id',USER.id);
+  btn.disabled=false;btn.textContent='💾 احفظ';
+  if(error){toast('تعذر الحفظ: '+error.message,true);return}
+  toast('انحفظ التعديل ✅');
+  closeEdit();
+  await loadPhotos();
+  const fresh=photos.find(x=>x.id===pid);
+  if(fresh&&curPhoto&&curPhoto.id===pid){curPhoto=fresh;openSheet(pid);}
+  render();
 }

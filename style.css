@@ -590,3 +590,12 @@ body.dark .comm-badge{background:#1B2A21}
 .q-icon{background:var(--card2);border:1.5px solid var(--line);border-radius:10px;padding:7px 0;font-size:19px;cursor:pointer;line-height:1;transition:.15s}
 .q-icon.on{border-color:var(--sadu);border-width:2px;background:linear-gradient(160deg,var(--card),rgba(214,58,47,.1));transform:scale(1.06)}
 @media(max-width:420px){.q-icons{grid-template-columns:repeat(6,1fr)}}
+
+/* ====== نافذة التعديل ====== */
+.edit-box{display:none;position:fixed;inset:0;background:rgba(36,31,28,.62);z-index:140;align-items:center;justify-content:center;padding:22px;backdrop-filter:blur(3px)}
+.edit-box.show{display:flex}
+.eb-card{background:var(--card);border:2px solid var(--ink);border-radius:20px;padding:22px;max-width:420px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 10px 34px rgba(0,0,0,.3)}
+.eb-title{font-family:'Reem Kufi',sans-serif;font-size:19px;color:var(--sand);margin-bottom:16px;text-align:center}
+.eb-acts{display:flex;gap:10px;margin-top:6px}
+.eb-acts .btn{flex:1;padding:12px}
+.eb-cancel{background:var(--card2);border:1px solid var(--line);color:var(--txt-dim)}

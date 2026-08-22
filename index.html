@@ -503,6 +503,25 @@
 </div>
 
 <!-- ====== دعوة تفعيل الإشعارات ====== -->
+<!-- ====== تعديل العنوان والوصف ====== -->
+<div id="editBox" class="edit-box">
+  <div class="eb-card">
+    <div class="eb-title" id="edLabel">عدّل العنوان والوصف</div>
+    <div class="f-group">
+      <label>العنوان</label>
+      <input id="edTitle" maxlength="120">
+    </div>
+    <div class="f-group" id="edDescGroup">
+      <label>الوصف</label>
+      <textarea id="edDesc" rows="4" maxlength="600"></textarea>
+    </div>
+    <div class="eb-acts">
+      <button class="btn" id="edSave" onclick="saveEdit()">💾 احفظ</button>
+      <button class="btn eb-cancel" onclick="closeEdit()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
 <div id="notifAsk" class="notif-ask">
   <div class="na-card">
     <div class="na-ic">🔔</div>
