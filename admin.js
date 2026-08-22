@@ -71,10 +71,19 @@ const FB_AR={suggestion:'💡 اقتراح',complaint:'⚠️ شكوى',question
 async function sendFeedback(){
   const kind=$('fbKind').value,body=$('fbBody').value.trim();
   if(body.length<3)return toast('اكتب رسالتك أول',true);
+  if(typeof checkText==='function'){
+    const bad=checkText(body,{allowLink:true});
+    if(bad){toast(bad,true);return}
+  }
+  if(typeof checkRate==='function'){
+    const lim=await checkRate('message');
+    if(lim){toast(lim,true);return}
+  }
   const b=$('fbGo');b.disabled=true;b.textContent='⏳';
   const { error } = await sb.from('feedback').insert({user_id:USER.id,kind,body});
   b.disabled=false;b.textContent='إرسال 📨';
   if(error){toast('تعذر الإرسال: '+error.message,true);return}
+  if(typeof logRate==='function')logRate('message');
   $('fbBody').value='';
   toast('وصلت رسالتك للإدارة، شكراً لك 🙏');
 }

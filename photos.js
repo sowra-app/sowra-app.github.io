@@ -413,8 +413,13 @@ async function reportPhoto(){
 async function addComment(){
   if(!USER || USER.is_anonymous){toast('سجّل أول عشان تعلق ✍️');closeSheet();openAcc();return}
   const t=$('cText').value.trim();if(!t)return;
+  const bad=checkText(t);
+  if(bad){toast(bad,true);return}
+  const lim=await checkRate('comment');
+  if(lim){toast(lim,true);return}
   const { error } = await sb.from('comments').insert({photo_id:curId,user_id:USER.id,body:t});
   if(error){toast('تعذر إرسال التعليق',true);return}
+  logRate('comment');
   $('cText').value='';
   const cm=await sb.from('comments').select('body,created_at,profiles!user_id(display_name)').eq('photo_id',curId).order('created_at');
   curPhoto._comments=cm.data||[];renderComments();
@@ -767,6 +772,8 @@ async function removeVisit(pid){
 
 async function saveVisitNote(pid){
   const t=$('vNote').value.trim();
+  const badV=checkText(t);
+  if(badV){toast(badV,true);return}
   const {error}=await sb.from('visits').update({note:t}).eq('photo_id',pid).eq('user_id',USER.id);
   if(error){toast('تعذر الحفظ',true);return}
   toast('انحفظ انطباعك ✅');
@@ -1297,6 +1304,8 @@ async function claimVote(cid,stance,pid){
   if(!USER||USER.is_anonymous){toast('سجّل أول عشان تشارك بالحكم',true);return}
   const note=prompt(stance==='support'?'تؤيد السبق — تبي تضيف سبباً؟ (اختياري)':'تشكك بالسبق — وش سببك؟ (اختياري)');
   if(note===null)return;
+  const badN=checkText(note);
+  if(badN){toast(badN,true);return}
   const {error}=await sb.from('claim_votes').upsert({
     claim_id:cid,user_id:USER.id,stance,note:(note||'').trim()
   });
@@ -1626,4 +1635,58 @@ async function shareProfile(uid){
       toast('انحفظت البطاقة');
     },'image/jpeg',0.92);
   }catch(e){toast('تعذر التجهيز',true)}
+}
+
+/* ====== حماية المحتوى: فلتر الكلمات وحد المعدّل ====== */
+const BAD_WORDS=['قحب','شرموط','منيوك','عرص','خرا','طيز','نيك','fuck','bitch','asshole','bastard'];
+
+function hasBadWord(t){
+  if(!t)return false;
+  const s=String(t).toLowerCase().replace(/[\u064B-\u0652]/g,'');
+  return BAD_WORDS.some(w=>s.includes(w));
+}
+
+function hasLink(t){
+  if(!t)return false;
+  return /(https?:\/\/|www\.|\.com|\.net|\.org|\.sa\b|t\.me\/|wa\.me\/|@[a-z0-9_]{4,})/i.test(String(t));
+}
+
+function hasRepeat(t){
+  if(!t)return false;
+  return /(.)\1{7,}/.test(String(t));
+}
+
+/* يرجع رسالة الخطأ أو null إذا النص سليم */
+function checkText(t,{allowLink=false}={}){
+  if(!t||!String(t).trim())return null;
+  if(hasBadWord(t))return 'فيه ألفاظ غير لائقة — عدّل النص من فضلك';
+  if(!allowLink&&hasLink(t))return 'الروابط ومعرّفات الحسابات غير مسموحة';
+  if(hasRepeat(t))return 'فيه تكرار غير طبيعي بالأحرف';
+  return null;
+}
+
+/* ====== حد المعدّل ====== */
+const RATE_LIMITS={photo:{n:10,hours:1,label:'صور'},comment:{n:20,hours:1,label:'تعليقات'},message:{n:5,hours:24,label:'رسائل'},claim:{n:3,hours:24,label:'سبق'}};
+
+async function checkRate(kind){
+  if(!USER||USER.is_anonymous)return null;
+  if(typeof IS_ADMIN!=='undefined'&&IS_ADMIN)return null;
+  const cfg=RATE_LIMITS[kind];
+  if(!cfg)return null;
+  try{
+    const since=new Date(Date.now()-cfg.hours*3600000).toISOString();
+    const r=await sb.from('rate_log').select('id',{count:'exact',head:true})
+      .eq('user_id',USER.id).eq('kind',kind).gte('created_at',since);
+    if((r.count||0)>=cfg.n){
+      return cfg.hours===24
+        ? ('وصلت الحد اليومي ('+cfg.n+' '+cfg.label+') — جرّب بكرة')
+        : ('خذ نفسك — تقدر تنشر '+cfg.n+' '+cfg.label+' بالساعة');
+    }
+  }catch(e){}
+  return null;
+}
+
+async function logRate(kind){
+  if(!USER||USER.is_anonymous)return;
+  try{await sb.from('rate_log').insert({user_id:USER.id,kind})}catch(e){}
 }

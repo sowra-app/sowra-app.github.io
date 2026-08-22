@@ -159,6 +159,19 @@ async function addPhoto(){
     region='عدسة مسافر';city=country;
   }
   if(!pendingFile&&!pendingVideo)return toast('اختر صورة أو فيديو أول ⚠️',true);
+  // فحص النصوص وحد المعدّل
+  if(typeof checkText==='function'){
+    const bt=checkText($('aTitle').value);
+    if(bt){toast('العنوان: '+bt,true);return}
+    const bd=$('aDesc')?checkText($('aDesc').value,{allowLink:true}):null;
+    if(bd){toast('الوصف: '+bd,true);return}
+    const bv=checkText($('aVillage')?$('aVillage').value:'');
+    if(bv){toast('اسم القرية: '+bv,true);return}
+  }
+  if(typeof checkRate==='function'){
+    const lim=await checkRate('photo');
+    if(lim){toast(lim,true);return}
+  }
   if(!title)return toast('اكتب عنوان للصورة ⚠️',true);
   if(title.length<2)return toast('العنوان قصير — حرفان على الأقل ✏️',true);
   if(title.length>100)return toast('العنوان طويل — 100 حرف كحد أقصى ✏️',true);
@@ -196,6 +209,7 @@ async function addPhoto(){
       const pv=$('videoPreview');if(pv){pv.src='';pv.style.display='none';}
       $('drop').style.display='none';$('geoCard').style.display='none';
       $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;
+      if(typeof logRate==='function')logRate('photo');
       toast('انرفع الفيديو 🎬');
       try{sortMode='new';_sort='new';}catch(e){}
       if(typeof maybeAskNotifs==='function')maybeAskNotifs();
@@ -226,7 +240,8 @@ async function addPhoto(){
     // السبق على الموقع إن سُجّل
     try{
       const cp=$('clPlace'), cr=$('clReason');
-      if(cp&&cr&&cp.value.trim()&&cr.value.trim()&&ins.data&&ins.data.id){
+      if(cp&&cr&&cp.value.trim()&&cr.value.trim()&&ins.data&&ins.data.id
+          &&!(typeof checkText==='function'&&(checkText(cp.value)||checkText(cr.value)))){
         const cl=await sb.from('claims').insert({
           photo_id:ins.data.id,user_id:USER.id,
           place_name:cp.value.trim(),reason:cr.value.trim(),
@@ -250,6 +265,7 @@ async function addPhoto(){
     pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();pendingVis='public';setVis('public');const _c2=$('clearDraft');if(_c2)_c2.style.display='none';
     $('preview').style.display='none';$('drop').style.display='none';$('geoCard').style.display='none';
     $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;
+    if(typeof logRate==='function')logRate('photo');
     toast(pendingVis==='private'?'انحفظت بخزنتك 🔒':'نُشرت صورتك 🎉');
     const wasAbroad=isAbroad;
     $('aCountry').value='';
