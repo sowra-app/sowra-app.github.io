@@ -213,6 +213,15 @@ async function openSheet(id){
   renderFollow(p);
   renderVisits(p);
   renderClaim(p);
+  // الترجمة الإنجليزية
+  const en=$('sEn');
+  if(en){
+    if(p.title_en||p.description_en){
+      en.style.display='block';
+      en.innerHTML=(p.title_en?'<b>'+esc(p.title_en)+'</b>':'')
+        +(p.description_en?esc(p.description_en):'');
+    }else en.style.display='none';
+  }
   // شارة الاستخدام التجاري
   const cb=$('sComm');
   if(cb)cb.style.display=p.commercial?'inline-flex':'none';

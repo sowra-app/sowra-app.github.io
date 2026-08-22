@@ -199,6 +199,11 @@
       <textarea id="aDesc" rows="3" maxlength="600" placeholder="احكِ قصتها: متى صوّرتها · كيف تصل للمكان · أفضل وقت لزيارته..." oninput="descCount()"></textarea>
       <div id="descLen" style="font-size:11px;color:var(--txt-dim);text-align:left;margin-top:3px">0 / 600</div>
     </div>
+    <div class="f-group" id="trGroup">
+      <button type="button" class="tr-btn" id="trBtn" onclick="translateFields()">🌐 ترجم العنوان والوصف للإنجليزية</button>
+      <div id="trPreview" class="tr-preview" style="display:none"></div>
+    </div>
+    
     <div class="f-group"><label id="lblCat">تصنيف الصورة</label>
       <select id="aCat">
         <option value="nature">🌿 طبيعة</option><option value="arch">🏛️ عمارة</option><option value="wildlife">🦅 طيور وحيوانات</option><option value="people">👥 أشخاص</option><option value="bw">⬛ أبيض وأسود</option><option value="landmark">🕌 معلم</option><option value="other" selected>📷 أخرى</option>
@@ -249,6 +254,7 @@
       <div id="sDate" class="s-date" style="display:none"></div>
       <div id="sComm" class="comm-badge" style="display:none">💼 متاحة للاستخدام التجاري</div>
       <div id="sDesc" class="s-desc" style="display:none"></div>
+      <div id="sEn" class="s-en" style="display:none"></div>
       <div id="sFollow" class="follow-row"></div>
       <div id="visitBox" style="display:none"></div>
       <div id="claimBox"></div>

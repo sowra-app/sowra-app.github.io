@@ -208,7 +208,7 @@ async function addPhoto(){
       pendingVideo=null;resetFilter();pendingVis='public';setVis('public');const _c1=$('clearDraft');if(_c1)_c1.style.display='none';
       const pv=$('videoPreview');if(pv){pv.src='';pv.style.display='none';}
       $('drop').style.display='none';$('geoCard').style.display='none';
-      $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;
+      $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();
       if(typeof logRate==='function')logRate('photo');
       toast('انرفع الفيديو 🎬');
       try{sortMode='new';_sort='new';}catch(e){}
@@ -230,7 +230,7 @@ async function addPhoto(){
       abroad:isAbroad,country,
       village:isAbroad?'':$('aVillage').value.trim(),
       lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
-      image_path:path,visibility:pendingVis,description:($('aDesc')?$('aDesc').value.trim():''),commercial:!!($('aComm')&&$('aComm').checked)
+      image_path:path,visibility:pendingVis,description:($('aDesc')?$('aDesc').value.trim():''),commercial:!!($('aComm')&&$('aComm').checked),title_en:trTitle,description_en:trDesc
     }).select('id').maybeSingle();
     if(ins.error){
       // فشل التسجيل — ننظف ملفات الصورة من المخزن حتى لا تبقى يتيمة
@@ -264,7 +264,7 @@ async function addPhoto(){
     }
     pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();pendingVis='public';setVis('public');const _c2=$('clearDraft');if(_c2)_c2.style.display='none';
     $('preview').style.display='none';$('drop').style.display='none';$('geoCard').style.display='none';
-    $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;
+    $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();
     if(typeof logRate==='function')logRate('photo');
     toast(pendingVis==='private'?'انحفظت بخزنتك 🔒':'نُشرت صورتك 🎉');
     const wasAbroad=isAbroad;
@@ -857,6 +857,8 @@ function syncPublishBtn(){
   if(lc)lc.textContent=isV?'تصنيف المقطع':'تصنيف الصورة';
   const dg=$('descGroup');
   if(dg)dg.style.display=isV?'none':'block';
+  const tg=$('trGroup');
+  if(tg)tg.style.display=isV?'none':'block';
   const ti=$('aTitle');
   if(ti)ti.placeholder=isV?'مثال: ضباب الصباح على السودة':'مثال: غروب على جبال السودة';
   const cf=$('claimForm');
@@ -879,4 +881,45 @@ function syncClaimLabel(){
 function descCount(){
   const t=$('aDesc'), l=$('descLen');
   if(t&&l)l.textContent=t.value.length+' / 600';
+}
+
+/* ====== الترجمة التلقائية ====== */
+let trTitle='', trDesc='';
+
+async function translateFields(){
+  const t=$('aTitle')?$('aTitle').value.trim():'';
+  const d=$('aDesc')?$('aDesc').value.trim():'';
+  if(!t&&!d){toast('اكتب العنوان أول',true);return}
+  const btn=$('trBtn');btn.disabled=true;btn.textContent='⏳ نترجم...';
+  try{
+    const r=await fetch('https://gquzjaxpqeggknhipmzk.supabase.co/functions/v1/translate',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':'sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX',
+        'Authorization':'Bearer sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX'
+      },
+      body:JSON.stringify({title:t,description:d})
+    });
+    const j=await r.json();
+    if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
+    trTitle=j.title_en||'';trDesc=j.description_en||'';
+    const pv=$('trPreview');
+    if(pv&&(trTitle||trDesc)){
+      pv.style.display='block';
+      pv.innerHTML=(trTitle?'<b>Title</b>'+esc(trTitle):'')
+        +(trDesc?'<div class="d">'+esc(trDesc)+'</div>':'');
+    }
+    btn.textContent='✅ تُرجم — اضغط لإعادة الترجمة';
+    toast('انترجم ✅');
+  }catch(e){
+    toast('تعذرت الترجمة: '+(e.message||''),true);
+    btn.textContent='🌐 ترجم العنوان والوصف للإنجليزية';
+  }finally{btn.disabled=false}
+}
+
+function resetTranslation(){
+  trTitle='';trDesc='';
+  const pv=$('trPreview');if(pv){pv.style.display='none';pv.innerHTML=''}
+  const b=$('trBtn');if(b)b.textContent='🌐 ترجم العنوان والوصف للإنجليزية';
 }
