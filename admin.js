@@ -883,3 +883,16 @@ async function admCommToggle(){
   toast(!b.commercial_enabled?'ظهر خيار الاستخدام التجاري 💼':'اختفى الخيار');
   await loadSponsor();await loadAdmWeek();
 }
+async function testTr(){
+  try{
+    const r=await fetch('https://gquzjaxpqeggknhipmzk.supabase.co/functions/v1/translate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title:'غروب السودة'})
+    });
+    const t=await r.text();
+    alert('HTTP '+r.status+'\n\n'+t);
+  }catch(e){
+    alert('استثناء: '+(e.message||e));
+  }
+}
