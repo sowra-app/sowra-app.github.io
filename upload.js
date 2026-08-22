@@ -618,6 +618,7 @@ function makeThumbDataUrl(file){
 /* ====== إلغاء المسودة ====== */
 function clearDraft(){
   try{
+    const _is=$('inspectStatus');if(_is)_is.style.display='none';
     setTimeout(syncPublishBtn,0);
     pendingFile=null;pendingBlob=null;pendingVideo=null;pendingGeo=null;
     const im=$('preview');
@@ -1002,6 +1003,7 @@ async function runInspection(blob){
     if(st){
       st.className='inspect-box bad';
       st.innerHTML='⛔ <b>الصورة مرفوضة</b><br><span>فيها محتوى مخالف لإرشادات النشر</span>';
+      setTimeout(()=>{if(st)st.style.display='none'},5000);
     }
     return false;
   }
@@ -1013,10 +1015,7 @@ async function runInspection(blob){
   if(res.indoor_private)warns.push('🏠 تبدو من داخل منزل خاص');
 
   if(warns.length){
-    if(st){
-      st.className='inspect-box warn';
-      st.innerHTML='⚠️ <b>تنبيه قبل النشر</b><br><span>'+warns.join('<br>')+'</span>';
-    }
+    if(st)st.style.display='none';
     return confirm('تنبيه:\n\n'+warns.join('\n')+'\n\nتبي تكمل النشر؟');
   }
 
