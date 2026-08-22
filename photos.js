@@ -260,7 +260,10 @@ async function openSheet(id){
     dbw.style.display=isMine?'block':'none';
     if(isMine){
       const dbi=$('deleteBtnInner');
-      if(dbi)dbi.onclick=function(){deleteMyPhoto(p.id,p.image_path)};
+      if(dbi){
+        dbi.textContent=(p.media_type==='video')?'🗑️ حذف المقطع':'🗑️ حذف صورتي';
+        dbi.onclick=function(){deleteMyPhoto(p.id,p.image_path)};
+      }
       // زر السحب للخزنة
       let vb=document.getElementById('vaultBtn');
       if(!vb){
@@ -270,7 +273,10 @@ async function openSheet(id){
         dbw.appendChild(vb);
       }
       const isPriv=p.visibility==='private';
-      vb.textContent=isPriv?'📢 انشرها للجميع':'🔒 اسحبها لخزنتي';
+      const isVd=p.media_type==='video';
+      vb.textContent=isPriv
+        ? (isVd?'📢 انشر المقطع للجميع':'📢 انشرها للجميع')
+        : (isVd?'🔒 اسحب المقطع لخزنتي':'🔒 اسحبها لخزنتي');
       vb.onclick=function(){isPriv?publishFromVault(p.id):moveToVault(p.id)};
       // زر تعديل العنوان والوصف
       let eb=document.getElementById('editBtn');
@@ -280,7 +286,7 @@ async function openSheet(id){
         eb.style.cssText="background:none;border:none;color:var(--qblue);font-family:'Tajawal';font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;display:block;margin:6px auto 0";
         dbw.appendChild(eb);
       }
-      eb.textContent='✏️ عدّل العنوان والوصف';
+      eb.textContent=(p.media_type==='video')?'✏️ عدّل العنوان':'✏️ عدّل العنوان والوصف';
       eb.onclick=function(){openEdit(p.id)};
     }
   }
@@ -576,12 +582,13 @@ function setView(v){
 }
 /* ====== حذف الصورة لصاحبها ====== */
 async function deleteMyPhoto(pid,path){
+  const ph=photos.find(x=>x.id===pid);
+  const _isV=ph&&ph.media_type==='video';
   try{
     const r=await sb.from('weekly_entries').select('id').eq('photo_id',pid).maybeSingle();
-    if(r&&r.data){toast('⚠️ الصورة مرشحة بمسابقة — لا يمكن حذفها الآن',true);return}
+    if(r&&r.data){toast(_isV?'⚠️ المقطع مرشح بمسابقة — لا يمكن حذفه':'⚠️ الصورة مرشحة بمسابقة — لا يمكن حذفها الآن',true);return}
   }catch(e){}
-  if(!confirm('حذف الصورة نهائياً؟ لا يمكن التراجع.'))return;
-  const ph=photos.find(x=>x.id===pid);
+  if(!confirm(_isV?'حذف المقطع نهائياً؟ لا يمكن التراجع.':'حذف الصورة نهائياً؟ لا يمكن التراجع.'))return;
   const isVid=ph&&ph.media_type==='video';
   try{
     if(isVid) await sb.storage.from('videos').remove([path]);
@@ -589,9 +596,13 @@ async function deleteMyPhoto(pid,path){
   }catch(e){}
   const {error}=await sb.from('photos').delete().eq('id',pid).eq('user_id',USER.id);
   if(error){toast('تعذر الحذف: '+error.message,true);return}
-  toast(isVid?'انحذف الفيديو ✅':'انحذفت الصورة ✅');
+  toast(isVid?'انحذف المقطع ✅':'انحذفت الصورة ✅');
   closeSheet();
   await loadPhotos();
+  if(typeof renderVault==='function')renderVault();
+  if(typeof renderProfTabs==='function'&&PROF_UID){renderProfTabs();renderProfFeed();}
+  if(typeof REELS!=='undefined')REELS=photos.filter(x=>x.media_type==='video');
+  render();
 }
 /* ====== بروفايل المصور ====== */
 let PROF_UID='', PROF_TAB='public';
@@ -1489,10 +1500,12 @@ async function renderVault(){
 }
 
 async function publishFromVault(pid){
-  if(!confirm('نشرها للجميع؟ ستدخل الشبكة وتُحتسب لسباق ديرتك.'))return;
+  const _pv=photos.find(x=>x.id===pid);
+  const _isVv=_pv&&_pv.media_type==='video';
+  if(!confirm(_isVv?'نشر المقطع للجميع؟ بيظهر بالأضواء.':'نشرها للجميع؟ ستدخل الشبكة وتُحتسب لسباق ديرتك.'))return;
   const {error}=await sb.from('photos').update({visibility:'public'}).eq('id',pid).eq('user_id',USER.id);
   if(error){toast('تعذر النشر: '+error.message,true);return}
-  toast('انتشرت للجميع 🎉');
+  toast(_isVv?'انتشر المقطع 🎉':'انتشرت للجميع 🎉');
   if(typeof maybeAskNotifs==='function')maybeAskNotifs();
   // إشعار للجميع
   try{
@@ -1521,10 +1534,12 @@ async function publishFromVault(pid){
 }
 
 async function moveToVault(pid){
-  if(!confirm('سحبها لخزنتك؟ ما راح يشوفها أحد غيرك.'))return;
+  const _mv=photos.find(x=>x.id===pid);
+  const _isVm=_mv&&_mv.media_type==='video';
+  if(!confirm(_isVm?'سحب المقطع لخزنتك؟ ما راح يشوفه أحد غيرك.':'سحبها لخزنتك؟ ما راح يشوفها أحد غيرك.'))return;
   const {error}=await sb.from('photos').update({visibility:'private'}).eq('id',pid).eq('user_id',USER.id);
   if(error){toast('تعذر السحب',true);return}
-  toast('انسحبت لخزنتك 🔒');
+  toast(_isVm?'انسحب المقطع لخزنتك 🔒':'انسحبت لخزنتك 🔒');
   await loadPhotos();
   renderVault();
   if(typeof renderProfTabs==="function"&&PROF_UID){renderProfTabs();renderProfFeed();}
