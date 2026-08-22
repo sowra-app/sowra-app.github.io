@@ -894,7 +894,11 @@ async function translateFields(){
   try{
     const r=await fetch('https://gquzjaxpqeggknhipmzk.supabase.co/functions/v1/translate',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':'sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX',
+        'Authorization':'Bearer sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX'
+      },
       body:JSON.stringify({title:t,description:d})
     });
     const raw=await r.text();
