@@ -897,8 +897,10 @@ async function translateFields(){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({title:t,description:d})
     });
-    const j=await r.json();
-    if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
+    const raw=await r.text();
+    if(!r.ok){toast('HTTP '+r.status+' — '+raw.slice(0,110),true);btn.disabled=false;btn.textContent='🌐 ترجم العنوان والوصف للإنجليزية';return}
+    let j={};
+    try{j=JSON.parse(raw)}catch(_){toast('رد غير متوقع: '+raw.slice(0,80),true)}
     trTitle=j.title_en||'';trDesc=j.description_en||'';
     const pv=$('trPreview');
     if(pv&&(trTitle||trDesc)){
