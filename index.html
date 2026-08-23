@@ -284,6 +284,7 @@
   </div>
 </div>
 <!-- ====== بروفايل المصور ====== -->
+<input type="file" id="avatarFile" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
 <div class="page" id="page-profile">
   <div class="form">
     <div id="profHead"></div>
@@ -383,7 +384,17 @@
 </div>
     </div>
     <div id="accIn" style="display:none">
-      <h2>👤 <span id="accHello"></span></h2><p class="hint" id="accMail"></p>
+      <div class="acc-hero">
+        <div class="pf-avatar-wrap">
+          <div id="accAvatar"></div>
+          <button class="pf-avatar-cam" onclick="document.getElementById('avatarFile').click()" title="غيّر صورتك">📷</button>
+        </div>
+        <div class="acc-hero-info">
+          <div class="acc-hero-name" id="accHello"></div>
+          <div class="acc-hero-mail" id="accMail"></div>
+          <button class="pf-act" style="margin-top:8px" onclick="openProfile(USER.id)">👁️ شوف بروفايلي</button>
+        </div>
+      </div>
       <div class="f-group"><label>اسمك الظاهر مع صورك</label><div style="display:flex;gap:8px"><input id="accEditName" style="flex:1"><button class="btn" onclick="saveMyName()">حفظ</button></div></div>
      <div class="f-group"><label>منطقتك (اختياري)</label><input id="accRegion" placeholder="مثال: عسير"></div>
 <div class="f-group"><label>نبذة عنك (اختياري)</label><textarea id="accBio" rows="2" placeholder="مصوّر يحب توثيق جمال الديرة"></textarea></div>

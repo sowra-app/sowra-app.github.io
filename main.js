@@ -61,6 +61,7 @@ function go(p){
   }
   if(p!=='reels'&&typeof stopAllReels==='function')stopAllReels();
   if(p==='acc'&&typeof renderVault==='function')setTimeout(renderVault,150);
+  if(p==='acc'&&typeof renderAccAvatar==='function')setTimeout(renderAccAvatar,150);
   if(p==='acc'&&typeof renderNotifBox==='function')setTimeout(renderNotifBox,150);
   $('nb-feed').classList.toggle('on',p==='feed');
   const nr=$('nb-reels');if(nr)nr.classList.toggle('on',p==='reels');
@@ -75,6 +76,7 @@ function go(p){
 (async()=>{
   if(window.__BOOT_FAIL)return;
   initTheme();
+  await handleAuthReturn();
   initEnBar();
   initSelects();fillAddCities();
   const authP=ensureAuth().then(()=>{checkAdmin();loadFavs();}).catch(e=>toast('تعذر الاتصال بالحساب',true));
@@ -287,4 +289,31 @@ function dismissEnBar(){
   try{localStorage.setItem('sowra_en_dismissed','1')}catch(e){}
   const el=document.getElementById('enBar');
   if(el)el.classList.remove('show');
+}
+
+/* ====== معالجة عودة تسجيل Google ====== */
+async function handleAuthReturn(){
+  try{
+    const h=window.location.hash||'';
+    const q=window.location.search||'';
+    const hasCode=q.includes('code=');
+    const hasToken=h.includes('access_token');
+    if(!hasCode&&!hasToken)return;
+
+    // تبادل الرمز بجلسة
+    if(hasCode&&sb.auth.exchangeCodeForSession){
+      try{await sb.auth.exchangeCodeForSession(window.location.href)}catch(e){}
+    }
+    // تنظيف الرابط
+    try{history.replaceState({},document.title,window.location.pathname)}catch(e){}
+
+    const s=await sb.auth.getSession();
+    if(s&&s.data&&s.data.session){
+      USER=s.data.session.user;
+      await checkAdmin();
+      if(typeof renderAccIn==='function')await renderAccIn();
+      toast('حياك الله 🌟');
+      await loadPhotos();
+    }
+  }catch(e){}
 }

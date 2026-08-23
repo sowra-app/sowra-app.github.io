@@ -611,27 +611,48 @@ async function openProfile(uid){
   go('profile');
   PROF_UID=uid;PROF_TAB='public';
   $('profHead').innerHTML='<div class="loader">⏳</div>';
-  const r=await sb.from('profiles').select('display_name,bio,region').eq('id',uid).maybeSingle();
+  const r=await sb.from('profiles').select('display_name,bio,region,avatar_path,cover_photo_id').eq('id',uid).maybeSingle();
   const pr=r.data||{};
   const mine=photos.filter(x=>x.user_id===uid);
-  const totV=mine.reduce((s,x)=>s+(x.views||0),0);
+  const pub=mine.filter(x=>x.visibility!=='private');
+  const totV=pub.reduce((s,x)=>s+(x.views||0),0);
   const rk=mine.length?rankOf(mine[0]):{ic:'🌱',t:'مستكشف',c:'bronze'};
   const fo=mine.length?(mine[0].followers_count||0):0;
   const isMe=!!(USER&&USER.id===uid);
 
+  // الغلاف: الصورة المختارة أو الأعلى تقييماً
+  let cover=null;
+  if(pr.cover_photo_id)cover=pub.find(x=>x.id===pr.cover_photo_id);
+  if(!cover&&pub.length)cover=pub.slice().sort((a,b)=>(b.avg_stars||0)-(a.avg_stars||0))[0];
+
+  const av=pr.avatar_path?avatarUrl(pr.avatar_path):'';
+
   $('profHead').innerHTML=`
-    <div class="prof-card">
-      <div class="prof-name">${esc(pr.display_name||'مصوّر')}</div>
-      <span class="rankchip r-${rk.c}">${rk.ic} ${rk.t}</span>
-      ${pr.region?`<div class="prof-bio">📍 ${esc(pr.region)}</div>`:''}
-      ${pr.bio?`<div class="prof-bio">${esc(pr.bio)}</div>`:''}
-      <div class="prof-stats">
-        <div class="prof-stat"><b>${mine.filter(x=>x.visibility!=='private').length}</b><span>صورة</span></div>
-        <div class="prof-stat"><b>${fo}</b><span>متابع</span></div>
-        <div class="prof-stat"><b>${totV}</b><span>مشاهدة</span></div>
+    <div class="pf-cover">
+      ${cover?`<img src="${imgUrl(cover.image_path)}" alt="">`:'<div class="pf-cover-empty">🏔️</div>'}
+      ${isMe?`<button class="pf-cam" onclick="pickCover()">🖼️ غيّر الغلاف</button>`:''}
+    </div>
+    <div class="pf-head">
+      <div class="pf-avatar-wrap">
+        ${av?`<img class="pf-avatar" src="${av}" alt="">`:`<div class="pf-avatar-ph">${rk.ic}</div>`}
+        ${isMe?`<button class="pf-avatar-cam" onclick="document.getElementById('avatarFile').click()" title="غيّر صورتك">📷</button>`:''}
       </div>
-      <div class="prof-badges" id="profBadges"></div>
-      <button class="prof-share" onclick="shareProfile('${uid}')">📤 شارك بروفايلي</button>
+      <div class="pf-name">${esc(pr.display_name||'مصوّر')}</div>
+      <div class="pf-meta">
+        <span class="rankchip r-${rk.c}">${rk.ic} ${rk.t}</span>
+        ${pr.region?' · 📍 '+esc(pr.region):''}
+      </div>
+      ${pr.bio?`<div class="pf-bio">${esc(pr.bio)}</div>`:''}
+      <div class="pf-stats">
+        <div class="pf-stat"><b>${pub.length}</b><span>صورة</span></div>
+        <div class="pf-stat"><b>${fo}</b><span>متابع</span></div>
+        <div class="pf-stat"><b>${totV}</b><span>مشاهدة</span></div>
+      </div>
+      <div class="pf-acts">
+        <button class="pf-act" onclick="shareProfile('${uid}')">📤 شارك</button>
+        ${isMe?`<button class="pf-act primary" onclick="go('acc')">⚙️ عدّل بياناتي</button>`:''}
+      </div>
+      <div class="pf-badges" id="profBadges"></div>
     </div>
     ${isMe?`<div class="prof-tabs" id="profTabs"></div>`:''}`;
 
@@ -642,6 +663,10 @@ async function openProfile(uid){
 
   renderProfTabs();
   renderProfFeed();
+}
+
+function avatarUrl(path){
+  return sb.storage.from('avatars').getPublicUrl(path).data.publicUrl;
 }
 
 function renderProfTabs(){
@@ -1854,4 +1879,69 @@ async function translateEdit(){
     toast('تعذرت الترجمة — جرّب مرة ثانية',true);
     btn.textContent='🌐 ترجم للإنجليزية';
   }finally{btn.disabled=false}
+}
+
+/* ====== الصورة الشخصية والغلاف ====== */
+async function uploadAvatar(inp){
+  const f=inp.files[0];if(!f)return;
+  if(!USER||USER.is_anonymous){toast('سجّل أول',true);return}
+  if(f.size>4*1024*1024){toast('الصورة كبيرة — الحد 4 ميجا',true);inp.value='';return}
+  toast('⏳ نرفع صورتك...');
+  try{
+    // تصغير لمربع 400
+    const blob=await new Promise((res,rej)=>{
+      const img=new Image();
+      img.onload=()=>{
+        const S=400;
+        const cv=document.createElement('canvas');cv.width=S;cv.height=S;
+        const ctx=cv.getContext('2d');
+        const rt=Math.max(S/img.width,S/img.height);
+        const dw=img.width*rt,dh=img.height*rt;
+        ctx.drawImage(img,(S-dw)/2,(S-dh)/2,dw,dh);
+        URL.revokeObjectURL(img.src);
+        cv.toBlob(b=>b?res(b):rej(new Error('فشل')),'image/jpeg',0.88);
+      };
+      img.onerror=rej;
+      img.src=URL.createObjectURL(f);
+    });
+
+    const path=USER.id+'/avatar.jpg';
+    const up=await sb.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg',upsert:true,cacheControl:'60'});
+    if(up.error)throw up.error;
+    const {error}=await sb.from('profiles').update({avatar_path:path}).eq('id',USER.id);
+    if(error)throw error;
+    toast('انحفظت صورتك ✅');
+    if(typeof renderAccAvatar==='function')renderAccAvatar();
+    if(PROF_UID)openProfile(PROF_UID);
+  }catch(e){toast('تعذر الرفع: '+(e.message||''),true)}
+  finally{inp.value=''}
+}
+
+async function pickCover(){
+  const mine=photos.filter(x=>x.user_id===USER.id&&x.visibility!=='private'&&x.media_type!=='video');
+  if(!mine.length){toast('انشر صورة أول عشان تختار غلافك',true);return}
+  const list=mine.slice(0,15).map((p,i)=>`${i+1} = ${p.title}`).join('\n');
+  const pick=prompt('اختر رقم الصورة لتكون غلافك:\n\n'+list);
+  if(pick===null)return;
+  const idx=parseInt(pick.trim())-1;
+  if(isNaN(idx)||!mine[idx]){toast('رقم غير صحيح',true);return}
+  const {error}=await sb.from('profiles').update({cover_photo_id:mine[idx].id}).eq('id',USER.id);
+  if(error){toast('تعذر الحفظ',true);return}
+  toast('انحفظ الغلاف 🖼️');
+  openProfile(USER.id);
+}
+
+/* ====== صورة الحساب بصفحة حسابي ====== */
+async function renderAccAvatar(){
+  const el=$('accAvatar');if(!el)return;
+  if(!USER||USER.is_anonymous){el.innerHTML='';return}
+  try{
+    const r=await sb.from('profiles').select('avatar_path').eq('id',USER.id).maybeSingle();
+    const path=r.data&&r.data.avatar_path;
+    const mine=photos.filter(x=>x.user_id===USER.id);
+    const rk=mine.length?rankOf(mine[0]):{ic:'🌱'};
+    el.innerHTML=path
+      ? `<img class="pf-avatar" src="${avatarUrl(path)}?t=${Date.now()}" alt="">`
+      : `<div class="pf-avatar-ph">${rk.ic}</div>`;
+  }catch(e){}
 }
