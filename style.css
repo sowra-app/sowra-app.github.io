@@ -654,3 +654,19 @@ body.dark .inspect-box.bad{background:#33201D}
 .acc-hero-info{flex:1;min-width:0}
 .acc-hero-name{font-family:'Reem Kufi',sans-serif;font-size:20px;color:var(--sand);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acc-hero-mail{font-size:12px;color:var(--txt-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;text-align:right}
+
+/* ====== شبكة حسابي ====== */
+.acc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.acc-tile{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:15px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;font-family:'Tajawal';transition:.15s}
+.acc-tile:active{transform:scale(.95)}
+.acc-tile.on{border-color:var(--sadu);border-width:2px;background:linear-gradient(160deg,var(--card),rgba(214,58,47,.07))}
+.at-ic{font-size:26px;line-height:1}
+.at-lb{font-size:11px;font-weight:700;color:var(--txt-dim)}
+.acc-tile.on .at-lb{color:var(--sadu)}
+.acc-panel{display:none;background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:16px;margin-bottom:18px;animation:apIn .25s ease}
+.acc-panel.on{display:block}
+@keyframes apIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.ap-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:11px;border-bottom:1px solid var(--line)}
+.ap-head span{font-family:'Reem Kufi',sans-serif;font-size:17px;color:var(--sand)}
+.ap-head button{background:var(--card2);border:1px solid var(--line);border-radius:50%;width:30px;height:30px;color:var(--txt-dim);font-size:14px;cursor:pointer}
+@media(max-width:380px){.acc-grid{gap:7px}.at-ic{font-size:23px}.at-lb{font-size:10px}}

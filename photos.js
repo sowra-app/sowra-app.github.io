@@ -1497,12 +1497,11 @@ async function renderHomeHero(){
 async function renderVault(){
   const wrap=$('vaultWrap'), el=$('vaultFeed');
   if(!wrap||!el)return;
-  if(!USER||USER.is_anonymous){wrap.style.display='none';return}
+  if(!USER||USER.is_anonymous)return;
   try{
     const r=await sb.from('photos').select('id,title,city,village,country,abroad,image_path,media_type,created_at')
       .eq('user_id',USER.id).eq('visibility','private').order('created_at',{ascending:false});
     const list=r.data||[];
-    wrap.style.display='block';
     if(!list.length){
       el.innerHTML='<div class="vault-empty">🔒 خزنتك فاضية<br><span style="font-size:12px">عند النشر اختر «خزنتي» لتحفظ صورك لنفسك أولاً</span></div>';
       return;
@@ -1521,7 +1520,7 @@ async function renderVault(){
         <button class="vault-pub" onclick="publishFromVault(${p.id})">📢 انشرها</button>
       </div>`;
     }).join('');
-  }catch(e){wrap.style.display='none'}
+  }catch(e){}
 }
 
 async function publishFromVault(pid){
