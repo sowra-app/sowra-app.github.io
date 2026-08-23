@@ -670,3 +670,19 @@ body.dark .inspect-box.bad{background:#33201D}
 .ap-head span{font-family:'Reem Kufi',sans-serif;font-size:17px;color:var(--sand)}
 .ap-head button{background:var(--card2);border:1px solid var(--line);border-radius:50%;width:30px;height:30px;color:var(--txt-dim);font-size:14px;cursor:pointer}
 @media(max-width:380px){.acc-grid{gap:7px}.at-ic{font-size:23px}.at-lb{font-size:10px}}
+
+/* ====== إحصائياتي ====== */
+.st-week{font-size:13px;font-weight:700;color:var(--sand);margin-bottom:9px}
+.st-cards{display:flex;gap:10px}
+.st-card{flex:1;background:var(--card2);border:1.5px solid var(--line);border-radius:14px;padding:14px 10px;text-align:center}
+.st-card b{display:block;font-family:'Reem Kufi',sans-serif;font-size:26px;color:var(--sadu);line-height:1.2}
+.st-card span{font-size:11.5px;color:var(--txt-dim);display:block;margin-top:4px}
+.st-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+.st-item{cursor:pointer}
+.st-thumb{position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--card2)}
+.st-thumb img,.st-thumb video{width:100%;height:100%;object-fit:cover;display:block}
+.st-star{position:absolute;top:3px;right:3px;background:rgba(232,160,32,.94);color:var(--ink);border-radius:7px;padding:1px 5px;font-size:9px;font-weight:700;font-family:'Tajawal'}
+.st-nums{display:flex;flex-direction:column;gap:1px;margin-top:4px;text-align:center}
+.st-nums span{font-size:9px;color:var(--txt-dim);line-height:1.5;white-space:nowrap}
+@media(max-width:400px){.st-grid{grid-template-columns:repeat(4,1fr)}.st-nums span{font-size:8.5px}}
+@media(min-width:700px){.st-grid{grid-template-columns:repeat(8,1fr)}}

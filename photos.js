@@ -1944,3 +1944,58 @@ async function renderAccAvatar(){
       : `<div class="pf-avatar-ph">${rk.ic}</div>`;
   }catch(e){}
 }
+
+/* ====== إحصائياتي — نشاط الأسبوع والأعلى تقييماً ====== */
+async function renderMyStats(){
+  const el=$('myStats');if(!el)return;
+  if(!USER||USER.is_anonymous){el.innerHTML='';return}
+  el.innerHTML='<div class="loader" style="padding:14px">⏳</div>';
+  try{
+    const mine=photos.filter(x=>x.user_id===USER.id&&x.visibility!=='private');
+
+    // نشاط آخر ٧ أيام
+    const wk=Date.now()-7*86400000;
+    const recent=mine.filter(x=>new Date(x.created_at).getTime()>=wk);
+    const recentViews=recent.reduce((s,x)=>s+(x.views||0),0);
+
+    // الأعلى تقييماً
+    const top=mine.slice().sort((a,b)=>{
+      const d=(b.avg_stars||0)-(a.avg_stars||0);
+      return d!==0?d:((b.ratings_count||0)-(a.ratings_count||0));
+    }).slice(0,12);
+
+    el.innerHTML=`
+      <div class="st-week">نشاطك آخر ٧ أيام</div>
+      <div class="st-cards">
+        <div class="st-card">
+          <b>${recent.length}</b>
+          <span>📸 صورة منشورة</span>
+        </div>
+        <div class="st-card">
+          <b>${recentViews}</b>
+          <span>👁️ مشاهدة لها</span>
+        </div>
+      </div>
+
+      <div class="st-week" style="margin-top:18px">الأعلى تقييماً</div>
+      ${top.length?`<div class="st-grid">${top.map(p=>{
+        const isV=p.media_type==='video';
+        const src=isV?vidUrl(p.image_path):thumbUrl(p.image_path);
+        return `<div class="st-item" onclick="openSheet(${p.id})" title="${esc(p.title)}">
+          <div class="st-thumb">
+            ${isV?`<video src="${src}#t=0.4" muted playsinline preload="metadata"></video>`
+                 :`<img src="${src}" loading="lazy" alt="">`}
+            <div class="st-star">★ ${Number(p.avg_stars).toFixed(1)}</div>
+          </div>
+          <div class="st-nums">
+            <span>👁️ ${p.views||0}</span>
+            <span>⭐ ${p.ratings_count||0}</span>
+            <span>💬 ${p.comments_count||0}</span>
+          </div>
+        </div>`;
+      }).join('')}</div>`
+      :'<div style="font-size:12.5px;color:var(--txt-dim);padding:8px">ما نشرت صوراً بعد</div>'}`;
+  }catch(e){
+    el.innerHTML='<div style="font-size:12px;color:var(--txt-dim)">تعذر تحميل الإحصائيات</div>';
+  }
+}
