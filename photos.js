@@ -1634,6 +1634,7 @@ async function shareProfile(uid){
     const rk=mine.length?rankOf(mine[0]):{ic:'🌱',t:'مستكشف'};
     const top=mine.slice().sort((a,b)=>(b.avg_stars||0)-(a.avg_stars||0)).slice(0,4);
 
+    try{if(document.fonts&&document.fonts.ready)await document.fonts.ready}catch(e){}
     const W=1080,H=1350;
     const cv=document.createElement('canvas');
     cv.width=W;cv.height=H;
@@ -1688,21 +1689,25 @@ async function shareProfile(uid){
     await Promise.all(top.map((ph,i)=>new Promise(res=>{
       const img=new Image();
       img.crossOrigin='anonymous';
+      const guard=setTimeout(res,6000);
       img.onload=()=>{
+        clearTimeout(guard);
         const cx=startX+(i%2)*(gs+gap);
         const cy=gy+Math.floor(i/2)*(gs+gap);
-        ctx.save();
-        ctx.beginPath();
-        if(ctx.roundRect)ctx.roundRect(cx,cy,gs,gs,20);
-        else ctx.rect(cx,cy,gs,gs);
-        ctx.clip();
-        const rt=Math.max(gs/img.width,gs/img.height);
-        const dw=img.width*rt, dh=img.height*rt;
-        ctx.drawImage(img,cx+(gs-dw)/2,cy+(gs-dh)/2,dw,dh);
-        ctx.restore();
+        try{
+          ctx.save();
+          ctx.beginPath();
+          if(ctx.roundRect)ctx.roundRect(cx,cy,gs,gs,20);
+          else ctx.rect(cx,cy,gs,gs);
+          ctx.clip();
+          const rt=Math.max(gs/img.width,gs/img.height);
+          const dw=img.width*rt, dh=img.height*rt;
+          ctx.drawImage(img,cx+(gs-dw)/2,cy+(gs-dh)/2,dw,dh);
+          ctx.restore();
+        }catch(e){}
         res();
       };
-      img.onerror=()=>res();
+      img.onerror=()=>{clearTimeout(guard);res()};
       img.src=thumbUrl(ph.image_path);
     })));
 
@@ -1734,7 +1739,7 @@ async function shareProfile(uid){
       a.click();
       toast('انحفظت البطاقة');
     },'image/jpeg',0.92);
-  }catch(e){toast('تعذر التجهيز',true)}
+  }catch(e){toast('تعذر التجهيز: '+(e.message||e),true)}
 }
 
 /* ====== حماية المحتوى: فلتر الكلمات وحد المعدّل ====== */
