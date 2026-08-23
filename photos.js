@@ -1945,47 +1945,84 @@ async function renderAccAvatar(){
   }catch(e){}
 }
 
-/* ====== إحصائياتي — نشاط الأسبوع والأعلى تقييماً ====== */
+/* ====== إحصائياتي — بأسلوب 500px ====== */
+window.__stPeriod=7;
+window.__stSort='stars';
+
 async function renderMyStats(){
   const el=$('myStats');if(!el)return;
   if(!USER||USER.is_anonymous){el.innerHTML='';return}
   el.innerHTML='<div class="loader" style="padding:14px">⏳</div>';
   try{
     const mine=photos.filter(x=>x.user_id===USER.id&&x.visibility!=='private');
+    const P=window.__stPeriod;
+    const since=P?Date.now()-P*86400000:0;
+    const inRange=P?mine.filter(x=>new Date(x.created_at).getTime()>=since):mine;
 
-    // نشاط آخر ٧ أيام
-    const wk=Date.now()-7*86400000;
-    const recent=mine.filter(x=>new Date(x.created_at).getTime()>=wk);
-    const recentViews=recent.reduce((s,x)=>s+(x.views||0),0);
+    const vTot=inRange.reduce((s,x)=>s+(x.views||0),0);
+    const rTot=inRange.reduce((s,x)=>s+(x.ratings_count||0),0);
+    const cTot=inRange.reduce((s,x)=>s+(x.comments_count||0),0);
 
-    // الأعلى تقييماً
-    const top=mine.slice().sort((a,b)=>{
+    // رسم بياني: نشاط النشر باليوم
+    const days=P||30;
+    const buckets=new Array(Math.min(days,30)).fill(0);
+    const now=Date.now();
+    mine.forEach(x=>{
+      const d=Math.floor((now-new Date(x.created_at).getTime())/86400000);
+      if(d>=0&&d<buckets.length)buckets[buckets.length-1-d]++;
+    });
+    const mx=Math.max(1,...buckets);
+
+    // الترتيب
+    const S=window.__stSort;
+    const sorted=mine.slice().sort((a,b)=>{
+      if(S==='views')return (b.views||0)-(a.views||0);
+      if(S==='comments')return (b.comments_count||0)-(a.comments_count||0);
+      if(S==='new')return new Date(b.created_at)-new Date(a.created_at);
       const d=(b.avg_stars||0)-(a.avg_stars||0);
       return d!==0?d:((b.ratings_count||0)-(a.ratings_count||0));
-    }).slice(0,12);
+    }).slice(0,18);
 
     el.innerHTML=`
-      <div class="st-week">نشاطك آخر ٧ أيام</div>
+      <div class="st-periods">
+        <button class="st-per${P===7?' on':''}" onclick="stSetPeriod(7)">٧ أيام</button>
+        <button class="st-per${P===30?' on':''}" onclick="stSetPeriod(30)">٣٠ يوم</button>
+        <button class="st-per${P===0?' on':''}" onclick="stSetPeriod(0)">الكل</button>
+      </div>
+
       <div class="st-cards">
-        <div class="st-card">
-          <b>${recent.length}</b>
-          <span>📸 صورة منشورة</span>
+        <div class="st-card"><b>${inRange.length}</b><span>📸 صورة</span></div>
+        <div class="st-card"><b>${vTot}</b><span>👁️ مشاهدة</span></div>
+        <div class="st-card"><b>${rTot}</b><span>⭐ تقييم</span></div>
+        <div class="st-card"><b>${cTot}</b><span>💬 تعليق</span></div>
+      </div>
+
+      <div class="st-chart-wrap">
+        <div class="st-chart-lb">نشاط النشر</div>
+        <div class="st-chart">
+          ${buckets.map((v,i)=>`<div class="st-bar" style="height:${Math.max(3,v/mx*100)}%" title="${v} صورة"></div>`).join('')}
         </div>
-        <div class="st-card">
-          <b>${recentViews}</b>
-          <span>👁️ مشاهدة لها</span>
+        <div class="st-chart-x"><span>الأقدم</span><span>اليوم</span></div>
+      </div>
+
+      <div class="st-sortbar">
+        <span>ترتيب حسب</span>
+        <div class="st-sorts">
+          <button class="st-sort${S==='stars'?' on':''}" onclick="stSetSort('stars')">⭐</button>
+          <button class="st-sort${S==='views'?' on':''}" onclick="stSetSort('views')">👁️</button>
+          <button class="st-sort${S==='comments'?' on':''}" onclick="stSetSort('comments')">💬</button>
+          <button class="st-sort${S==='new'?' on':''}" onclick="stSetSort('new')">🕐</button>
         </div>
       </div>
 
-      <div class="st-week" style="margin-top:18px">الأعلى تقييماً</div>
-      ${top.length?`<div class="st-grid">${top.map(p=>{
+      ${sorted.length?`<div class="st-grid">${sorted.map(p=>{
         const isV=p.media_type==='video';
         const src=isV?vidUrl(p.image_path):thumbUrl(p.image_path);
         return `<div class="st-item" onclick="openSheet(${p.id})" title="${esc(p.title)}">
           <div class="st-thumb">
             ${isV?`<video src="${src}#t=0.4" muted playsinline preload="metadata"></video>`
                  :`<img src="${src}" loading="lazy" alt="">`}
-            <div class="st-star">★ ${Number(p.avg_stars).toFixed(1)}</div>
+            ${(p.avg_stars>0)?`<div class="st-star">★ ${Number(p.avg_stars).toFixed(1)}</div>`:''}
           </div>
           <div class="st-nums">
             <span>👁️ ${p.views||0}</span>
@@ -1994,8 +2031,11 @@ async function renderMyStats(){
           </div>
         </div>`;
       }).join('')}</div>`
-      :'<div style="font-size:12.5px;color:var(--txt-dim);padding:8px">ما نشرت صوراً بعد</div>'}`;
+      :'<div style="font-size:12.5px;color:var(--txt-dim);padding:10px;text-align:center">ما نشرت صوراً بعد</div>'}`;
   }catch(e){
     el.innerHTML='<div style="font-size:12px;color:var(--txt-dim)">تعذر تحميل الإحصائيات</div>';
   }
 }
+
+function stSetPeriod(d){window.__stPeriod=d;renderMyStats()}
+function stSetSort(s){window.__stSort=s;renderMyStats()}
