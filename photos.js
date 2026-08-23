@@ -1955,25 +1955,23 @@ async function renderMyStats(){
   el.innerHTML='<div class="loader" style="padding:14px">⏳</div>';
   try{
     const mine=photos.filter(x=>x.user_id===USER.id&&x.visibility!=='private');
-    const P=window.__stPeriod;
-    const since=P?Date.now()-P*86400000:0;
-    const inRange=P?mine.filter(x=>new Date(x.created_at).getTime()>=since):mine;
+    const ids=mine.map(x=>x.id);
+    const since=new Date(Date.now()-7*86400000).toISOString();
 
-    const vTot=inRange.reduce((s,x)=>s+(x.views||0),0);
-    const rTot=inRange.reduce((s,x)=>s+(x.ratings_count||0),0);
-    const cTot=inRange.reduce((s,x)=>s+(x.comments_count||0),0);
+    // نشاط الأسبوع الحقيقي — على كل صورك
+    const newPhotos=mine.filter(x=>x.created_at>=since).length;
+    let newRatings=0,newComments=0,newVisits=0;
+    if(ids.length){
+      try{
+        const [r1,r2,r3]=await Promise.all([
+          sb.from('ratings').select('photo_id',{count:'exact',head:true}).in('photo_id',ids).gte('created_at',since),
+          sb.from('comments').select('id',{count:'exact',head:true}).in('photo_id',ids).gte('created_at',since),
+          sb.from('visits').select('photo_id',{count:'exact',head:true}).in('photo_id',ids).gte('created_at',since)
+        ]);
+        newRatings=r1.count||0;newComments=r2.count||0;newVisits=r3.count||0;
+      }catch(e){}
+    }
 
-    // رسم بياني: نشاط النشر باليوم
-    const days=P||30;
-    const buckets=new Array(Math.min(days,30)).fill(0);
-    const now=Date.now();
-    mine.forEach(x=>{
-      const d=Math.floor((now-new Date(x.created_at).getTime())/86400000);
-      if(d>=0&&d<buckets.length)buckets[buckets.length-1-d]++;
-    });
-    const mx=Math.max(1,...buckets);
-
-    // الترتيب
     const S=window.__stSort;
     const sorted=mine.slice().sort((a,b)=>{
       if(S==='views')return (b.views||0)-(a.views||0);
@@ -1983,30 +1981,29 @@ async function renderMyStats(){
       return d!==0?d:((b.ratings_count||0)-(a.ratings_count||0));
     }).slice(0,18);
 
+    const totV=mine.reduce((s,x)=>s+(x.views||0),0);
+
     el.innerHTML=`
       <div class="st-week">نشاطك آخر ٧ أيام</div>
       <div class="st-cards">
-        <div class="st-card"><b>${inRange.length}</b><span>📸 صورة</span></div>
-        <div class="st-card"><b>${vTot}</b><span>👁️ مشاهدة</span></div>
-        <div class="st-card"><b>${rTot}</b><span>⭐ تقييم</span></div>
-        <div class="st-card"><b>${cTot}</b><span>💬 تعليق</span></div>
+        <div class="st-card"><b>${newPhotos}</b><span>📸 نشرت</span></div>
+        <div class="st-card"><b>${newRatings}</b><span>⭐ تقييم</span></div>
+        <div class="st-card"><b>${newComments}</b><span>💬 تعليق</span></div>
+        <div class="st-card"><b>${newVisits}</b><span>👣 زيارة</span></div>
       </div>
 
-      <div class="st-chart-wrap">
-        <div class="st-chart-lb">نشاط النشر</div>
-        <div class="st-chart">
-          ${buckets.map((v,i)=>`<div class="st-bar" style="height:${Math.max(3,v/mx*100)}%" title="${v} صورة"></div>`).join('')}
-        </div>
-        <div class="st-chart-x"><span>الأقدم</span><span>اليوم</span></div>
+      <div class="st-total">
+        <span>📷 ${mine.length} صورة</span>
+        <span>👁️ ${totV} مشاهدة</span>
       </div>
 
       <div class="st-sortbar">
-        <span>ترتيب حسب</span>
+        <span>أعمالك — ترتيب حسب</span>
         <div class="st-sorts">
-          <button class="st-sort${S==='stars'?' on':''}" onclick="stSetSort('stars')">⭐</button>
-          <button class="st-sort${S==='views'?' on':''}" onclick="stSetSort('views')">👁️</button>
-          <button class="st-sort${S==='comments'?' on':''}" onclick="stSetSort('comments')">💬</button>
-          <button class="st-sort${S==='new'?' on':''}" onclick="stSetSort('new')">🕐</button>
+          <button class="st-sort${S==='stars'?' on':''}" onclick="stSetSort('stars')" title="التقييم">⭐</button>
+          <button class="st-sort${S==='views'?' on':''}" onclick="stSetSort('views')" title="المشاهدات">👁️</button>
+          <button class="st-sort${S==='comments'?' on':''}" onclick="stSetSort('comments')" title="التعليقات">💬</button>
+          <button class="st-sort${S==='new'?' on':''}" onclick="stSetSort('new')" title="الأحدث">🕐</button>
         </div>
       </div>
 
