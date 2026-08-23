@@ -959,8 +959,7 @@ async function shareCard(p){
           await navigator.share({
             files:[file],
             title:p.title,
-            text:p.title+' — من «صورة من بلدي» 📸',
-            url:'https://sowra.app'
+            text:p.title+' — من «صورة من بلدي» 📸\nhttps://sowra.app'
           });
           return;
         }catch(e){}
@@ -1728,8 +1727,7 @@ async function shareProfile(uid){
           await navigator.share({
             files:[file],
             title:pr.display_name||'مصوّر',
-            text:'عدستي في «صورة من بلدي» 📸\nشوف صور ديرتك وشارك عدستك:',
-            url:'https://sowra.app'
+            text:'عدستي في «صورة من بلدي» 📸\nشوف صور ديرتك وشارك عدستك:\nhttps://sowra.app'
           });
           return;
         }catch(e){}
@@ -1738,7 +1736,8 @@ async function shareProfile(uid){
       a.href=URL.createObjectURL(blob);
       a.download='sowra-profile.jpg';
       a.click();
-      toast('انحفظت البطاقة');
+      try{await navigator.clipboard.writeText('عدستي في «صورة من بلدي» 📸\nhttps://sowra.app')}catch(e){}
+      toast('انحفظت البطاقة — والنص بالحافظة 📋');
     },'image/jpeg',0.92);
   }catch(e){toast('تعذر التجهيز: '+(e.message||e),true)}
 }
