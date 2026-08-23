@@ -556,6 +556,26 @@
 <!-- ====== دعوة تفعيل الإشعارات ====== -->
 <!-- ====== تعديل العنوان والوصف ====== -->
 <!-- ====== قوائم المتابعة ====== -->
+<!-- ====== نشر بالسوشال (للمشرف) ====== -->
+<div id="promoBox" class="promo-box" onclick="if(event.target===this)closePromo()">
+  <div class="pm-card">
+    <div class="pm-head"><span>📢 انشرها بالسوشال</span><button onclick="closePromo()">✕</button></div>
+    <img id="pmPreview" class="pm-img" alt="">
+    <textarea id="pmText" rows="5" class="pm-text"></textarea>
+    <div class="pm-note">🔗 رابط sowra.app يُضاف تلقائياً مع النص</div>
+    <div class="pm-nets">
+      <button class="pm-net" onclick="promoOpen('x')">𝕏</button>
+      <button class="pm-net" onclick="promoOpen('wa')">💬</button>
+      <button class="pm-net" onclick="promoOpen('tg')">✈️</button>
+      <button class="pm-net" onclick="promoOpen('ig')">📷</button>
+    </div>
+    <div class="pm-acts">
+      <button class="btn" onclick="promoDownload()">📥 الصورة</button>
+      <button class="btn" style="background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="promoCopy()">📋 انسخ النص</button>
+    </div>
+  </div>
+</div>
+
 <div id="followsBox" class="follows-box" onclick="if(event.target===this)closeFollows()">
   <div class="fb-card">
     <div class="fb-head"><span id="fbTitle">👥 المتابعون</span><button onclick="closeFollows()">✕</button></div>

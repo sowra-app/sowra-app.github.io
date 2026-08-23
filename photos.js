@@ -344,17 +344,26 @@ function openFavs(){
 }
 function renderFavs(){
   const list=photos.filter(p=>favSet.has(p.id));
-  $('favFeed').innerHTML=list.length?list.map(p=>`
-    <div class="card" onclick="openSheet(${p.id})">
-      <div class="ph"><img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" alt="${esc(p.title)}" loading="lazy">
-        <div class="loc-chip">${p.abroad?'🌍 '+esc(p.country||p.city):'📍 '+esc(p.village||p.city)}</div>
+  const el=$('favFeed');
+  if(!list.length){
+    el.className='';
+    el.innerHTML='<div class="empty"><span class="big">🤍</span>مفضلتك فاضية — افتح أي صورة واضغط «حفظ»</div>';
+    return;
+  }
+  el.className='grid';
+  el.innerHTML=list.map(p=>{
+    const isV=p.media_type==='video';
+    const src=isV?vidUrl(p.image_path):thumbUrl(p.image_path);
+    return `<div class="mcard" onclick="openSheet(${p.id})">
+      ${isV?`<video src="${src}#t=0.4" muted playsinline preload="metadata"></video>`
+           :`<img src="${src}" loading="lazy" alt="${esc(p.title)}">`}
+      ${IS_ADMIN?`<button class="mc-promo" onclick="event.stopPropagation();openPromo(${p.id})" title="انشرها بالسوشال">📢</button>`:''}
+      <div class="mc-overlay">
+        <div class="mc-title">${esc(p.title)}</div>
+        <div class="mc-sub">${p.abroad?'🌍 '+esc(p.country||p.city):'📍 '+esc(p.village||p.city)} · ⭐ ${Number(p.avg_stars).toFixed(1)}</div>
       </div>
-      <div class="card-body">
-        <div class="card-title">${esc(p.title)}</div>
-        <div class="card-meta"><span class="who">${rankOf(p).ic} ${esc(p.photographer)}</span><span>⭐ ${Number(p.avg_stars).toFixed(1)}</span></div>
-      </div>
-    </div>`).join('')
-  :'<div class="empty" style="grid-column:1/-1"><span class="big">🤍</span>مفضلتك فاضية — افتح أي صورة واضغط «حفظ»</div>';
+    </div>`;
+  }).join('');
 }
 async function renderFollow(p){
   const el=$('sFollow');if(!el)return;
@@ -2098,4 +2107,72 @@ async function showFollows(uid,kind){
 function closeFollows(){
   const el=$('followsBox');
   if(el)el.classList.remove('show');
+}
+
+/* ====== نشر المشرف بالسوشال ====== */
+let PROMO_ID=null;
+
+function openPromo(pid){
+  if(!IS_ADMIN){toast('للمشرف فقط',true);return}
+  const p=photos.find(x=>x.id===pid);
+  if(!p)return;
+  PROMO_ID=pid;
+  const loc=p.abroad?(p.country||p.city):((p.village?p.village+' · ':'')+p.city);
+  const txt='📸 '+p.title+'\n📍 '+loc+'\n📷 عدسة '+(p.photographer||'مصوّر')+'\n\nمن «صورة من بلدي» — عدسات أهل الديار 🇸🇦';
+  $('pmText').value=txt;
+  $('pmPreview').src=thumbUrl(p.image_path);
+  $('promoBox').classList.add('show');
+}
+
+function closePromo(){
+  const el=$('promoBox');
+  if(el)el.classList.remove('show');
+  PROMO_ID=null;
+}
+
+function promoText(){
+  return ($('pmText')?$('pmText').value:'')+'\n\nhttps://sowra.app';
+}
+
+async function promoCopy(){
+  try{
+    await navigator.clipboard.writeText(promoText());
+    toast('انتسخ النص ✅ — الصقه بالمنصة');
+  }catch(e){toast('تعذر النسخ',true)}
+}
+
+async function promoDownload(){
+  const p=photos.find(x=>x.id===PROMO_ID);
+  if(!p)return;
+  toast('⏳ نجهّز الصورة...');
+  try{
+    const r=await fetch(imgUrl(p.image_path));
+    const b=await r.blob();
+    const f=new File([b],'sowra-'+p.id+'.jpg',{type:'image/jpeg'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){
+      await navigator.share({files:[f],text:promoText(),url:'https://sowra.app'});
+      return;
+    }
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(b);
+    a.download='sowra-'+p.id+'.jpg';
+    a.click();
+    toast('انحفظت الصورة 📥');
+  }catch(e){toast('تعذر التجهيز',true)}
+}
+
+function promoOpen(net){
+  const t=encodeURIComponent(promoText());
+  const u=encodeURIComponent('https://sowra.app');
+  const links={
+    x:'https://twitter.com/intent/tweet?text='+t,
+    wa:'https://wa.me/?text='+t,
+    tg:'https://t.me/share/url?url='+u+'&text='+encodeURIComponent($('pmText').value),
+    ig:'https://www.instagram.com/'
+  };
+  if(net==='ig'){
+    promoCopy();
+    toast('انتسخ النص — نزّل الصورة والصقه بإنستقرام');
+  }
+  window.open(links[net],'_blank','noopener');
 }
