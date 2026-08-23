@@ -1,37 +1,73 @@
-/* ====== الوضع الليلي ====== */
+/* ====== الوضع الليلي — نهاري · ليلي · تلقائي ====== */
 (function(){
   try{
-    var t=localStorage.getItem('sowra_theme');
-    if(!t){
-      t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
-    }
+    var t=localStorage.getItem('sowra_theme')||'auto';
     if(t==='dark')document.documentElement.setAttribute('data-preload-dark','1');
   }catch(e){}
 })();
 
-function applyTheme(t){
+function isNightNow(){
   try{
-    document.body.classList.toggle('dark',t==='dark');
-    var b=document.getElementById('themeBtn');
-    if(b){b.textContent=t==='dark'?'☀️':'🌙';b.title=t==='dark'?'الوضع النهاري':'الوضع الليلي';}
-    var meta=document.querySelector('meta[name="theme-color"]');
-    if(meta)meta.setAttribute('content',t==='dark'?'#161310':'#F7F1E3');
-    localStorage.setItem('sowra_theme',t);
+    const s=localStorage.getItem('sowra_sun');
+    if(s){
+      const o=JSON.parse(s);
+      const now=Date.now();
+      if(o.rise&&o.set&&(now-o.at)<86400000)return now<o.rise||now>o.set;
+    }
+  }catch(e){}
+  const h=new Date().getHours();
+  return h<6||h>=18;
+}
+
+async function loadSunTimes(lat,lng){
+  try{
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lng
+      +'&daily=sunrise,sunset&timezone=auto&forecast_days=1');
+    const j=await r.json();
+    const rise=new Date(j.daily.sunrise[0]).getTime();
+    const set=new Date(j.daily.sunset[0]).getTime();
+    localStorage.setItem('sowra_sun',JSON.stringify({rise,set,at:Date.now()}));
+    if(getThemeMode()==='auto')applyTheme('auto');
+  }catch(e){}
+}
+
+function getThemeMode(){
+  try{return localStorage.getItem('sowra_theme')||'auto'}catch(e){return 'auto'}
+}
+
+function resolveTheme(mode){
+  if(mode==='dark')return 'dark';
+  if(mode==='light')return 'light';
+  return isNightNow()?'dark':'light';
+}
+
+function applyTheme(mode){
+  try{
+    if(mode==='auto'||mode==='dark'||mode==='light'){}else{mode=mode==='dark'?'dark':'light'}
+    const eff=resolveTheme(mode);
+    document.body.classList.toggle('dark',eff==='dark');
+    const b=document.getElementById('themeBtn');
+    if(b){
+      b.textContent=mode==='auto'?'🔄':(mode==='dark'?'☀️':'🌙');
+      b.title=mode==='auto'?'تلقائي حسب الوقت':(mode==='dark'?'الوضع النهاري':'الوضع الليلي');
+    }
+    const meta=document.querySelector('meta[name="theme-color"]');
+    if(meta)meta.setAttribute('content',eff==='dark'?'#161310':'#F7F1E3');
+    localStorage.setItem('sowra_theme',mode);
   }catch(e){}
 }
 
 function toggleTheme(){
-  var cur=document.body.classList.contains('dark')?'dark':'light';
-  applyTheme(cur==='dark'?'light':'dark');
+  const cur=getThemeMode();
+  const next=cur==='auto'?'light':(cur==='light'?'dark':'auto');
+  applyTheme(next);
+  const names={auto:'تلقائي حسب الوقت 🔄',light:'الوضع النهاري ☀️',dark:'الوضع الليلي 🌙'};
+  if(typeof toast==='function')toast(names[next]);
 }
 
 function initTheme(){
-  var t='light';
-  try{
-    t=localStorage.getItem('sowra_theme');
-    if(!t)t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
-  }catch(e){}
-  applyTheme(t);
+  applyTheme(getThemeMode());
+  setInterval(function(){if(getThemeMode()==='auto')applyTheme('auto')},600000);
 }
 
 /* صورة من بلدي — main.js | v1.1 */
@@ -60,6 +96,7 @@ function go(p){
     document.body.style.overflow='';
   }
   if(p!=='reels'&&typeof stopAllReels==='function')stopAllReels();
+  if(p==='feed'&&typeof applyViewPrefs==='function')setTimeout(applyViewPrefs,80);
   if(p==='acc'&&typeof renderAccAvatar==='function')setTimeout(renderAccAvatar,150);
   if(p!=='acc'&&typeof accPanel==='function'&&window.__accOpen)accPanel('');
   $('nb-feed').classList.toggle('on',p==='feed');

@@ -47,6 +47,7 @@ function showNearby(){
     // لو الخريطة مفتوحة — أضف دبوس موقعك الآن
     if(MAP)addUserPin(lat,lng);
     loadWeatherTip();
+    if(typeof loadSunTimes==='function'&&window.__USER_LAT)loadSunTimes(window.__USER_LAT,window.__USER_LNG);
     if(typeof renderHomeHero==='function')renderHomeHero();
     const distKm=(p)=>Math.hypot(((p.lat||0)-lat)*111,(((p.lng||0)-lng)*111*Math.cos(lat*Math.PI/180)));
 const near=photos.filter(p=>p.lat&&p.lng&&p.media_type!=='video'&&distKm(p)<=30).sort((a,b)=>distKm(a)-distKm(b)).slice(0,6);
