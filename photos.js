@@ -1630,6 +1630,7 @@ async function shareProfile(uid){
     const r=await sb.from('profiles').select('display_name,bio,region').eq('id',uid).maybeSingle();
     const pr=r.data||{};
     const mine=photos.filter(x=>x.user_id===uid&&x.visibility!=='private');
+    const totV=mine.reduce((s,x)=>s+(x.views||0),0);
     const fo=mine.length?(mine[0].followers_count||0):0;
     const rk=mine.length?rankOf(mine[0]):{ic:'🌱',t:'مستكشف'};
     const top=mine.slice().sort((a,b)=>(b.avg_stars||0)-(a.avg_stars||0)).slice(0,4);
