@@ -115,6 +115,12 @@
           <button class="fd-chip" id="fdSponsorsBtn" style="display:none" onclick="applyFilter();openSponsorsPage()">🤝 الرعاة</button>
         </div>
       </div>
+      <div class="fd-view">
+        <div class="fd-view-lb">ما يظهر بالرئيسية</div>
+        <label class="fd-sw"><input type="checkbox" id="swHero" onchange="saveViewPrefs()"><span>📍 بنر ديرتك</span></label>
+        <label class="fd-sw"><input type="checkbox" id="swWeather" onchange="saveViewPrefs()"><span>🌤️ نصيحة الطقس</span></label>
+        <label class="fd-sw"><input type="checkbox" id="swChallenge" onchange="saveViewPrefs()"><span>🎯 تحدي الأسبوع</span></label>
+      </div>
       <div style="display:flex;gap:8px;margin-top:6px">
         <button class="btn" style="flex:1;background:var(--palm)" onclick="applyFilter()">✓ تطبيق</button>
         <button class="btn" style="flex:1;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="clearFilter()">✕ مسح</button>

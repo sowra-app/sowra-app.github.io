@@ -77,6 +77,7 @@ function go(p){
   initTheme();
   await handleAuthReturn();
   initEnBar();
+  initViewPrefs();
   initSelects();fillAddCities();
   const authP=ensureAuth().then(()=>{checkAdmin();loadFavs();}).catch(e=>toast('تعذر الاتصال بالحساب',true));
   try{
@@ -341,4 +342,45 @@ function accPanel(name){
       if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});
     },60);
   }
+}
+
+/* ====== تفضيلات العرض ====== */
+function getViewPrefs(){
+  let p={hero:true,weather:true,challenge:true};
+  try{
+    const s=localStorage.getItem('sowra_view');
+    if(s)p=Object.assign(p,JSON.parse(s));
+  }catch(e){}
+  return p;
+}
+
+function saveViewPrefs(){
+  const p={
+    hero:!!(document.getElementById('swHero')&&document.getElementById('swHero').checked),
+    weather:!!(document.getElementById('swWeather')&&document.getElementById('swWeather').checked),
+    challenge:!!(document.getElementById('swChallenge')&&document.getElementById('swChallenge').checked)
+  };
+  try{localStorage.setItem('sowra_view',JSON.stringify(p))}catch(e){}
+  applyViewPrefs();
+}
+
+function applyViewPrefs(){
+  const p=getViewPrefs();
+  const hero=document.getElementById('homeHero');
+  const wt=document.getElementById('weatherTip');
+  const ch=document.getElementById('challengeStrip');
+  if(hero&&!p.hero)hero.style.display='none';
+  if(wt)wt.style.display=p.weather?'':'none';
+  if(ch&&!p.challenge)ch.style.display='none';
+  if(hero&&p.hero&&typeof renderHomeHero==='function')renderHomeHero();
+  if(ch&&p.challenge&&typeof loadChallenge==='function')loadChallenge();
+}
+
+function initViewPrefs(){
+  const p=getViewPrefs();
+  const a=document.getElementById('swHero'),b=document.getElementById('swWeather'),c=document.getElementById('swChallenge');
+  if(a)a.checked=p.hero;
+  if(b)b.checked=p.weather;
+  if(c)c.checked=p.challenge;
+  applyViewPrefs();
 }

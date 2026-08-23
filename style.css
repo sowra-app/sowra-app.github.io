@@ -731,3 +731,10 @@ body.dark .inspect-box.bad{background:#33201D}
 .pm-net:active{transform:scale(.95);border-color:var(--sadu)}
 .pm-acts{display:flex;gap:9px}
 .pm-acts .btn{flex:1;padding:11px;font-size:13px}
+
+/* ====== تفضيلات العرض بالفلتر ====== */
+.fd-view{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:12px 0 8px}
+.fd-view-lb{font-size:12px;font-weight:700;color:var(--txt-dim);margin-bottom:9px}
+.fd-sw{display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer}
+.fd-sw input{width:19px;height:19px;accent-color:var(--palm);flex-shrink:0;margin:0}
+.fd-sw span{font-size:13px}
