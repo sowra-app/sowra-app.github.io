@@ -61,7 +61,7 @@ function go(p){
   }
   if(p!=='reels'&&typeof stopAllReels==='function')stopAllReels();
   if(p==='acc'&&typeof renderAccAvatar==='function')setTimeout(renderAccAvatar,150);
-  if(p!=='acc'&&typeof accPanel==='function'&&accOpen)accPanel('');
+  if(p!=='acc'&&typeof accPanel==='function'&&window.__accOpen)accPanel('');
   $('nb-feed').classList.toggle('on',p==='feed');
   const nr=$('nb-reels');if(nr)nr.classList.toggle('on',p==='reels');
   $('nb-favs').classList.toggle('on',p==='favs');
@@ -318,26 +318,26 @@ async function handleAuthReturn(){
 }
 
 /* ====== أقسام صفحة حسابي ====== */
-let accOpen='';
+window.__accOpen='';
 
 function accPanel(name){
-  accOpen=(accOpen===name)?'':name;
+  window.__accOpen=(window.__accOpen===name)?'':name;
   const map={edit:'pnEdit',stats:'pnStats',vault:'pnVault',notif:'pnNotif'};
   Object.keys(map).forEach(k=>{
     const el=document.getElementById(map[k]);
-    if(el)el.classList.toggle('on',k===accOpen);
+    if(el)el.classList.toggle('on',k===window.__accOpen);
   });
   document.querySelectorAll('.acc-tile').forEach((t,i)=>{
     const keys=['edit','stats','vault','notif'];
-    t.classList.toggle('on',keys[i]===accOpen);
+    t.classList.toggle('on',keys[i]===window.__accOpen);
   });
   // تحميل عند الفتح
-  if(accOpen==='vault'&&typeof renderVault==='function')renderVault();
-  if(accOpen==='stats'&&typeof renderMyStats==='function')renderMyStats();
-  if(accOpen==='notif'&&typeof renderNotifBox==='function')renderNotifBox();
-  if(accOpen){
+  if(window.__accOpen==='vault'&&typeof renderVault==='function')renderVault();
+  if(window.__accOpen==='stats'&&typeof renderMyStats==='function')renderMyStats();
+  if(window.__accOpen==='notif'&&typeof renderNotifBox==='function')renderNotifBox();
+  if(window.__accOpen){
     setTimeout(()=>{
-      const el=document.getElementById(map[accOpen]);
+      const el=document.getElementById(map[window.__accOpen]);
       if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});
     },60);
   }
