@@ -673,9 +673,7 @@ body.dark .inspect-box.bad{background:#33201D}
 
 
 /* ====== إحصائياتي ====== */
-.st-periods{display:flex;gap:7px;margin-bottom:14px}
-.st-per{flex:1;background:var(--card2);border:1.5px solid var(--line);border-radius:11px;padding:8px;font-family:'Tajawal';font-size:12px;font-weight:700;color:var(--txt-dim);cursor:pointer}
-.st-per.on{background:var(--sadu);border-color:var(--sadu);color:#fff}
+.st-week{font-size:13px;font-weight:700;color:var(--sand);margin-bottom:10px}
 .st-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:16px}
 .st-card{background:var(--card2);border:1.5px solid var(--line);border-radius:13px;padding:11px 4px;text-align:center}
 .st-card b{display:block;font-family:'Reem Kufi',sans-serif;font-size:21px;color:var(--sadu);line-height:1.25}
@@ -692,8 +690,8 @@ body.dark .inspect-box.bad{background:#33201D}
 .st-sort.on{background:var(--sadu);border-color:var(--sadu)}
 .st-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
 .st-item{cursor:pointer}
-.st-thumb{position:relative;border-radius:9px;overflow:hidden;background:var(--card2);min-height:52px}
-.st-thumb img,.st-thumb video{width:100%;height:auto;display:block;max-height:120px;object-fit:cover}
+.st-thumb{position:relative;border-radius:9px;overflow:hidden;background:var(--card2);aspect-ratio:1;display:block}
+.st-thumb img,.st-thumb video{width:100%;height:100%;object-fit:cover;display:block}
 .st-star{position:absolute;top:3px;right:3px;background:rgba(232,160,32,.94);color:var(--ink);border-radius:7px;padding:1px 5px;font-size:9px;font-weight:700;font-family:'Tajawal'}
 .st-nums{display:flex;flex-direction:column;gap:1px;margin-top:4px;text-align:center}
 .st-nums span{font-size:9px;color:var(--txt-dim);line-height:1.5;white-space:nowrap}

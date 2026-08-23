@@ -1946,7 +1946,7 @@ async function renderAccAvatar(){
 }
 
 /* ====== إحصائياتي — بأسلوب 500px ====== */
-window.__stPeriod=7;
+window.__stPeriod=7; /* ثابت */
 window.__stSort='stars';
 
 async function renderMyStats(){
@@ -1984,12 +1984,7 @@ async function renderMyStats(){
     }).slice(0,18);
 
     el.innerHTML=`
-      <div class="st-periods">
-        <button class="st-per${P===7?' on':''}" onclick="stSetPeriod(7)">٧ أيام</button>
-        <button class="st-per${P===30?' on':''}" onclick="stSetPeriod(30)">٣٠ يوم</button>
-        <button class="st-per${P===0?' on':''}" onclick="stSetPeriod(0)">الكل</button>
-      </div>
-
+      <div class="st-week">نشاطك آخر ٧ أيام</div>
       <div class="st-cards">
         <div class="st-card"><b>${inRange.length}</b><span>📸 صورة</span></div>
         <div class="st-card"><b>${vTot}</b><span>👁️ مشاهدة</span></div>
@@ -2037,5 +2032,4 @@ async function renderMyStats(){
   }
 }
 
-function stSetPeriod(d){window.__stPeriod=d;renderMyStats()}
 function stSetSort(s){window.__stSort=s;renderMyStats()}
