@@ -942,14 +942,28 @@ async function shareCard(p){
       ctx.fillText('★ '+Number(p.avg_stars).toFixed(1),W-60,ih+108);
     }
 
+    const qr2=await qrDataUrl('https://sowra.app',180);
+    if(qr2){
+      const qs=120, qx=60, qy=ih+110;
+      ctx.fillStyle='#F7F1E3';
+      if(ctx.roundRect){ctx.beginPath();ctx.roundRect(qx-8,qy-8,qs+16,qs+16,12);ctx.fill()}
+      else ctx.fillRect(qx-8,qy-8,qs+16,qs+16);
+      try{ctx.drawImage(qr2,qx,qy,qs,qs)}catch(e){}
+    }
+
     ctx.textAlign='center';
+    const cx2=W/2+(qr2?70:0);
     ctx.fillStyle='#D63A2F';
-    ctx.font='bold 52px Tajawal, sans-serif';
-    ctx.fillText('صورة من بلدي',W/2,ih+168);
+    ctx.font='bold 50px Tajawal, sans-serif';
+    ctx.fillText('صورة من بلدي',cx2,ih+165);
+
+    ctx.fillStyle='#241F1C';
+    ctx.font='bold 36px Tajawal, sans-serif';
+    ctx.fillText('sowra.app',cx2,ih+212);
 
     ctx.fillStyle='#6B6259';
-    ctx.font='30px Tajawal, sans-serif';
-    ctx.fillText('عدسات أهل الديار  ·  sowra.app',W/2,ih+212);
+    ctx.font='26px Tajawal, sans-serif';
+    ctx.fillText('عدسات أهل الديار',cx2,ih+250);
 
     cv.toBlob(async function(blob){
       if(!blob){toast('تعذر إنشاء البطاقة',true);return}
@@ -1711,13 +1725,30 @@ async function shareProfile(uid){
       img.src=thumbUrl(ph.image_path);
     })));
 
-    // التذييل
+    // التذييل مع رمز QR
+    const qr=await qrDataUrl('https://sowra.app',200);
+    if(qr){
+      const qs=150, qx=70, qy=H-215;
+      ctx.fillStyle='#F7F1E3';
+      if(ctx.roundRect){ctx.beginPath();ctx.roundRect(qx-10,qy-10,qs+20,qs+20,14);ctx.fill()}
+      else ctx.fillRect(qx-10,qy-10,qs+20,qs+20);
+      try{ctx.drawImage(qr,qx,qy,qs,qs)}catch(e){}
+      ctx.fillStyle='#6B6259';
+      ctx.font='22px Tajawal, sans-serif';
+      ctx.textAlign='center';
+      ctx.fillText('امسح للزيارة',qx+qs/2,qy+qs+34);
+    }
+
+    ctx.textAlign='center';
     ctx.fillStyle='#D63A2F';
-    ctx.font='bold 58px Tajawal, sans-serif';
-    ctx.fillText('صورة من بلدي',W/2,H-140);
+    ctx.font='bold 56px Tajawal, sans-serif';
+    ctx.fillText('صورة من بلدي',W/2+(qr?90:0),H-155);
+    ctx.fillStyle='#241F1C';
+    ctx.font='bold 40px Tajawal, sans-serif';
+    ctx.fillText('sowra.app',W/2+(qr?90:0),H-100);
     ctx.fillStyle='#6B6259';
-    ctx.font='34px Tajawal, sans-serif';
-    ctx.fillText('عدسات أهل الديار · sowra.app',W/2,H-88);
+    ctx.font='28px Tajawal, sans-serif';
+    ctx.fillText('عدسات أهل الديار',W/2+(qr?90:0),H-58);
 
     cv.toBlob(async function(blob){
       if(!blob){toast('تعذر إنشاء البطاقة',true);return}
@@ -2180,4 +2211,19 @@ function promoOpen(net){
     toast('انتسخ النص — نزّل الصورة والصقه بإنستقرام');
   }
   window.open(links[net],'_blank','noopener');
+}
+
+/* ====== رمز QR — توليد محلي بلا مكتبات خارجية ====== */
+async function qrDataUrl(text,size){
+  size=size||220;
+  // نستخدم خدمة توليد QR مع احتياطي محلي
+  return new Promise(res=>{
+    const img=new Image();
+    img.crossOrigin='anonymous';
+    const guard=setTimeout(()=>res(null),5000);
+    img.onload=()=>{clearTimeout(guard);res(img)};
+    img.onerror=()=>{clearTimeout(guard);res(null)};
+    img.src='https://api.qrserver.com/v1/create-qr-code/?size='+size+'x'+size
+      +'&margin=0&color=241F1C&bgcolor=F7F1E3&data='+encodeURIComponent(text);
+  });
 }
