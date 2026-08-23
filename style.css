@@ -695,3 +695,21 @@ body.dark .inspect-box.bad{background:#33201D}
 
 .st-empty{background:var(--card2);border:1.5px dashed var(--line);border-radius:13px;padding:16px;text-align:center;font-size:12.5px;color:var(--txt-dim);line-height:1.9;margin-top:14px}
 .st-empty b{color:var(--sadu);cursor:pointer;text-decoration:underline}
+
+/* ====== قوائم المتابعة ====== */
+.pf-stat{cursor:pointer}
+.follows-box{display:none;position:fixed;inset:0;background:rgba(36,31,28,.62);z-index:145;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px)}
+.follows-box.show{display:flex}
+.fb-card{background:var(--card);border:2px solid var(--ink);border-radius:22px 22px 0 0;width:100%;max-width:520px;max-height:78vh;display:flex;flex-direction:column;animation:fbUp .28s ease}
+@keyframes fbUp{from{transform:translateY(100%)}to{transform:none}}
+.fb-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line);flex-shrink:0}
+.fb-head span{font-family:'Reem Kufi',sans-serif;font-size:18px;color:var(--sand)}
+.fb-head button{background:var(--card2);border:1px solid var(--line);border-radius:50%;width:32px;height:32px;color:var(--txt-dim);font-size:15px;cursor:pointer}
+.fb-list{overflow-y:auto;padding:12px 14px calc(20px + env(safe-area-inset-bottom))}
+.fb-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--card2);border-radius:14px;margin-bottom:8px;cursor:pointer}
+.fb-row:active{transform:scale(.985)}
+.fb-row img,.fb-ph{width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:19px}
+.fb-info{flex:1;min-width:0}
+.fb-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fb-reg{font-size:11.5px;color:var(--txt-dim);margin-top:2px}
+.fb-go{color:var(--txt-dim);font-size:17px}

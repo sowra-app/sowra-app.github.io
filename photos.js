@@ -618,6 +618,11 @@ async function openProfile(uid){
   const totV=pub.reduce((s,x)=>s+(x.views||0),0);
   const rk=mine.length?rankOf(mine[0]):{ic:'🌱',t:'مستكشف',c:'bronze'};
   const fo=mine.length?(mine[0].followers_count||0):0;
+  let fg=0;
+  try{
+    const fr=await sb.from('follows').select('followed_id',{count:'exact',head:true}).eq('follower_id',uid);
+    fg=fr.count||0;
+  }catch(e){}
   const isMe=!!(USER&&USER.id===uid);
 
   // الغلاف: الصورة المختارة أو الأعلى تقييماً
@@ -645,7 +650,8 @@ async function openProfile(uid){
       ${pr.bio?`<div class="pf-bio">${esc(pr.bio)}</div>`:''}
       <div class="pf-stats">
         <div class="pf-stat"><b>${pub.length}</b><span>صورة</span></div>
-        <div class="pf-stat"><b>${fo}</b><span>متابع</span></div>
+        <div class="pf-stat" onclick="showFollows('${uid}','followers')"><b>${fo}</b><span>متابع</span></div>
+        <div class="pf-stat" onclick="showFollows('${uid}','following')"><b>${fg}</b><span>يتابع</span></div>
         <div class="pf-stat"><b>${totV}</b><span>مشاهدة</span></div>
       </div>
       <div class="pf-acts">
@@ -2057,4 +2063,39 @@ async function saveProfileAll(){
   await loadPhotos();
   if(typeof renderAccIn==='function')renderAccIn();
   render();
+}
+
+/* ====== قوائم المتابعة ====== */
+async function showFollows(uid,kind){
+  const el=$('followsBox');if(!el)return;
+  el.classList.add('show');
+  $('fbTitle').textContent=kind==='followers'?'👥 المتابعون':'👤 يتابعهم';
+  $('fbList').innerHTML='<div class="loader" style="padding:20px">⏳</div>';
+  try{
+    const col=kind==='followers'?'follower_id':'followed_id';
+    const filt=kind==='followers'?'followed_id':'follower_id';
+    const r=await sb.from('follows').select(col+',profiles!'+col+'(id,display_name,avatar_path,region)').eq(filt,uid);
+    const list=(r.data||[]).map(x=>x.profiles).filter(Boolean);
+    if(!list.length){
+      $('fbList').innerHTML='<div style="padding:22px;text-align:center;font-size:13px;color:var(--txt-dim)">'
+        +(kind==='followers'?'ما فيه متابعون بعد':'ما يتابع أحداً بعد')+'</div>';
+      return;
+    }
+    $('fbList').innerHTML=list.map(u=>`
+      <div class="fb-row" onclick="closeFollows();openProfile('${u.id}')">
+        ${u.avatar_path?`<img src="${avatarUrl(u.avatar_path)}" alt="">`:'<div class="fb-ph">📷</div>'}
+        <div class="fb-info">
+          <div class="fb-name">${esc(u.display_name||'مصوّر')}</div>
+          ${u.region?`<div class="fb-reg">📍 ${esc(u.region)}</div>`:''}
+        </div>
+        <span class="fb-go">←</span>
+      </div>`).join('');
+  }catch(e){
+    $('fbList').innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:var(--txt-dim)">تعذر التحميل</div>';
+  }
+}
+
+function closeFollows(){
+  const el=$('followsBox');
+  if(el)el.classList.remove('show');
 }

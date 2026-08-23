@@ -555,6 +555,14 @@
 
 <!-- ====== دعوة تفعيل الإشعارات ====== -->
 <!-- ====== تعديل العنوان والوصف ====== -->
+<!-- ====== قوائم المتابعة ====== -->
+<div id="followsBox" class="follows-box" onclick="if(event.target===this)closeFollows()">
+  <div class="fb-card">
+    <div class="fb-head"><span id="fbTitle">👥 المتابعون</span><button onclick="closeFollows()">✕</button></div>
+    <div id="fbList" class="fb-list"></div>
+  </div>
+</div>
+
 <div id="editBox" class="edit-box">
   <div class="eb-card">
     <div class="eb-title" id="edLabel">عدّل العنوان والوصف</div>
