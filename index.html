@@ -414,9 +414,10 @@
       <!-- الأقسام -->
       <div class="acc-panel" id="pnEdit">
         <div class="ap-head"><span>✏️ بياناتي</span><button onclick="accPanel('')">✕</button></div>
-        <div class="f-group"><label>اسمك الظاهر مع صورك</label><div style="display:flex;gap:8px"><input id="accEditName" style="flex:1"><button class="btn" onclick="saveMyName()">حفظ</button></div></div>
-        <div class="f-group"><label>منطقتك (اختياري)</label><input id="accRegion" placeholder="مثال: عسير"></div>
-        <div class="f-group"><label>نبذة عنك (اختياري)</label><textarea id="accBio" rows="3" placeholder="مصوّر يحب توثيق جمال الديرة"></textarea></div>
+        <div class="f-group"><label>اسمك الظاهر مع صورك</label><input id="accEditName" maxlength="40"></div>
+        <div class="f-group"><label>منطقتك (اختياري)</label><input id="accRegion" placeholder="مثال: عسير" maxlength="30"></div>
+        <div class="f-group"><label>نبذة عنك (اختياري)</label><textarea id="accBio" rows="3" maxlength="200" placeholder="مصوّر يحب توثيق جمال الديرة"></textarea></div>
+        <button class="btn" style="width:100%;padding:12px" onclick="saveProfileAll()">💾 حفظ التعديل</button>
       </div>
 
       <div class="acc-panel" id="pnStats">

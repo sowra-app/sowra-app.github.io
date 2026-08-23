@@ -1615,7 +1615,6 @@ async function shareProfile(uid){
     const r=await sb.from('profiles').select('display_name,bio,region').eq('id',uid).maybeSingle();
     const pr=r.data||{};
     const mine=photos.filter(x=>x.user_id===uid&&x.visibility!=='private');
-    const totV=mine.reduce((s,x)=>s+(x.views||0),0);
     const fo=mine.length?(mine[0].followers_count||0):0;
     const rk=mine.length?rankOf(mine[0]):{ic:'🌱',t:'مستكشف'};
     const top=mine.slice().sort((a,b)=>(b.avg_stars||0)-(a.avg_stars||0)).slice(0,4);
@@ -1981,8 +1980,6 @@ async function renderMyStats(){
       return d!==0?d:((b.ratings_count||0)-(a.ratings_count||0));
     }).slice(0,18);
 
-    const totV=mine.reduce((s,x)=>s+(x.views||0),0);
-
     el.innerHTML=`
       <div class="st-week">نشاطك آخر ٧ أيام</div>
       <div class="st-cards">
@@ -1992,13 +1989,22 @@ async function renderMyStats(){
         <div class="st-card"><b>${newVisits}</b><span>👣 زيارة</span></div>
       </div>
 
-      <div class="st-total">
-        <span>📷 ${mine.length} صورة</span>
-        <span>👁️ ${totV} مشاهدة</span>
-      </div>
+      ${(function(){
+        const wk=mine.filter(x=>x.created_at>=since);
+        if(!wk.length)return '<div class="st-empty">ما نشرت شيئاً هذا الأسبوع — <b onclick="go(\'add\')">انشر صورة الآن</b></div>';
+        return '<div class="st-week" style="margin-top:16px">صور هذا الأسبوع</div><div class="st-grid">'+wk.map(function(p){
+          const isV=p.media_type==='video';
+          const src=isV?vidUrl(p.image_path):thumbUrl(p.image_path);
+          return '<div class="st-item" onclick="openSheet('+p.id+')" title="'+esc(p.title)+'">'
+            +'<div class="st-thumb">'
+            +(isV?'<video src="'+src+'#t=0.4" muted playsinline preload="metadata"></video>':'<img src="'+src+'" loading="lazy" alt="">')
+            +((p.avg_stars>0)?'<div class="st-star">★ '+Number(p.avg_stars).toFixed(1)+'</div>':'')
+            +'</div><div class="st-nums"><span>👁️ '+(p.views||0)+'</span><span>⭐ '+(p.ratings_count||0)+'</span><span>💬 '+(p.comments_count||0)+'</span></div></div>';
+        }).join('')+'</div>';
+      })()}
 
-      <div class="st-sortbar">
-        <span>أعمالك — ترتيب حسب</span>
+      <div class="st-sortbar" style="margin-top:20px">
+        <span>كل أعمالك — ترتيب حسب</span>
         <div class="st-sorts">
           <button class="st-sort${S==='stars'?' on':''}" onclick="stSetSort('stars')" title="التقييم">⭐</button>
           <button class="st-sort${S==='views'?' on':''}" onclick="stSetSort('views')" title="المشاهدات">👁️</button>
@@ -2030,3 +2036,25 @@ async function renderMyStats(){
 }
 
 function stSetSort(s){window.__stSort=s;renderMyStats()}
+
+/* ====== حفظ بيانات البروفايل كاملة ====== */
+async function saveProfileAll(){
+  if(!USER||USER.is_anonymous){toast('سجّل أول',true);return}
+  const name=($('accEditName')?$('accEditName').value:'').trim();
+  const region=($('accRegion')?$('accRegion').value:'').trim();
+  const bio=($('accBio')?$('accBio').value:'').trim();
+  if(!name){toast('الاسم ما يصير فاضي',true);return}
+  const bn=checkText(name);
+  if(bn){toast('الاسم: '+bn,true);return}
+  const br=checkText(region);
+  if(br){toast('المنطقة: '+br,true);return}
+  const bb=checkText(bio);
+  if(bb){toast('النبذة: '+bb,true);return}
+
+  const {error}=await sb.from('profiles').update({display_name:name,region,bio}).eq('id',USER.id);
+  if(error){toast('تعذر الحفظ: '+error.message,true);return}
+  toast('انحفظت بياناتك ✅');
+  await loadPhotos();
+  if(typeof renderAccIn==='function')renderAccIn();
+  render();
+}
