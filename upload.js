@@ -1013,6 +1013,7 @@ async function runInspection(blob){
   if(res.face)warns.push('👤 فيها وجه واضح — تأكد من إذن صاحبه');
   if(res.plate)warns.push('🚗 فيها لوحة مركبة مقروءة');
   if(res.indoor_private)warns.push('🏠 تبدو من داخل منزل خاص');
+  if(res.military)warns.push('🚫 قد تكون منشأة عسكرية أو أمنية — تصويرها محظور نظاماً');
 
   if(warns.length){
     if(st)st.style.display='none';
