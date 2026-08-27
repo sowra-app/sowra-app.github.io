@@ -841,5 +841,4 @@ body.dark .near-alert{background:linear-gradient(135deg,#1B2A21,var(--card))}
   @keyframes fdUp{from{transform:translateY(100%)}to{transform:none}}
   .fd-scroll{-webkit-overflow-scrolling:touch}
   .fd-actions{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
-  .fd-backdrop{position:fixed;inset:0;background:rgba(36,31,28,.45);z-index:9998}
 }
