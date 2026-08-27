@@ -5,11 +5,9 @@ let _cat='all', _sort='top';
 function toggleFilter(){
   const d=$('filterDrawer');
   const open=d.style.display==='none';
-  d.style.display=open?'flex':'none';
+  d.style.display=open?'block':'none';
   $('filterBtn').classList.toggle('active',open);
-  const bd=document.getElementById('fdBackdrop');
-  if(bd)bd.remove();
-  document.body.style.overflow='';
+  if(open)setTimeout(()=>{d.scrollIntoView({behavior:'smooth',block:'nearest'})},60);
 }
 
 function fdSetCat(el,k){ 
