@@ -587,6 +587,18 @@
 <!-- ====== كاميرا التسجيل ====== -->
 <div id="recScreen">
   <video id="recPreview" autoplay muted playsinline></video>
+  <img id="ghostImg" class="ghost-img" style="display:none" alt="">
+  <div id="ghostBar" class="ghost-bar" style="display:none">
+    <div class="gb-head">
+      <span>👻 صور من هذا المكان</span>
+      <button onclick="ghostClear()" id="ghostOff" style="display:none">✕ إخفاء</button>
+    </div>
+    <div class="gb-strip" id="ghostStrip"></div>
+    <div class="gb-slider" id="ghostSlider" style="display:none">
+      <span>شفافية</span>
+      <input type="range" min="10" max="85" value="45" oninput="ghostOpacity(this.value)">
+    </div>
+  </div>
   <div class="rec-top">
     <button class="rec-x" onclick="recClose()">✕</button>
     <div class="rec-timer" id="recTimer">00:00</div>

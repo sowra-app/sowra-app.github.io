@@ -874,3 +874,17 @@ body.dark .near-alert{background:linear-gradient(135deg,#1B2A21,var(--card))}
 .tl-item.cur img{border-color:var(--sadu);border-width:2.5px}
 .tl-date{font-size:10px;color:var(--txt-dim);text-align:center;margin-top:5px;font-weight:700}
 .tl-now{position:absolute;top:5px;right:5px;background:var(--sadu);color:#fff;border-radius:8px;padding:1px 6px;font-size:9px;font-weight:700}
+
+/* ====== كاميرا الزاوية (الصورة الشبحية) ====== */
+.ghost-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:2;opacity:.45}
+.ghost-bar{position:absolute;left:0;right:0;bottom:150px;z-index:6;padding:0 14px}
+.gb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.gb-head span{color:#fff;font-size:12.5px;font-weight:700;text-shadow:0 1px 5px rgba(0,0,0,.8)}
+.gb-head button{background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:10px;padding:4px 11px;font-family:'Tajawal';font-size:11px;font-weight:700;cursor:pointer}
+.gb-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.gb-strip::-webkit-scrollbar{display:none}
+.gb-thumb{flex:0 0 auto;width:62px;height:62px;border-radius:11px;object-fit:cover;border:2px solid rgba(255,255,255,.45);cursor:pointer;display:block}
+.gb-thumb.on{border-color:var(--star);border-width:3px}
+.gb-slider{display:flex;align-items:center;gap:10px;margin-top:9px;background:rgba(0,0,0,.5);border-radius:12px;padding:8px 13px}
+.gb-slider span{color:#fff;font-size:11.5px;font-weight:700;white-space:nowrap}
+.gb-slider input{flex:1;accent-color:var(--star)}

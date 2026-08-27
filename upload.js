@@ -332,6 +332,7 @@ function initRecBtn(){
 }
 
 async function recOpen(){
+  setTimeout(function(){if(typeof loadGhosts==="function")loadGhosts()},700);
   if(!recSupported()){toast('جهازك ما يدعم التسجيل الداخلي — استخدم المعرض',true);return}
   try{
     recStream=await navigator.mediaDevices.getUserMedia({
@@ -357,6 +358,8 @@ async function recOpen(){
 }
 
 function recClose(){
+  if(typeof ghostClear==="function")ghostClear();
+  const _gb=document.getElementById("ghostBar");if(_gb)_gb.style.display="none";
   recStop(true);
   stopMusicPreview();stopMixer();
   ownMusicFile=null;
@@ -1188,4 +1191,62 @@ async function readExifTech(file){
     }
     return Object.keys(tech).length?tech:null;
   }catch(e){return null}
+}
+
+/* ====== كاميرا الزاوية — صورة شبحية للمحاذاة ====== */
+window.__ghostId=null;
+
+async function loadGhosts(){
+  const bar=$('ghostBar'), strip=$('ghostStrip');
+  if(!bar||!strip)return;
+  bar.style.display='none';
+  try{
+    if(!window.__USER_LAT||typeof photos==='undefined')return;
+    const lat=window.__USER_LAT, lng=window.__USER_LNG;
+    const d=p=>Math.hypot((p.lat-lat)*111000,(p.lng-lng)*111000*Math.cos(lat*Math.PI/180));
+
+    const near=photos.filter(p=>
+      p.lat&&p.lng&&p.media_type!=='video'&&p.visibility!=='private'&&d(p)<=200
+    ).sort((a,b)=>d(a)-d(b)).slice(0,10);
+
+    if(!near.length)return;
+    bar.style.display='block';
+    strip.innerHTML=near.map(p=>
+      `<img class="gb-thumb" src="${thumbUrl(p.image_path)}" onclick="ghostPick(${p.id},this)" alt="">`
+    ).join('');
+  }catch(e){}
+}
+
+function ghostPick(pid,el){
+  const img=$('ghostImg');
+  if(!img)return;
+  const p=photos.find(x=>x.id===pid);
+  if(!p)return;
+
+  if(window.__ghostId===pid){ghostClear();return}
+
+  window.__ghostId=pid;
+  img.src=imgUrl(p.image_path);
+  img.style.display='block';
+  const sl=$('ghostSlider'), off=$('ghostOff');
+  if(sl)sl.style.display='flex';
+  if(off)off.style.display='block';
+  document.querySelectorAll('.gb-thumb').forEach(t=>t.classList.remove('on'));
+  if(el)el.classList.add('on');
+  toast('👻 حاذِ المشهد مع الصورة');
+}
+
+function ghostOpacity(v){
+  const img=$('ghostImg');
+  if(img)img.style.opacity=(v/100);
+}
+
+function ghostClear(){
+  window.__ghostId=null;
+  const img=$('ghostImg');
+  if(img){img.style.display='none';img.src=''}
+  const sl=$('ghostSlider'), off=$('ghostOff');
+  if(sl)sl.style.display='none';
+  if(off)off.style.display='none';
+  document.querySelectorAll('.gb-thumb').forEach(t=>t.classList.remove('on'));
 }
