@@ -37,7 +37,7 @@ function admSetTab(t){
 async function loadStats(){
   $('admSt').innerHTML='<div class="empty">⏳</div>';
   const [st,us]=await Promise.all([sb.rpc('admin_stats'),sb.rpc('admin_users')]);
-  if(st.error||!st.data){$('admSt').innerHTML=`<div class="empty">⚠️ ${st.error?.message||'نفّذ سكربت v7 أول'}</div>`;return}
+  if(st.error||!st.data){$('admSt').innerHTML=`<div class="empty">⚠️ تعذر تحميل الإحصائيات<br><span style="font-size:11px">${esc(st.error?.message||'لا توجد بيانات')}</span></div>`;return}
   const s=st.data;
   const card=(n,l,ic)=>`<div style="background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:14px 8px;text-align:center">
     <div style="font-size:22px">${ic}</div>

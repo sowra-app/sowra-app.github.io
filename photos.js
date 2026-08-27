@@ -333,7 +333,7 @@ async function toggleFav(pid){
   }else{
     favSet.add(pid);
     const {error}=await sb.from('favorites').insert({user_id:USER.id,photo_id:pid});
-    if(error){favSet.delete(pid);toast('تعذر الحفظ — نفّذ سكربت v15',true);return}
+    if(error){favSet.delete(pid);toast('تعذر الحفظ: '+(error.message||''),true);return}
     toast('انحفظت بمفضلتك ❤️');
   }
   if(curPhoto)renderFollow(curPhoto);
