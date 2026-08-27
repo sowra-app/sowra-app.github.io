@@ -7,7 +7,10 @@ function toggleFilter(){
   const open=d.style.display==='none';
   d.style.display=open?'block':'none';
   $('filterBtn').classList.toggle('active',open);
-  if(open)setTimeout(()=>{d.scrollIntoView({behavior:'smooth',block:'nearest'})},60);
+  if(open){
+    setTimeout(()=>{d.scrollIntoView({behavior:'smooth',block:'nearest'})},60);
+    if(typeof lockFdScroll==='function')lockFdScroll();
+  }
 }
 
 function fdSetCat(el,k){ 
@@ -2546,4 +2549,22 @@ function hideNearby(){
   try{sessionStorage.setItem('near_hidden','1')}catch(e){}
   const el=$('nearAlert');
   if(el)el.style.display='none';
+}
+
+/* ====== منع تسرب التمرير من صندوق الفلتر ====== */
+function lockFdScroll(){
+  const el=document.querySelector('.fd-scroll');
+  if(!el||el.__locked)return;
+  el.__locked=true;
+  let y0=0;
+  el.addEventListener('touchstart',function(e){
+    y0=e.touches[0].clientY;
+  },{passive:true});
+  el.addEventListener('touchmove',function(e){
+    const dy=e.touches[0].clientY-y0;
+    const atTop=el.scrollTop<=0;
+    const atBottom=el.scrollTop+el.clientHeight>=el.scrollHeight-1;
+    // يسحب لأسفل وهو بالأعلى · أو لأعلى وهو بالأسفل
+    if((atTop&&dy>0)||(atBottom&&dy<0))e.preventDefault();
+  },{passive:false});
 }
