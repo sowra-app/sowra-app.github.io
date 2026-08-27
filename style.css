@@ -648,7 +648,15 @@ body.dark .inspect-box.bad{background:#33201D}
 .pf-avatar-cam{position:absolute;bottom:4px;left:2px;width:32px;height:32px;border-radius:50%;background:var(--sadu);border:2.5px solid var(--night);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
 /* ====== رأس صفحة حسابي ====== */
-.acc-hero{display:flex;align-items:center;gap:16px;background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:16px;margin-bottom:18px;position:relative;z-index:2}
+.acc-hero{position:relative;display:flex;align-items:center;gap:16px;background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:18px 16px;margin-bottom:18px;overflow:hidden;min-height:112px}
+.acc-bg{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0}
+.acc-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(to left,rgba(10,8,6,.78),rgba(10,8,6,.42))}
+.acc-hero.has-bg .acc-hero-name{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+.acc-hero.has-bg .acc-hero-mail{color:rgba(255,255,255,.82);text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.acc-hero.has-bg .cover-hint{color:rgba(255,255,255,.72)}
+.acc-hero.has-bg .pf-act{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.32);color:#fff;backdrop-filter:blur(6px)}
+.acc-hero .pf-avatar-wrap,.acc-hero-info{position:relative;z-index:2}
+.acc-cam{position:absolute;top:10px;left:10px;z-index:3;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:10px;width:32px;height:32px;font-size:14px;cursor:pointer;backdrop-filter:blur(5px)}
 .acc-hero .pf-avatar,.acc-hero .pf-avatar-ph{width:78px;height:78px;border-width:3px;font-size:30px}
 .acc-hero .pf-avatar-cam{width:27px;height:27px;font-size:12px;bottom:2px;left:0}
 .acc-hero-info{flex:1;min-width:0}
@@ -739,12 +747,4 @@ body.dark .inspect-box.bad{background:#33201D}
 .fd-sw input{width:19px;height:19px;accent-color:var(--palm);flex-shrink:0;margin:0}
 .fd-sw span{font-size:13px}
 
-/* ====== غلاف صفحة حسابي ====== */
-.acc-cover{position:relative;height:140px;margin:0 -14px 0;background:linear-gradient(135deg,var(--card2),var(--line));overflow:hidden;border-radius:0;z-index:1}
-.acc-cover img{width:100%;height:100%;object-fit:cover;display:block}
-.acc-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(10,8,6,.5),transparent 65%);pointer-events:none}
-.ac-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px;opacity:.25}
-.acc-cover .pf-cam{z-index:3}
-.acc-cover + .acc-hero{margin-top:-30px}
-.acc-cover + .acc-hero .pf-avatar-wrap{margin-top:-42px}
 .cover-hint{font-size:10.5px;color:var(--txt-dim);margin-top:7px;line-height:1.7}

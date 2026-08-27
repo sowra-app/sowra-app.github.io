@@ -2264,19 +2264,18 @@ async function uploadCover(inp){
 }
 
 async function renderAccCover(){
-  const el=$('accCover');if(!el)return;
+  const el=$('accCover'), hero=$('accHero');
+  if(!el||!hero)return;
   if(!USER||USER.is_anonymous)return;
   try{
     const r=await sb.from('profiles').select('cover_path').eq('id',USER.id).maybeSingle();
     const path=r.data&&r.data.cover_path;
-    const btn=el.querySelector('.pf-cam');
-    el.innerHTML = path
-      ? `<img src="${coverUrl(path)}?t=${Date.now()}" alt="">`
-      : '<div class="ac-empty">🏔️</div>';
-    const b=document.createElement('button');
-    b.className='pf-cam';
-    b.textContent='🖼️ غيّر الغلاف';
-    b.onclick=()=>document.getElementById('coverFile').click();
-    el.appendChild(b);
+    if(path){
+      el.style.backgroundImage='url("'+coverUrl(path)+'?t='+Date.now()+'")';
+      hero.classList.add('has-bg');
+    }else{
+      el.style.backgroundImage='';
+      hero.classList.remove('has-bg');
+    }
   }catch(e){}
 }
