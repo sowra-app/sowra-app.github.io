@@ -28,6 +28,8 @@ function applyFilter(){
 }
 function clearFilter(){
   window.__fdTags=[];
+  window.__onlyClaims=false;
+  const _cb=document.getElementById("fdClaimBtn");if(_cb)_cb.classList.remove("on");
   if(typeof renderFdTags==="function")renderFdTags();
   _cat='all';_sort='top';
   document.querySelectorAll('.fd-chip[data-k]').forEach(b=>b.classList.toggle('on',b.dataset.k==='all'));
@@ -161,6 +163,7 @@ function render(){
   $('feed').style.display='';
   const abroadView=sortMode==='abroad';
   let list=photos.filter(p=>!!p.abroad===abroadView&&p.media_type!=='video');
+  if(window.__onlyClaims)list=list.filter(p=>CLAIM_MAP[p.id]);
   if(window.__fdTags&&window.__fdTags.length){
     list=list.filter(p=>{
       const t=p.tags||[];
@@ -192,7 +195,7 @@ function render(){
         : `<img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="${esc(p.title)}">`}
       ${medal?`<div class="mc-medal">${medal}</div>`:''}
       ${VISIT_COUNTS[p.id]?`<div class="mc-visits">👣 ${VISIT_COUNTS[p.id]}</div>`:''}
-      ${CLAIM_MAP[p.id]?'<div class="mc-claim">🏅 سبق</div>':''}
+      ${claimBadge(p.id)}
       ${p.visibility==='private'?'<div class="mc-lock">🔒 خاصة</div>':''}
       ${p.media_type==='video'?'<div class="mc-vid">▶</div>':''}
       <div class="mc-overlay">
@@ -547,7 +550,10 @@ function renderMap(){
     &&(!q||p.title.includes(q)||(p.village||'').includes(q)||(p.city||'').includes(q)||(p.country||'').includes(q)));
   const pts=[];
   list.forEach(p=>{
-    const ic=L.divIcon({className:'',html:`<div class="pmark"><img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'"></div>`,iconSize:[46,46],iconAnchor:[23,23]});
+    const cl=CLAIM_MAP[p.id];
+    const clCls=cl?(' claim-'+cl.state):'';
+    const clDot=cl?('<span class="pmark-claim">'+(cl.state==='doubted'?'❓':'🏅')+'</span>'):'';
+    const ic=L.divIcon({className:'',html:`<div class="pmark${clCls}"><img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'">${clDot}</div>`,iconSize:[46,46],iconAnchor:[23,23]});
     L.marker([p.lat,p.lng],{icon:ic}).addTo(MARKS).on('click',()=>openSheet(p.id));
     pts.push([p.lat,p.lng]);
   });
@@ -1369,10 +1375,40 @@ let CLAIM_MAP={};
 
 async function loadClaims(){
   try{
-    const r=await sb.from('claims').select('photo_id,place_name').eq('active',true);
+    const r=await sb.from('claims').select('id,photo_id,place_name').eq('active',true);
     CLAIM_MAP={};
-    (r.data||[]).forEach(c=>{CLAIM_MAP[c.photo_id]=c.place_name});
+    const list=r.data||[];
+    if(!list.length)return;
+    // جلب الأصوات لحساب حالة التحقق
+    const ids=list.map(c=>c.id);
+    let votes=[];
+    try{
+      const v=await sb.from('claim_votes').select('claim_id,stance').in('claim_id',ids);
+      votes=v.data||[];
+    }catch(e){}
+    list.forEach(c=>{
+      const mine=votes.filter(v=>v.claim_id===c.id);
+      const sup=mine.filter(v=>v.stance==='support').length;
+      const dbt=mine.filter(v=>v.stance==='doubt').length;
+      let state='new';
+      if(sup>=3&&sup>dbt*2)state='verified';
+      else if(dbt>sup&&dbt>=2)state='doubted';
+      CLAIM_MAP[c.photo_id]={name:c.place_name,sup,dbt,state};
+    });
   }catch(e){}
+}
+
+/* شارة السبق حسب حالتها */
+function claimBadge(pid,small){
+  const c=CLAIM_MAP[pid];
+  if(!c)return '';
+  const cfg={
+    verified:{cls:'ok', ic:'🏅', t:'أول موثّق'},
+    doubted: {cls:'dbt',ic:'❓', t:'سبق موضع شك'},
+    new:     {cls:'new',ic:'🏅', t:'سبق'}
+  }[c.state];
+  return '<div class="mc-claim '+cfg.cls+(small?' sm':'')+'">'+cfg.ic+' '+cfg.t
+    +(c.sup?'<b>'+c.sup+'</b>':'')+'</div>';
 }
 
 async function renderClaim(p){
@@ -1394,10 +1430,19 @@ async function renderClaim(p){
     const days=Math.ceil((new Date(c.expires_at)-new Date())/86400000);
     const notes=votes.filter(x=>x.note&&x.note.trim());
 
-    el.innerHTML=`<div class="claim-box">
+    let state='new';
+    if(sup>=3&&sup>dbt*2)state='verified';
+    else if(dbt>sup&&dbt>=2)state='doubted';
+    const stCfg={
+      verified:{cls:'ok',  ic:'🏅', t:'أول موثّق — تحقّق منه الجمهور'},
+      doubted: {cls:'dbt', ic:'❓', t:'سبق موضع شك'},
+      new:     {cls:'new', ic:'🏅', t:'ادّعاء سبق — بانتظار الجمهور'}
+    }[state];
+
+    el.innerHTML=`<div class="claim-box ${stCfg.cls}">
+      <div class="claim-state">${stCfg.ic} ${stCfg.t}</div>
       <div class="claim-head">
-        <span class="claim-badge">🏅 سبق</span>
-        <span class="claim-place">${esc(c.place_name)}</span>
+        <span class="claim-place">📍 ${esc(c.place_name)}</span>
       </div>
       <div class="claim-reason">${esc(c.reason)}</div>
       ${(c.lat&&c.lng)?`<a class="mapbtn" href="https://maps.google.com/?q=${c.lat},${c.lng}" target="_blank" rel="noopener" style="margin-bottom:10px">🗺️ إحداثيات السبق</a>`:''}
@@ -2324,4 +2369,12 @@ function renderPhotoTags(p){
   if(!tags.length||typeof tagName!=='function'){el.style.display='none';return}
   el.style.display='flex';
   el.innerHTML=tags.map(k=>'<span class="s-tag">'+esc(tagName(k))+'</span>').join('');
+}
+
+/* ====== فلتر السبق ====== */
+window.__onlyClaims=false;
+
+function toggleClaimFilter(btn){
+  window.__onlyClaims=!window.__onlyClaims;
+  if(btn)btn.classList.toggle('on',window.__onlyClaims);
 }

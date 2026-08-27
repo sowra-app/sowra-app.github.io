@@ -760,3 +760,27 @@ body.dark .inspect-box.bad{background:#33201D}
 .s-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .s-tag{background:var(--card2);border:1px solid var(--qteal);color:var(--qteal);border-radius:14px;padding:4px 11px;font-size:11.5px;font-weight:700}
 body.dark .s-tag{background:#1B2A2E}
+
+/* ====== شارة السبق البارزة ====== */
+.mc-claim{position:absolute;top:8px;right:8px;border-radius:11px;padding:4px 10px;font-size:11px;font-weight:700;font-family:'Tajawal';box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;gap:5px;z-index:3}
+.mc-claim.new{background:rgba(232,160,32,.96);color:var(--ink)}
+.mc-claim.ok{background:rgba(46,139,87,.96);color:#fff}
+.mc-claim.dbt{background:rgba(214,58,47,.94);color:#fff}
+.mc-claim b{background:rgba(255,255,255,.28);border-radius:7px;padding:0 5px;font-size:10px}
+.mc-claim.sm{font-size:10px;padding:3px 8px}
+
+.pmark.claim-verified{border-color:var(--palm)!important;box-shadow:0 0 0 3px rgba(46,139,87,.35)}
+.pmark.claim-new{border-color:var(--star)!important;box-shadow:0 0 0 3px rgba(232,160,32,.35)}
+.pmark.claim-doubted{border-color:var(--sadu)!important;box-shadow:0 0 0 3px rgba(214,58,47,.3)}
+.pmark-claim{position:absolute;top:-6px;right:-6px;background:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+
+.claim-state{font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:11px;margin-bottom:10px;text-align:center}
+.claim-box.new{border-color:var(--star)}
+.claim-box.new .claim-state{background:#FFF7E0;color:#A87500}
+.claim-box.ok{border-color:var(--palm);border-width:2.5px}
+.claim-box.ok .claim-state{background:#EFF7F1;color:var(--palm)}
+.claim-box.dbt{border-color:var(--sadu)}
+.claim-box.dbt .claim-state{background:#FBEAE8;color:var(--sadu)}
+body.dark .claim-box.new .claim-state{background:#2E2519}
+body.dark .claim-box.ok .claim-state{background:#1B2A21}
+body.dark .claim-box.dbt .claim-state{background:#33201D}
