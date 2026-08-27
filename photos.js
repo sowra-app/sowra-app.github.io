@@ -5,7 +5,7 @@ let _cat='all', _sort='top';
 function toggleFilter(){
   const d=$('filterDrawer');
   const open=d.style.display==='none';
-  d.style.display=open?'block':'none';
+  d.style.display=open?'flex':'none';
   $('filterBtn').classList.toggle('active',open);
 }
 function fdSetCat(el,k){ 
