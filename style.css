@@ -190,7 +190,13 @@ nav{position:fixed;bottom:0;left:0;right:0;width:100%;z-index:30;background:var(
 .maint-msg{font-size:15px;color:var(--txt-dim);line-height:2;max-width:400px}
 .maint-foot{margin-top:26px;font-size:12px;color:var(--sand-dim)}
 .maint-chip{position:fixed;top:10px;left:10px;z-index:100000;background:#FFF4D6;border:1.5px solid var(--star);border-radius:12px;padding:6px 13px;font-size:11.5px;font-weight:700;color:#A87500;box-shadow:0 2px 8px rgba(0,0,0,.15)}
-.filter-drawer{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
+.filter-drawer{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:14px 14px 0;margin-bottom:10px;max-height:70vh;display:flex;flex-direction:column}
+.filter-drawer>*{flex:0 0 auto}
+.fd-scroll{overflow-y:auto;flex:1 1 auto;padding-bottom:6px;margin-left:-4px;padding-left:4px}
+.fd-scroll::-webkit-scrollbar{width:4px}
+.fd-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+.fd-actions{position:sticky;bottom:0;background:var(--card);padding:12px 0 14px;margin-top:4px;border-top:1px solid var(--line);display:flex;gap:8px;z-index:2}
+.fd-actions .btn{flex:1}
 .fd-section{margin-bottom:12px}
 .fd-label{font-size:12px;font-weight:700;color:var(--txt-dim);margin-bottom:7px}
 .fd-chips{display:flex;flex-wrap:wrap;gap:7px}
