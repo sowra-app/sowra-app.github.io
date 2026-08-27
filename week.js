@@ -148,8 +148,45 @@ async function loadChallenge(){
     else {el.style.display='none';return}
   }
   el.style.display='block';
+  const reg=CHALLENGE.region?'<span class="ch-tag">📍 '+esc(CHALLENGE.region)+'</span>':'';
+  const cat=CHALLENGE.cat?'<span class="ch-tag">'+esc(catName(CHALLENGE.cat))+'</span>':'';
+  const prize=CHALLENGE.prize?'<div class="ch-prize">🎁 '+esc(CHALLENGE.prize)+'</div>':'';
   el.innerHTML='🎯 <b>تحدي الأسبوع:</b> '+esc(CHALLENGE.title)+
+    ((reg||cat)?'<div class="ch-tags">'+reg+cat+'</div>':'')+
     (CHALLENGE.hint?'<div class="ch-hint">'+esc(CHALLENGE.hint)+'</div>':'')+
-    '<div class="ch-left">'+left.replace(' · ','')+'</div>';
-  el.onclick=function(){go('add')};
+    prize+
+    '<div class="ch-left">'+left.replace(' · ','')+'</div>'+
+    '<button class="ch-join" onclick="event.stopPropagation();joinChallenge()">📷 شارك بالتحدي</button>';
+  el.onclick=function(){joinChallenge()};
+}
+
+/* ====== المشاركة بالتحدي ====== */
+function catName(k){
+  const m={nature:'🌿 طبيعة',arch:'🏛️ عمارة',wildlife:'🦅 طيور وحيوانات',
+    people:'👥 أشخاص',bw:'⬛ أبيض وأسود',landmark:'🕌 معلم',heritage:'🏺 تراث',other:'📷 أخرى'};
+  return m[k]||k;
+}
+
+function joinChallenge(){
+  go('add');
+  setTimeout(function(){
+    try{
+      const c=window.__CH||{};
+      // المنطقة
+      if(c.region&&$('aRegion')){
+        const opt=Array.from($('aRegion').options).find(o=>o.value===c.region||o.textContent.trim()===c.region);
+        if(opt){$('aRegion').value=opt.value;if(typeof fillAddCities==='function')fillAddCities();}
+      }
+      // التصنيف
+      if(c.cat&&$('aCat')){
+        const co=Array.from($('aCat').options).find(o=>o.value===c.cat);
+        if(co)$('aCat').value=c.cat;
+      }
+      // تلميح بالعنوان
+      if(c.title&&$('aTitle')&&!$('aTitle').value.trim()){
+        $('aTitle').placeholder='تحدي: '+c.title;
+      }
+      if(typeof toast==='function')toast('🎯 '+c.title+' — صوّر وشارك');
+    }catch(e){}
+  },240);
 }

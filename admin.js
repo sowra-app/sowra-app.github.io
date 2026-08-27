@@ -503,6 +503,27 @@ function admChallengeBlock(){
     <input id="chTitle" placeholder="موضوع التحدي (مثال: الأبواب القديمة)" value="${esc(c.title||'')}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
     <input id="chHint" placeholder="وصف أو تلميح (اختياري)" value="${esc(c.hint||'')}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
     <input id="chEnds" type="date" value="${c.ends_at||''}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:8px">
+    <div style="font-size:11.5px;color:var(--txt-dim);margin:10px 0 6px">توجيه التحدي (اختياري)</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <select id="chRegion" style="flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px;color:var(--txt);font-family:'Tajawal';font-size:12.5px;outline:none">
+        <option value="">كل المناطق</option>
+        ${['الرياض','مكة المكرمة','المدينة المنورة','القصيم','الشرقية','عسير','تبوك','حائل','الحدود الشمالية','جازان','نجران','الباحة','الجوف'].map(r=>`<option value="${r}" ${c.region===r?'selected':''}>${r}</option>`).join('')}
+      </select>
+      <select id="chCat" style="flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px;color:var(--txt);font-family:'Tajawal';font-size:12.5px;outline:none">
+        <option value="">كل التصنيفات</option>
+        ${[['nature','🌿 طبيعة'],['arch','🏛️ عمارة'],['wildlife','🦅 طيور'],['people','👥 أشخاص'],['bw','⬛ أبيض وأسود'],['landmark','🕌 معلم'],['heritage','🏺 تراث']].map(x=>`<option value="${x[0]}" ${c.cat===x[0]?'selected':''}>${x[1]}</option>`).join('')}
+      </select>
+    </div>
+    <input id="chPrize" placeholder="الجائزة أو الحافز (اختياري)" value="${esc(c.prize||'')}" style="width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--txt);font-family:'Tajawal';font-size:13px;outline:none;margin-bottom:10px">
+    <div class="ch-ideas">
+      <b>أفكار جاهزة:</b>
+      <button onclick="chIdea('أجمل غروب في نجد','الرياض','nature')">🌅 غروب نجد</button>
+      <button onclick="chIdea('تفاصيل تراثية من الجنوب','عسير','heritage')">🏺 تراث الجنوب</button>
+      <button onclick="chIdea('أماكن نادرة في الشرقية','الشرقية','')">💎 نوادر الشرقية</button>
+      <button onclick="chIdea('نخيل القصيم','القصيم','nature')">🌴 نخيل القصيم</button>
+      <button onclick="chIdea('أبواب ونوافذ قديمة','','arch')">🚪 أبواب قديمة</button>
+      <button onclick="chIdea('ليل الصحراء ونجومها','','nature')">🌙 ليل الصحراء</button>
+    </div>
     <div style="display:flex;gap:8px">
       <button class="btn" style="flex:1;font-size:12px;padding:9px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admChSave()">💾 حفظ</button>
       <button class="btn" style="flex:1;font-size:12px;padding:9px;${on?'background:var(--sadu)':'background:var(--qblue)'}" onclick="admChToggle()">${on?'🙈 إيقاف':'▶️ تفعيل'}</button>
@@ -514,6 +535,9 @@ async function admChSave(){
     title:$('chTitle').value.trim(),
     hint:$('chHint').value.trim(),
     ends_at:$('chEnds').value||null,
+    region:$('chRegion')?$('chRegion').value:'',
+    cat:$('chCat')?$('chCat').value:'',
+    prize:$('chPrize')?$('chPrize').value.trim():'',
     updated_at:new Date().toISOString()
   }).eq('id',1);
   if(error){toast('فشل الحفظ: '+error.message,true);return}
@@ -900,4 +924,14 @@ async function admInspectToggle(){
   if(error){toast('فشلت العملية: '+error.message,true);return}
   toast(!b.inspect_enabled?'الفاحص الذكي مفعّل 🤖':'اتوقف الفاحص');
   await loadSponsor();await loadAdmWeek();
+}
+
+/* أفكار تحديات جاهزة */
+function chIdea(title,region,cat){
+  if($('chTitle'))$('chTitle').value=title;
+  if($('chRegion'))$('chRegion').value=region;
+  if($('chCat'))$('chCat').value=cat;
+  const d=new Date();d.setDate(d.getDate()+7);
+  if($('chEnds'))$('chEnds').value=d.toISOString().slice(0,10);
+  toast('اضغط حفظ ثم تفعيل 🎯');
 }

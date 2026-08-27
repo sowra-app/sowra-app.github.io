@@ -784,3 +784,14 @@ body.dark .s-tag{background:#1B2A2E}
 body.dark .claim-box.new .claim-state{background:#2E2519}
 body.dark .claim-box.ok .claim-state{background:#1B2A21}
 body.dark .claim-box.dbt .claim-state{background:#33201D}
+
+/* ====== التحدي الموجّه ====== */
+.ch-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.ch-tag{background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:3px 10px;font-size:11px;font-weight:700}
+.ch-prize{font-size:12px;margin-top:7px;opacity:.92}
+.ch-join{background:rgba(255,255,255,.94);border:none;border-radius:12px;padding:8px 18px;font-family:'Tajawal';font-size:12.5px;font-weight:700;color:var(--qblue);cursor:pointer;margin-top:11px;display:block;width:100%}
+.ch-join:active{transform:scale(.98)}
+.ch-ideas{background:var(--card2);border:1px dashed var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.ch-ideas b{display:block;font-size:11.5px;color:var(--txt-dim);margin-bottom:7px}
+.ch-ideas button{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:6px 11px;font-family:'Tajawal';font-size:11.5px;font-weight:700;color:var(--txt);cursor:pointer;margin:0 0 5px 5px}
+.ch-ideas button:active{transform:scale(.96);border-color:var(--qblue)}
