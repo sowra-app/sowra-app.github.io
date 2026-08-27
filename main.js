@@ -98,6 +98,7 @@ function go(p){
   if(p!=='reels'&&typeof stopAllReels==='function')stopAllReels();
   if(p==='feed'&&typeof applyViewPrefs==='function')setTimeout(applyViewPrefs,80);
   if(p==='acc'&&typeof renderAccAvatar==='function')setTimeout(renderAccAvatar,150);
+  if(p==='acc'&&typeof renderAccCover==='function')setTimeout(renderAccCover,150);
   if(p!=='acc'&&typeof accPanel==='function'&&window.__accOpen)accPanel('');
   $('nb-feed').classList.toggle('on',p==='feed');
   const nr=$('nb-reels');if(nr)nr.classList.toggle('on',p==='reels');

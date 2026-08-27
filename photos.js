@@ -621,7 +621,7 @@ async function openProfile(uid){
   go('profile');
   PROF_UID=uid;PROF_TAB='public';
   $('profHead').innerHTML='<div class="loader">⏳</div>';
-  const r=await sb.from('profiles').select('display_name,bio,region,avatar_path,cover_photo_id').eq('id',uid).maybeSingle();
+  const r=await sb.from('profiles').select('display_name,bio,region,avatar_path,cover_path').eq('id',uid).maybeSingle();
   const pr=r.data||{};
   const mine=photos.filter(x=>x.user_id===uid);
   const pub=mine.filter(x=>x.visibility!=='private');
@@ -635,17 +635,20 @@ async function openProfile(uid){
   }catch(e){}
   const isMe=!!(USER&&USER.id===uid);
 
-  // الغلاف: الصورة المختارة أو الأعلى تقييماً
-  let cover=null;
-  if(pr.cover_photo_id)cover=pub.find(x=>x.id===pr.cover_photo_id);
-  if(!cover&&pub.length)cover=pub.slice().sort((a,b)=>(b.avg_stars||0)-(a.avg_stars||0))[0];
+  // الغلاف: المرفوع من حسابي، أو الأعلى تقييماً
+  let coverSrc='';
+  if(pr.cover_path)coverSrc=coverUrl(pr.cover_path);
+  else if(pub.length){
+    const top1=pub.slice().sort((a,b)=>(b.avg_stars||0)-(a.avg_stars||0))[0];
+    if(top1)coverSrc=imgUrl(top1.image_path);
+  }
 
   const av=pr.avatar_path?avatarUrl(pr.avatar_path):'';
 
   $('profHead').innerHTML=`
     <div class="pf-cover">
-      ${cover?`<img src="${imgUrl(cover.image_path)}" alt="">`:'<div class="pf-cover-empty">🏔️</div>'}
-      ${isMe?`<button class="pf-cam" onclick="pickCover()">🖼️ غيّر الغلاف</button>`:''}
+      ${coverSrc?`<img src="${coverSrc}" alt="">`:'<div class="pf-cover-empty">🏔️</div>'}
+      ${isMe?`<button class="pf-cam" onclick="go('acc')">🖼️ غيّره من حسابي</button>`:''}
     </div>
     <div class="pf-head">
       <div class="pf-avatar-wrap">
@@ -1967,19 +1970,6 @@ async function uploadAvatar(inp){
   finally{inp.value=''}
 }
 
-async function pickCover(){
-  const mine=photos.filter(x=>x.user_id===USER.id&&x.visibility!=='private'&&x.media_type!=='video');
-  if(!mine.length){toast('انشر صورة أول عشان تختار غلافك',true);return}
-  const list=mine.slice(0,15).map((p,i)=>`${i+1} = ${p.title}`).join('\n');
-  const pick=prompt('اختر رقم الصورة لتكون غلافك:\n\n'+list);
-  if(pick===null)return;
-  const idx=parseInt(pick.trim())-1;
-  if(isNaN(idx)||!mine[idx]){toast('رقم غير صحيح',true);return}
-  const {error}=await sb.from('profiles').update({cover_photo_id:mine[idx].id}).eq('id',USER.id);
-  if(error){toast('تعذر الحفظ',true);return}
-  toast('انحفظ الغلاف 🖼️');
-  openProfile(USER.id);
-}
 
 /* ====== صورة الحساب بصفحة حسابي ====== */
 async function renderAccAvatar(){
@@ -2227,4 +2217,66 @@ async function qrDataUrl(text,size){
     img.src='https://api.qrserver.com/v1/create-qr-code/?size='+size+'x'+size
       +'&margin=0&color=241F1C&bgcolor=F7F1E3&data='+encodeURIComponent(text);
   });
+}
+
+/* ====== غلاف البروفايل وحسابي ====== */
+function coverUrl(path){
+  return sb.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+}
+
+async function uploadCover(inp){
+  const f=inp.files[0];if(!f)return;
+  // تلميح المقاس
+  if(!sessionStorage.getItem('cover_hint')){
+    try{sessionStorage.setItem('cover_hint','1')}catch(e){}
+  }
+  if(!USER||USER.is_anonymous){toast('سجّل أول',true);return}
+  if(f.size>6*1024*1024){toast('الصورة كبيرة — الحد 6 ميجا',true);inp.value='';return}
+  toast('⏳ نرفع الغلاف...');
+  try{
+    // قص لنسبة 3:1 بعرض 1200
+    const blob=await new Promise((res,rej)=>{
+      const img=new Image();
+      img.onload=()=>{
+        const W=1200,H=400;
+        const cv=document.createElement('canvas');cv.width=W;cv.height=H;
+        const ctx=cv.getContext('2d');
+        const rt=Math.max(W/img.width,H/img.height);
+        const dw=img.width*rt,dh=img.height*rt;
+        ctx.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh);
+        URL.revokeObjectURL(img.src);
+        cv.toBlob(b=>b?res(b):rej(new Error('فشل')),'image/jpeg',0.86);
+      };
+      img.onerror=rej;
+      img.src=URL.createObjectURL(f);
+    });
+
+    const path=USER.id+'/cover.jpg';
+    const up=await sb.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg',upsert:true,cacheControl:'60'});
+    if(up.error)throw up.error;
+    const {error}=await sb.from('profiles').update({cover_path:path}).eq('id',USER.id);
+    if(error)throw error;
+    toast('انحفظ الغلاف 🖼️');
+    if(typeof renderAccCover==='function')renderAccCover();
+    if(PROF_UID===USER.id)openProfile(USER.id);
+  }catch(e){toast('تعذر الرفع: '+(e.message||''),true)}
+  finally{inp.value=''}
+}
+
+async function renderAccCover(){
+  const el=$('accCover');if(!el)return;
+  if(!USER||USER.is_anonymous)return;
+  try{
+    const r=await sb.from('profiles').select('cover_path').eq('id',USER.id).maybeSingle();
+    const path=r.data&&r.data.cover_path;
+    const btn=el.querySelector('.pf-cam');
+    el.innerHTML = path
+      ? `<img src="${coverUrl(path)}?t=${Date.now()}" alt="">`
+      : '<div class="ac-empty">🏔️</div>';
+    const b=document.createElement('button');
+    b.className='pf-cam';
+    b.textContent='🖼️ غيّر الغلاف';
+    b.onclick=()=>document.getElementById('coverFile').click();
+    el.appendChild(b);
+  }catch(e){}
 }

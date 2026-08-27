@@ -738,3 +738,12 @@ body.dark .inspect-box.bad{background:#33201D}
 .fd-sw{display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer}
 .fd-sw input{width:19px;height:19px;accent-color:var(--palm);flex-shrink:0;margin:0}
 .fd-sw span{font-size:13px}
+
+/* ====== غلاف صفحة حسابي ====== */
+.acc-cover{position:relative;height:130px;margin:0 -14px 0;background:linear-gradient(135deg,var(--card2),var(--line));overflow:hidden;border-radius:0}
+.acc-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.acc-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(10,8,6,.5),transparent 65%);pointer-events:none}
+.ac-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px;opacity:.25}
+.acc-cover .pf-cam{z-index:3}
+.acc-hero{margin-top:-34px;position:relative;z-index:2}
+.cover-hint{font-size:10.5px;color:var(--txt-dim);margin-top:7px;line-height:1.7}

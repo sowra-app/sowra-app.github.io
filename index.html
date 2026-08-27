@@ -299,6 +299,7 @@
 </div>
 <!-- ====== بروفايل المصور ====== -->
 <input type="file" id="avatarFile" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+<input type="file" id="coverFile" accept="image/*" style="display:none" onchange="uploadCover(this)">
 <div class="page" id="page-profile">
   <div class="form">
     <div id="profHead"></div>
@@ -398,6 +399,10 @@
 </div>
     </div>
     <div id="accIn" style="display:none">
+      <div class="acc-cover" id="accCover">
+        <div class="ac-empty">🏔️</div>
+        <button class="pf-cam" onclick="document.getElementById('coverFile').click()">🖼️ غيّر الغلاف</button>
+      </div>
       <div class="acc-hero">
         <div class="pf-avatar-wrap">
           <div id="accAvatar"></div>
@@ -407,6 +412,7 @@
           <div class="acc-hero-name" id="accHello"></div>
           <div class="acc-hero-mail" id="accMail"></div>
           <button class="pf-act" style="margin-top:8px" onclick="openProfile(USER.id)">👁️ شوف بروفايلي</button>
+          <div class="cover-hint">🖼️ الغلاف يظهر ببروفايلك أيضاً · الأفضل صورة عريضة (1200×400)</div>
         </div>
       </div>
       <!-- شبكة الرموز -->
