@@ -135,6 +135,7 @@
         </div>
         <div class="fd-chips">
           <button class="fd-chip" onclick="applyFilter();openRace()">🏁 سباق الديار</button>
+          <button class="fd-chip" onclick="applyFilter();openWaiting()">🗺️ تنتظر عدستك</button>
           <button class="fd-chip" onclick="applyFilter();openQuests()">🏆 كنوز الديرة</button>
           <button class="fd-chip" id="fdSponsorsBtn" style="display:none" onclick="applyFilter();openSponsorsPage()">🤝 الرعاة</button>
         </div>
@@ -332,6 +333,14 @@
   </div>
 </div>
 <!-- ====== سباق الديار ====== -->
+<div class="page" id="page-waiting">
+  <div class="form">
+    <h2>🗺️ أماكن تنتظر عدستك</h2>
+    <p class="hint">مناطق وقرى ما وثّقها أحد بعد — كن أول من يصوّرها</p>
+    <div id="waitingBody"></div>
+  </div>
+</div>
+
 <div class="page" id="page-race">
   <div class="form">
     <h2>🏆 سباق الديار</h2>

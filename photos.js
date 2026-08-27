@@ -2568,3 +2568,106 @@ function lockFdScroll(){
     if((atTop&&dy>0)||(atBottom&&dy<0))e.preventDefault();
   },{passive:false});
 }
+
+/* ====== أماكن تنتظر عدستك ====== */
+const ALL_REGIONS=['الرياض','مكة المكرمة','المدينة المنورة','القصيم','الشرقية','عسير',
+  'تبوك','حائل','الحدود الشمالية','جازان','نجران','الباحة','الجوف'];
+
+function openWaiting(){
+  go('waiting');
+  renderWaiting();
+}
+
+function renderWaiting(){
+  const el=$('waitingBody');if(!el)return;
+  const local=photos.filter(p=>!p.abroad&&p.visibility!=='private');
+
+  // ═══ المناطق ═══
+  const byReg={};
+  ALL_REGIONS.forEach(r=>byReg[r]={n:0,ph:[],cities:new Set()});
+  local.forEach(p=>{
+    if(byReg[p.region]){
+      byReg[p.region].n++;
+      byReg[p.region].ph.push(p);
+      if(p.city)byReg[p.region].cities.add(p.city);
+    }
+  });
+  const regs=ALL_REGIONS.map(r=>({r,...byReg[r]})).sort((a,b)=>a.n-b.n);
+
+  // ═══ المدن الأفقر (لها صورة أو صورتان) ═══
+  const byCity={};
+  local.forEach(p=>{
+    if(!p.city)return;
+    const k=p.region+'|'+p.city;
+    byCity[k]=byCity[k]||{city:p.city,region:p.region,n:0};
+    byCity[k].n++;
+  });
+  const thinCities=Object.values(byCity).filter(c=>c.n<=2).sort((a,b)=>a.n-b.n).slice(0,12);
+
+  const empty=regs.filter(x=>x.n===0);
+  const thin=regs.filter(x=>x.n>0&&x.n<5);
+
+  el.innerHTML=`
+    ${empty.length?`
+      <div class="wt-lead">🏜️ ما فيها ولا صورة</div>
+      <div class="wt-grid">
+        ${empty.map(x=>`
+          <div class="wt-card empty" onclick="shootThere('${esc(x.r)}')">
+            <div class="wt-name">${esc(x.r)}</div>
+            <div class="wt-badge">أول صورة!</div>
+            <button class="wt-go">📷 صوّرها</button>
+          </div>`).join('')}
+      </div>`:''}
+
+    ${thin.length?`
+      <div class="wt-lead" style="margin-top:20px">🌱 تحتاج مزيداً</div>
+      <div class="wt-grid">
+        ${thin.map(x=>`
+          <div class="wt-card thin" onclick="shootThere('${esc(x.r)}')">
+            <div class="wt-name">${esc(x.r)}</div>
+            <div class="wt-count">${x.n} ${x.n===1?'صورة':x.n<11?'صور':'صورة'} · ${x.cities.size} ${x.cities.size===1?'مدينة':'مدن'}</div>
+            <button class="wt-go">📷 صوّرها</button>
+          </div>`).join('')}
+      </div>`:''}
+
+    ${thinCities.length?`
+      <div class="wt-lead" style="margin-top:20px">📍 مدن وقرى بصورة أو صورتين</div>
+      <div class="wt-cities">
+        ${thinCities.map(c=>`
+          <div class="wt-city" onclick="shootThere('${esc(c.region)}','${esc(c.city)}')">
+            <span class="wc-name">${esc(c.city)}</span>
+            <span class="wc-reg">${esc(c.region)}</span>
+            <span class="wc-n">${c.n}</span>
+          </div>`).join('')}
+      </div>`:''}
+
+    ${(!empty.length&&!thin.length&&!thinCities.length)?`
+      <div class="empty" style="padding:30px">
+        <span class="big">🎉</span>
+        كل المناطق موثّقة!<br>واصل التوثيق وكثّف صور ديرتك
+      </div>`:''}
+
+    <div class="wt-note">
+      💡 كل صورة من مكان جديد ترفع ترتيب منطقتك بسباق الديار — والمصوّر الأول يكسب سبق الموقع 🏅
+    </div>`;
+}
+
+/* الانتقال للنشر مع تعبئة الموقع */
+function shootThere(region,city){
+  go('add');
+  setTimeout(function(){
+    try{
+      if(region&&$('aRegion')){
+        const o=Array.from($('aRegion').options).find(x=>x.value===region||x.textContent.trim()===region);
+        if(o){$('aRegion').value=o.value;if(typeof fillAddCities==='function')fillAddCities();}
+      }
+      if(city)setTimeout(function(){
+        if($('aCity')){
+          const c=Array.from($('aCity').options).find(x=>x.value===city||x.textContent.trim()===city);
+          if(c)$('aCity').value=c.value;
+        }
+      },160);
+      toast('📍 '+(city||region)+' — صوّرها وكن أول من يوثّقها');
+    }catch(e){}
+  },240);
+}

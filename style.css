@@ -823,3 +823,25 @@ body.dark .near-alert{background:linear-gradient(135deg,#1B2A21,var(--card))}
 .fs-dot:nth-child(2){animation-delay:.16s}
 .fs-dot:nth-child(3){animation-delay:.32s}
 @keyframes fsB{0%,80%,100%{opacity:.3;transform:scale(.85)}40%{opacity:1;transform:scale(1.1)}}
+
+
+/* ====== أماكن تنتظر عدستك ====== */
+.wt-lead{font-family:'Reem Kufi',sans-serif;font-size:16px;color:var(--sand);margin-bottom:11px}
+.wt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.wt-card{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:15px 13px;text-align:center;cursor:pointer;transition:.15s}
+.wt-card:active{transform:scale(.97)}
+.wt-card.empty{border-color:var(--sadu);border-width:2px;background:linear-gradient(160deg,var(--card),rgba(214,58,47,.07))}
+.wt-card.thin{border-color:var(--star)}
+.wt-name{font-family:'Reem Kufi',sans-serif;font-size:17px;color:var(--txt);margin-bottom:5px}
+.wt-badge{display:inline-block;background:var(--sadu);color:#fff;border-radius:11px;padding:3px 11px;font-size:10.5px;font-weight:700;margin-bottom:9px}
+.wt-count{font-size:11.5px;color:var(--txt-dim);margin-bottom:9px}
+.wt-go{background:var(--card2);border:1.5px solid var(--line);border-radius:11px;padding:7px 0;width:100%;font-family:'Tajawal';font-size:12px;font-weight:700;color:var(--txt);cursor:pointer}
+.wt-card.empty .wt-go{background:var(--sadu);border-color:var(--sadu);color:#fff}
+.wt-cities{display:flex;flex-direction:column;gap:7px}
+.wt-city{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px 14px;cursor:pointer}
+.wt-city:active{transform:scale(.99)}
+.wc-name{font-weight:700;font-size:13.5px;flex:1}
+.wc-reg{font-size:11px;color:var(--txt-dim)}
+.wc-n{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:2px 9px;font-size:11px;font-weight:700;color:var(--star)}
+.wt-note{background:var(--card2);border:1px dashed var(--line);border-radius:13px;padding:13px 15px;margin-top:20px;font-size:12px;color:var(--txt-dim);line-height:1.9}
+@media(min-width:600px){.wt-grid{grid-template-columns:repeat(3,1fr)}}
