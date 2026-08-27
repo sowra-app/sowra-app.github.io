@@ -623,7 +623,7 @@ body.dark .inspect-box.bad{background:#33201D}
 /* ====== بروفايل بأسلوب 500px ====== */
 .pf-cover{position:relative;height:190px;margin:0 -14px;background:linear-gradient(135deg,var(--card2),var(--line));overflow:hidden}
 .pf-cover img{width:100%;height:100%;object-fit:cover;display:block}
-.pf-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(10,8,6,.55),transparent 60%)}
+.pf-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(10,8,6,.42),transparent 62%)}
 .pf-cover-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px;opacity:.25}
 .pf-head{position:relative;margin-top:-52px;padding:0 4px;text-align:center;z-index:2}
 .pf-avatar{width:106px;height:106px;border-radius:50%;border:4px solid var(--night);background:var(--card2);object-fit:cover;display:block;margin:0 auto;box-shadow:0 4px 14px rgba(36,31,28,.25)}
@@ -650,13 +650,16 @@ body.dark .inspect-box.bad{background:#33201D}
 /* ====== رأس صفحة حسابي ====== */
 .acc-hero{position:relative;display:flex;align-items:center;gap:16px;background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:18px 16px;margin-bottom:18px;overflow:hidden;min-height:112px}
 .acc-bg{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0}
-.acc-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(to left,rgba(10,8,6,.78),rgba(10,8,6,.42))}
+.acc-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(to left,rgba(10,8,6,.5),rgba(10,8,6,.18))}
 .acc-hero.has-bg .acc-hero-name{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)}
 .acc-hero.has-bg .acc-hero-mail{color:rgba(255,255,255,.82);text-shadow:0 1px 4px rgba(0,0,0,.6)}
 .acc-hero.has-bg .cover-hint{color:rgba(255,255,255,.72)}
 .acc-hero.has-bg .pf-act{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.32);color:#fff;backdrop-filter:blur(6px)}
 .acc-hero .pf-avatar-wrap,.acc-hero-info{position:relative;z-index:2}
-.acc-cam{position:absolute;top:10px;left:10px;z-index:3;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:10px;width:32px;height:32px;font-size:14px;cursor:pointer;backdrop-filter:blur(5px)}
+.acc-cam{position:absolute;top:10px;left:10px;z-index:3;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:10px;height:32px;min-width:32px;padding:0 9px;font-size:14px;cursor:pointer;backdrop-filter:blur(5px);font-family:'Tajawal';font-weight:700;display:flex;align-items:center;gap:6px;transition:.2s;white-space:nowrap}
+.acc-cam span{max-width:0;overflow:hidden;font-size:11.5px;transition:max-width .25s ease}
+.acc-cam:hover{background:rgba(0,0,0,.68);border-color:rgba(255,255,255,.5)}
+.acc-cam:hover span{max-width:110px}
 .acc-hero .pf-avatar,.acc-hero .pf-avatar-ph{width:78px;height:78px;border-width:3px;font-size:30px}
 .acc-hero .pf-avatar-cam{width:27px;height:27px;font-size:12px;bottom:2px;left:0}
 .acc-hero-info{flex:1;min-width:0}
