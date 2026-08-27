@@ -2656,15 +2656,37 @@ function renderWaiting(){
 function shootThere(region,city){
   go('add');
   window.__pendingPlace={region:region||'',city:city||''};
-  applyPendingPlace(0);
+  setTimeout(()=>applyPendingPlace(0),200);
   toast('📍 '+(city||region)+' — صوّرها وكن أول من يوثّقها');
+}
+
+/* تطبيع الاسم للمطابقة المرنة */
+function normPlace(s){
+  return String(s||'')
+    .replace(/[\u064B-\u0652\u0640]/g,'')
+    .replace(/[أإآا]/g,'ا')
+    .replace(/[ىي]/g,'ي')
+    .replace(/ة/g,'ه')
+    .replace(/منطقة|محافظة|امارة/g,'')
+    .replace(/\s+/g,'')
+    .trim();
+}
+
+function findOpt(sel,want){
+  if(!sel||!want)return null;
+  const w=normPlace(want);
+  return Array.from(sel.options).find(o=>
+    normPlace(o.value)===w||normPlace(o.textContent)===w
+  )||Array.from(sel.options).find(o=>
+    normPlace(o.textContent).includes(w)||w.includes(normPlace(o.textContent))
+  )||null;
 }
 
 /* يحاول التعبئة عدة مرات حتى تجهز القوائم */
 function applyPendingPlace(tries){
   const pp=window.__pendingPlace;
   if(!pp)return;
-  if(tries>14){window.__pendingPlace=null;return}
+  if(tries>22){window.__pendingPlace=null;return}
 
   const rs=$('aRegion');
   if(!rs||!rs.options.length){
@@ -2673,25 +2695,35 @@ function applyPendingPlace(tries){
   }
 
   // المنطقة
-  if(pp.region&&rs.value!==pp.region){
-    const o=Array.from(rs.options).find(x=>x.value===pp.region||x.textContent.trim()===pp.region);
+  if(pp.region&&normPlace(rs.value)!==normPlace(pp.region)){
+    const o=findOpt(rs,pp.region);
     if(o){
       rs.value=o.value;
+      rs.dispatchEvent(new Event('change',{bubbles:true}));
       if(typeof fillAddCities==='function')fillAddCities();
+    }else if(tries>6){
+      window.__pendingPlace=null;
+      if(typeof toast==='function')toast('اختر المنطقة يدوياً',true);
+      return;
     }
   }
 
   // المدينة
   if(!pp.city){
-    if(pp.region&&rs.value===pp.region){window.__pendingPlace=null;return}
-    setTimeout(()=>applyPendingPlace(tries+1),120);
+    if(pp.region&&normPlace(rs.value)===normPlace(pp.region)){window.__pendingPlace=null;return}
+    setTimeout(()=>applyPendingPlace(tries+1),140);
     return;
   }
 
   const cs=$('aCity');
-  if(cs&&cs.options.length){
-    const c=Array.from(cs.options).find(x=>x.value===pp.city||x.textContent.trim()===pp.city);
-    if(c){cs.value=c.value;window.__pendingPlace=null;return}
+  if(cs&&cs.options.length>1){
+    const c=findOpt(cs,pp.city);
+    if(c){
+      cs.value=c.value;
+      cs.dispatchEvent(new Event('change',{bubbles:true}));
+      window.__pendingPlace=null;
+      return;
+    }
   }
-  setTimeout(()=>applyPendingPlace(tries+1),120);
+  setTimeout(()=>applyPendingPlace(tries+1),140);
 }
