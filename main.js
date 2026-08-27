@@ -116,6 +116,8 @@ function go(p){
   await handleAuthReturn();
   initEnBar();
   initViewPrefs();
+  if(typeof renderTagRow==='function')renderTagRow();
+  if(typeof renderFdTags==='function')renderFdTags();
   initSelects();fillAddCities();
   const authP=ensureAuth().then(()=>{checkAdmin();loadFavs();}).catch(e=>toast('تعذر الاتصال بالحساب',true));
   try{

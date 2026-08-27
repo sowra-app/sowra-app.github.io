@@ -27,6 +27,8 @@ function applyFilter(){
   if(_viewMode==='map'){renderMap();}else{render();}
 }
 function clearFilter(){
+  window.__fdTags=[];
+  if(typeof renderFdTags==="function")renderFdTags();
   _cat='all';_sort='top';
   document.querySelectorAll('.fd-chip[data-k]').forEach(b=>b.classList.toggle('on',b.dataset.k==='all'));
   document.querySelectorAll('.fd-chip[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s==='top'));
@@ -159,6 +161,12 @@ function render(){
   $('feed').style.display='';
   const abroadView=sortMode==='abroad';
   let list=photos.filter(p=>!!p.abroad===abroadView&&p.media_type!=='video');
+  if(window.__fdTags&&window.__fdTags.length){
+    list=list.filter(p=>{
+      const t=p.tags||[];
+      return window.__fdTags.every(k=>t.includes(k));
+    });
+  }
   if(catFilter!=='all')list=list.filter(p=>(p.category||'other')===catFilter);
   if(abroadView){
     list=list.filter(p=>!q||p.title.includes(q)||(p.country||'').includes(q));
@@ -223,6 +231,7 @@ async function openSheet(id){
         +(p.description_en?esc(p.description_en):'');
     }else en.style.display='none';
   }
+  renderPhotoTags(p);
   // شارة الاستخدام التجاري
   const cb=$('sComm');
   if(cb)cb.style.display=p.commercial?'inline-flex':'none';
@@ -2285,4 +2294,34 @@ async function renderAccCover(){
       hero.classList.remove('has-bg');
     }
   }catch(e){}
+}
+
+/* ====== فلترة السمات ====== */
+window.__fdTags=[];
+
+function renderFdTags(){
+  const el=$('fdTags');if(!el)return;
+  el.innerHTML='';
+  if(typeof PHOTO_TAGS==='undefined')return;
+  PHOTO_TAGS.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='fd-chip'+(window.__fdTags.includes(t.k)?' on':'');
+    b.textContent=t.n;
+    b.onclick=()=>{
+      const i=window.__fdTags.indexOf(t.k);
+      if(i>-1)window.__fdTags.splice(i,1);
+      else window.__fdTags.push(t.k);
+      renderFdTags();
+    };
+    el.appendChild(b);
+  });
+}
+
+/* عرض سمات الصورة بالنافذة */
+function renderPhotoTags(p){
+  const el=$('sTags');if(!el)return;
+  const tags=p.tags||[];
+  if(!tags.length||typeof tagName!=='function'){el.style.display='none';return}
+  el.style.display='flex';
+  el.innerHTML=tags.map(k=>'<span class="s-tag">'+esc(tagName(k))+'</span>').join('');
 }

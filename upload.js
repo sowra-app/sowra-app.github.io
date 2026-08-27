@@ -188,7 +188,7 @@ async function addPhoto(){
         abroad:isAbroad,country,
         village:isAbroad?'':$('aVillage').value.trim(),
         lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
-        image_path:vpath,media_type:'video',filter_key:curFilter,music_key:(pendingMusicName||''),visibility:pendingVis,description:'',commercial:!!($('aComm')&&$('aComm').checked)
+        image_path:vpath,media_type:'video',filter_key:curFilter,music_key:(pendingMusicName||''),visibility:pendingVis,description:'',commercial:!!($('aComm')&&$('aComm').checked),tags:(window.__pickedTags||[])
       });
       if(insv.error){
         await sb.storage.from('videos').remove([vpath]).catch(()=>{});
@@ -208,7 +208,7 @@ async function addPhoto(){
       pendingVideo=null;resetFilter();pendingVis='public';setVis('public');const _c1=$('clearDraft');if(_c1)_c1.style.display='none';
       const pv=$('videoPreview');if(pv){pv.src='';pv.style.display='none';}
       $('drop').style.display='none';$('geoCard').style.display='none';
-      $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();
+      $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();window.__pickedTags=[];renderTagRow();
       if(typeof logRate==='function')logRate('photo');
       toast('انرفع الفيديو 🎬');
       try{sortMode='new';_sort='new';}catch(e){}
@@ -235,7 +235,7 @@ async function addPhoto(){
       abroad:isAbroad,country,
       village:isAbroad?'':$('aVillage').value.trim(),
       lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
-      image_path:path,visibility:pendingVis,description:($('aDesc')?$('aDesc').value.trim():''),commercial:!!($('aComm')&&$('aComm').checked),title_en:trTitle,description_en:trDesc
+      image_path:path,visibility:pendingVis,description:($('aDesc')?$('aDesc').value.trim():''),commercial:!!($('aComm')&&$('aComm').checked),title_en:trTitle,description_en:trDesc,tags:(window.__pickedTags||[])
     }).select('id').maybeSingle();
     if(ins.error){
       // فشل التسجيل — ننظف ملفات الصورة من المخزن حتى لا تبقى يتيمة
@@ -269,7 +269,7 @@ async function addPhoto(){
     }
     pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();pendingVis='public';setVis('public');const _c2=$('clearDraft');if(_c2)_c2.style.display='none';
     $('preview').style.display='none';$('drop').style.display='none';$('geoCard').style.display='none';
-    $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();
+    $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();window.__pickedTags=[];renderTagRow();
     if(typeof logRate==='function')logRate('photo');
     toast(pendingVis==='private'?'انحفظت بخزنتك 🔒':'نُشرت صورتك 🎉');
     const wasAbroad=isAbroad;
@@ -1034,4 +1034,39 @@ async function runInspection(blob){
     $('aTitle').placeholder='اقتراح: '+res.suggested_title_ar;
   }
   return true;
+}
+
+/* ====== سمات الصورة ====== */
+const PHOTO_TAGS=[
+  {k:'pure',   n:'💎 طبيعة نقية'},
+  {k:'night',  n:'🌙 ليلي'},
+  {k:'season', n:'🍂 موسمي'},
+  {k:'hard',   n:'⛰️ صعب الوصول'},
+  {k:'rare',   n:'✨ مشهد نادر'},
+  {k:'sunrise',n:'🌅 شروق/غروب'}
+];
+window.__pickedTags=[];
+
+function renderTagRow(){
+  const el=$('tagRow');if(!el)return;
+  el.innerHTML='';
+  PHOTO_TAGS.forEach(t=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='tag-chip'+(window.__pickedTags.includes(t.k)?' on':'');
+    b.textContent=t.n;
+    b.onclick=()=>{
+      const i=window.__pickedTags.indexOf(t.k);
+      if(i>-1)window.__pickedTags.splice(i,1);
+      else if(window.__pickedTags.length<3)window.__pickedTags.push(t.k);
+      else{toast('حد أقصى ٣ سمات',true);return}
+      renderTagRow();
+    };
+    el.appendChild(b);
+  });
+}
+
+function tagName(k){
+  const t=PHOTO_TAGS.find(x=>x.k===k);
+  return t?t.n:k;
 }

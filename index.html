@@ -109,7 +109,7 @@
           <button class="fd-chip" data-k="wildlife" onclick="fdSetCat(this,'wildlife')">🦅 طيور وحيوانات</button>
           <button class="fd-chip" data-k="people" onclick="fdSetCat(this,'people')">👥 أشخاص</button>
           <button class="fd-chip" data-k="bw" onclick="fdSetCat(this,'bw')">⬛ أبيض وأسود</button>
-          <button class="fd-chip" data-k="landmark" onclick="fdSetCat(this,'landmark')">🕌 معلم</button>
+          <button class="fd-chip" data-k="heritage" onclick="fdSetCat(this,'heritage')">🏺 تراث</button><button class="fd-chip" data-k="landmark" onclick="fdSetCat(this,'landmark')">🕌 معلم</button>
           <button class="fd-chip" data-k="other" onclick="fdSetCat(this,'other')">📷 أخرى</button>
         </div>
       </div>
@@ -126,6 +126,10 @@
           <button class="fd-chip on" data-s="top" onclick="fdSetSort(this,'top')">⭐ الأعلى</button>
           <button class="fd-chip" data-s="new" onclick="fdSetSort(this,'new')">🕐 الأحدث</button>
           <button class="fd-chip" data-s="abroad" onclick="fdSetSort(this,'abroad')">🌍 عدسة مسافر</button>
+          </div>
+        <div class="fd-lb" style="margin-top:12px">السمات</div>
+        <div class="fd-chips" id="fdTags"></div>
+        <div class="fd-chips">
           <button class="fd-chip" onclick="applyFilter();openRace()">🏁 سباق الديار</button>
           <button class="fd-chip" onclick="applyFilter();openQuests()">🏆 كنوز الديرة</button>
           <button class="fd-chip" id="fdSponsorsBtn" style="display:none" onclick="applyFilter();openSponsorsPage()">🤝 الرعاة</button>
@@ -229,8 +233,12 @@
     
     <div class="f-group"><label id="lblCat">تصنيف الصورة</label>
       <select id="aCat">
-        <option value="nature">🌿 طبيعة</option><option value="arch">🏛️ عمارة</option><option value="wildlife">🦅 طيور وحيوانات</option><option value="people">👥 أشخاص</option><option value="bw">⬛ أبيض وأسود</option><option value="landmark">🕌 معلم</option><option value="other" selected>📷 أخرى</option>
+        <option value="nature">🌿 طبيعة</option><option value="arch">🏛️ عمارة</option><option value="wildlife">🦅 طيور وحيوانات</option><option value="people">👥 أشخاص</option><option value="bw">⬛ أبيض وأسود</option><option value="heritage">🏺 تراث</option><option value="landmark">🕌 معلم</option><option value="other" selected>📷 أخرى</option>
       </select>
+    </div>
+    <div class="f-group">
+      <label>سمات الصورة (اختياري)</label>
+      <div class="tag-row" id="tagRow"></div>
     </div>
     <div class="f-group" id="grpRegion"><label>المنطقة</label><select id="aRegion" onchange="fillAddCities()"></select></div>
     <div class="f-group" id="grpCity"><label>المدينة / المحافظة</label><select id="aCity"></select></div>
@@ -275,6 +283,7 @@
       <div class="sheet-title" id="sTitle"></div>
       <div class="sheet-loc" id="sLoc"></div>
       <div id="sDate" class="s-date" style="display:none"></div>
+      <div id="sTags" class="s-tags" style="display:none"></div>
       <div id="sComm" class="comm-badge" style="display:none">💼 متاحة للاستخدام التجاري</div>
       <div id="sDesc" class="s-desc" style="display:none"></div>
       <div id="sEn" class="s-en" style="display:none"></div>
