@@ -419,6 +419,26 @@ async function rate(n){
   if(error){myRating=prev;drawStars();toast('تعذر حفظ التقييم',true);return}
   $('thanks').style.display='block';
   await refreshOne();
+  notifyRating(curId);
+}
+
+/* إشعار صاحب الصورة عند عتبات التقييم */
+async function notifyRating(pid){
+  try{
+    const ph=photos.find(x=>x.id===pid);
+    if(!ph||!ph.user_id||!USER||ph.user_id===USER.id)return;
+    const r=await sb.from('ratings').select('stars').eq('photo_id',pid);
+    const list=(r.data||[]).map(x=>x.stars);
+    const n=list.length;
+    if(![3,10,25,50].includes(n))return;
+    const avg=(list.reduce((s,x)=>s+x,0)/n).toFixed(1);
+    pushNotify({
+      title:'⭐ صورتك نالت '+avg,
+      body:'«'+ph.title+'» — '+n+' تقييماً حتى الآن',
+      url:'/',
+      user_ids:[ph.user_id]
+    });
+  }catch(e){}
 }
 
 function renderPoll(){
@@ -1617,6 +1637,7 @@ async function publishFromVault(pid){
   if(error){toast('تعذر النشر: '+error.message,true);return}
   toast(_isVv?'انتشر المقطع 🎉':'انتشرت للجميع 🎉');
   if(typeof maybeAskNotifs==='function')maybeAskNotifs();
+  setTimeout(()=>{if(typeof checkRaceProgress==='function')checkRaceProgress()},2500);
   // إشعار للجميع
   try{
     const ph=photos.find(x=>x.id===pid);
@@ -2377,4 +2398,31 @@ window.__onlyClaims=false;
 function toggleClaimFilter(btn){
   window.__onlyClaims=!window.__onlyClaims;
   if(btn)btn.classList.toggle('on',window.__onlyClaims);
+}
+
+/* ====== إشعار تقدّم المنطقة بالسباق ====== */
+async function checkRaceProgress(){
+  try{
+    if(!USER||USER.is_anonymous)return;
+    const reg=MY_REGION||detectMyRegion();
+    if(!reg)return;
+    await loadRace();
+    const idx=RACE.findIndex(r=>r.region===reg);
+    if(idx<0)return;
+    const rank=idx+1;
+
+    let prev=null;
+    try{prev=parseInt(localStorage.getItem('sowra_rank_'+reg))}catch(e){}
+    try{localStorage.setItem('sowra_rank_'+reg,String(rank))}catch(e){}
+
+    if(prev&&rank<prev){
+      const up=prev-rank;
+      pushNotify({
+        title:'🏁 '+reg+' تقدّمت!',
+        body:'صعدت '+(up===1?'مركزاً':up+' مراكز')+' — الترتيب الآن #'+rank,
+        url:'/',
+        user_ids:[USER.id]
+      });
+    }
+  }catch(e){}
 }

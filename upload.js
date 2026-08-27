@@ -213,6 +213,7 @@ async function addPhoto(){
       toast('انرفع الفيديو 🎬');
       try{sortMode='new';_sort='new';}catch(e){}
       if(typeof maybeAskNotifs==='function')maybeAskNotifs();
+    setTimeout(function(){if(typeof checkRaceProgress==='function')checkRaceProgress()},3000);
     await loadPhotos();go('feed');
       btn.disabled=false;btn.textContent=(pendingVideo?'انشر المقطع 🎬':'انشر الصورة 🚀');
       return;
@@ -276,6 +277,7 @@ async function addPhoto(){
     $('aCountry').value='';
     try{sortMode=wasAbroad?'abroad':'new';_sort=sortMode;}catch(e){}
     if(typeof maybeAskNotifs==='function')maybeAskNotifs();
+    setTimeout(function(){if(typeof checkRaceProgress==='function')checkRaceProgress()},3000);
     await loadPhotos();go('feed');
   }catch(e){
     if(e.message&&e.message.includes('row-level')){
