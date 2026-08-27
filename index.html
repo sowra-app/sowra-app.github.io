@@ -8,6 +8,14 @@
   var U="https://gquzjaxpqeggknhipmzk.supabase.co", K="sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX";
   var isAdm=false;
   try{ isAdm=localStorage.getItem("sowra_admin")==="1"; }catch(e){}
+  /* مفتاح احتياطي: sowra.app/?admin=1 — يتجاوز الستارة ويثبّت الصلاحية */
+  try{
+    if(location.search.indexOf("admin=1")>-1){
+      localStorage.setItem("sowra_admin","1");
+      isAdm=true;
+      history.replaceState({},document.title,location.pathname);
+    }
+  }catch(e){}
   if(isAdm) return;
   var de=document.documentElement;
   de.style.visibility="hidden";
