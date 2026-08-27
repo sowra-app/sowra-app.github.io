@@ -834,12 +834,12 @@ body.dark .near-alert{background:linear-gradient(135deg,#1B2A21,var(--card))}
     border-radius:22px 22px 0 0;
     border-width:2px 0 0;
     padding:16px 16px 0;
-    z-index:200;
+    z-index:9999;
     box-shadow:0 -8px 32px rgba(36,31,28,.28);
     animation:fdUp .26s ease;
   }
   @keyframes fdUp{from{transform:translateY(100%)}to{transform:none}}
   .fd-scroll{-webkit-overflow-scrolling:touch}
   .fd-actions{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
-  .fd-backdrop{position:fixed;inset:0;background:rgba(36,31,28,.5);z-index:199;backdrop-filter:blur(2px)}
+  .fd-backdrop{position:fixed;inset:0;background:rgba(36,31,28,.45);z-index:9998}
 }
