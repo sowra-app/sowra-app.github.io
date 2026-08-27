@@ -860,3 +860,17 @@ body.dark .near-alert{background:linear-gradient(135deg,#1B2A21,var(--card))}
 .st-cam{font-size:12.5px;font-weight:700;margin-bottom:6px}
 .st-set{display:flex;flex-wrap:wrap;gap:5px}
 .st-set span{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px 9px;font-size:10.5px;color:var(--txt-dim);direction:ltr}
+
+/* ====== هذا المكان عبر الزمن ====== */
+.s-timeline{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px 0 12px 13px;margin-bottom:12px}
+.tl-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding-left:13px}
+.tl-head>span{font-size:12.5px;font-weight:700;color:var(--sand)}
+.tl-head b{font-size:11px;color:var(--txt-dim)}
+.tl-strip{display:flex;gap:9px;overflow-x:auto;padding:2px 13px 4px 0;scrollbar-width:none;overscroll-behavior-x:contain}
+.tl-strip::-webkit-scrollbar{display:none}
+.tl-item{flex:0 0 auto;width:82px;cursor:pointer;position:relative}
+.tl-item.cur{cursor:default}
+.tl-item img{width:82px;height:82px;object-fit:cover;border-radius:11px;display:block;border:1.5px solid var(--line)}
+.tl-item.cur img{border-color:var(--sadu);border-width:2.5px}
+.tl-date{font-size:10px;color:var(--txt-dim);text-align:center;margin-top:5px;font-weight:700}
+.tl-now{position:absolute;top:5px;right:5px;background:var(--sadu);color:#fff;border-radius:8px;padding:1px 6px;font-size:9px;font-weight:700}

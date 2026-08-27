@@ -291,6 +291,7 @@ async function openSheet(id){
   }
   renderPhotoTags(p);
   renderPhotoTech(p);
+  renderTimeline(p);
   // شارة الاستخدام التجاري
   const cb=$('sComm');
   if(cb)cb.style.display=p.commercial?'inline-flex':'none';
@@ -2741,4 +2742,46 @@ function renderPhotoTech(p){
     (t.camera?'<div class="st-cam">📷 '+esc(t.camera)+'</div>':'')+
     (t.lens?'<div class="st-cam" style="font-weight:400;font-size:11.5px;color:var(--txt-dim)">🔭 '+esc(t.lens)+'</div>':'')+
     (set.length?'<div class="st-set">'+set.map(x=>'<span>'+esc(x)+'</span>').join('')+'</div>':'');
+}
+
+/* ====== هذا المكان عبر الزمن ====== */
+function renderTimeline(p){
+  const el=$('sTimeline');if(!el)return;
+  if(!p.lat||!p.lng||p.media_type==='video'){el.style.display='none';return}
+
+  const d=x=>Math.hypot((x.lat-p.lat)*111000,(x.lng-p.lng)*111000*Math.cos(p.lat*Math.PI/180));
+  const same=photos.filter(x=>
+    x.lat&&x.lng&&x.media_type!=='video'&&
+    x.visibility!=='private'&&
+    d(x)<=200
+  ).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+
+  if(same.length<2){el.style.display='none';return}
+
+  const first=new Date(same[0].created_at);
+  const last=new Date(same[same.length-1].created_at);
+  const span=Math.round((last-first)/86400000);
+  let spanTxt='';
+  if(span>=365)spanTxt=Math.floor(span/365)+' سنة';
+  else if(span>=30)spanTxt=Math.floor(span/30)+' شهر';
+  else if(span>0)spanTxt=span+' يوم';
+
+  el.style.display='block';
+  el.innerHTML=`
+    <div class="tl-head">
+      <span>📅 هذا المكان عبر الزمن</span>
+      <b>${same.length} صورة${spanTxt?' · '+spanTxt:''}</b>
+    </div>
+    <div class="tl-strip">
+      ${same.map(x=>{
+        const dt=new Date(x.created_at);
+        const mon=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'][dt.getMonth()];
+        const cur=x.id===p.id;
+        return `<div class="tl-item${cur?' cur':''}" onclick="${cur?'':'openSheet('+x.id+')'}">
+          <img src="${thumbUrl(x.image_path)}" loading="lazy" alt="">
+          <div class="tl-date">${mon} ${dt.getFullYear()}</div>
+          ${cur?'<div class="tl-now">الحالية</div>':''}
+        </div>`;
+      }).join('')}
+    </div>`;
 }
