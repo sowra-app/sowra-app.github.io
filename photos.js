@@ -637,13 +637,13 @@ async function openProfile(uid){
 
   // الغلاف: المرفوع من حسابي، أو الأعلى تقييماً
   let coverSrc='';
-  if(pr.cover_path)coverSrc=coverUrl(pr.cover_path);
+  if(pr.cover_path)coverSrc=coverUrl(pr.cover_path)+'?t='+Date.now();
   else if(pub.length){
     const top1=pub.slice().sort((a,b)=>(b.avg_stars||0)-(a.avg_stars||0))[0];
     if(top1)coverSrc=imgUrl(top1.image_path);
   }
 
-  const av=pr.avatar_path?avatarUrl(pr.avatar_path):'';
+  const av=pr.avatar_path?(avatarUrl(pr.avatar_path)+'?t='+Date.now()):'';
 
   $('profHead').innerHTML=`
     <div class="pf-cover">
@@ -1965,7 +1965,7 @@ async function uploadAvatar(inp){
     if(error)throw error;
     toast('انحفظت صورتك ✅');
     if(typeof renderAccAvatar==='function')renderAccAvatar();
-    if(PROF_UID)openProfile(PROF_UID);
+    if(PROF_UID)PROF_UID='';
   }catch(e){toast('تعذر الرفع: '+(e.message||''),true)}
   finally{inp.value=''}
 }
@@ -2258,7 +2258,7 @@ async function uploadCover(inp){
     if(error)throw error;
     toast('انحفظ الغلاف 🖼️');
     if(typeof renderAccCover==='function')renderAccCover();
-    if(PROF_UID===USER.id)openProfile(USER.id);
+    if(PROF_UID)PROF_UID='';
   }catch(e){toast('تعذر الرفع: '+(e.message||''),true)}
   finally{inp.value=''}
 }
