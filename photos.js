@@ -290,6 +290,7 @@ async function openSheet(id){
     }else en.style.display='none';
   }
   renderPhotoTags(p);
+  renderPhotoTech(p);
   // شارة الاستخدام التجاري
   const cb=$('sComm');
   if(cb)cb.style.display=p.commercial?'inline-flex':'none';
@@ -2726,4 +2727,18 @@ function applyPendingPlace(tries){
     }
   }
   setTimeout(()=>applyPendingPlace(tries+1),140);
+}
+
+/* ====== عرض بيانات التصوير بنافذة الصورة ====== */
+function renderPhotoTech(p){
+  const el=$('sTech');if(!el)return;
+  const t=p.exif||{};
+  const has=t.camera||t.lens||t.focal||t.aperture||t.iso||t.shutter;
+  if(!has||p.media_type==='video'){el.style.display='none';return}
+  el.style.display='block';
+  const set=[t.focal,t.aperture,t.shutter,t.iso].filter(Boolean);
+  el.innerHTML=
+    (t.camera?'<div class="st-cam">📷 '+esc(t.camera)+'</div>':'')+
+    (t.lens?'<div class="st-cam" style="font-weight:400;font-size:11.5px;color:var(--txt-dim)">🔭 '+esc(t.lens)+'</div>':'')+
+    (set.length?'<div class="st-set">'+set.map(x=>'<span>'+esc(x)+'</span>').join('')+'</div>':'');
 }
