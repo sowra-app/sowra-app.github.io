@@ -829,16 +829,38 @@ body.dark .near-alert{background:linear-gradient(135deg,#1B2A21,var(--card))}
   .filter-drawer{
     position:fixed;
     left:0;right:0;bottom:0;top:auto;
-    max-height:82vh;
+    height:78vh;
+    max-height:78vh;
     margin:0;
     border-radius:22px 22px 0 0;
     border-width:2px 0 0;
-    padding:16px 16px 0;
+    padding:0;
     z-index:9999;
     box-shadow:0 -8px 32px rgba(36,31,28,.28);
     animation:fdUp .26s ease;
+    display:none;
   }
+  .filter-drawer[style*="flex"]{display:block!important}
+  .fd-scroll{
+    position:absolute;
+    top:0;left:0;right:0;
+    bottom:82px;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:16px 16px 8px;
+  }
+  .fd-actions{
+    position:absolute;
+    bottom:0;left:0;right:0;
+    height:82px;
+    background:var(--card);
+    border-top:1.5px solid var(--line);
+    padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+    margin:0;
+    display:flex;
+    gap:9px;
+    align-items:flex-start;
+  }
+  .fd-actions .btn{flex:1;padding:13px;font-size:14px}
   @keyframes fdUp{from{transform:translateY(100%)}to{transform:none}}
-  .fd-scroll{-webkit-overflow-scrolling:touch}
-  .fd-actions{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
 }
