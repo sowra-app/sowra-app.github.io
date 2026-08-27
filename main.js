@@ -386,7 +386,7 @@ function accPanel(name){
 
 /* ====== تفضيلات العرض ====== */
 function getViewPrefs(){
-  let p={hero:true,weather:true,challenge:true};
+  let p={hero:true,weather:true,challenge:true,near:true};
   try{
     const s=localStorage.getItem('sowra_view');
     if(s)p=Object.assign(p,JSON.parse(s));
@@ -396,6 +396,7 @@ function getViewPrefs(){
 
 function saveViewPrefs(){
   const p={
+    near:!!(document.getElementById('swNear')&&document.getElementById('swNear').checked),
     hero:!!(document.getElementById('swHero')&&document.getElementById('swHero').checked),
     weather:!!(document.getElementById('swWeather')&&document.getElementById('swWeather').checked),
     challenge:!!(document.getElementById('swChallenge')&&document.getElementById('swChallenge').checked)
@@ -406,6 +407,8 @@ function saveViewPrefs(){
 
 function applyViewPrefs(){
   const p=getViewPrefs();
+  const na=document.getElementById('nearAlert');
+  if(na&&!p.near)na.style.display='none';
   const hero=document.getElementById('homeHero');
   const wt=document.getElementById('weatherTip');
   const ch=document.getElementById('challengeStrip');
@@ -418,6 +421,8 @@ function applyViewPrefs(){
 
 function initViewPrefs(){
   const p=getViewPrefs();
+  const n=document.getElementById('swNear');
+  if(n)n.checked=p.near;
   const a=document.getElementById('swHero'),b=document.getElementById('swWeather'),c=document.getElementById('swChallenge');
   if(a)a.checked=p.hero;
   if(b)b.checked=p.weather;

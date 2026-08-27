@@ -52,6 +52,7 @@ function showNearby(){
     if(MAP)addUserPin(lat,lng);
     loadWeatherTip();
     if(typeof loadSunTimes==='function'&&window.__USER_LAT)loadSunTimes(window.__USER_LAT,window.__USER_LNG);
+    if(typeof checkNearby==='function')setTimeout(checkNearby,600);
     if(typeof renderHomeHero==='function')renderHomeHero();
     const distKm=(p)=>Math.hypot(((p.lat||0)-lat)*111,(((p.lng||0)-lng)*111*Math.cos(lat*Math.PI/180)));
 const near=photos.filter(p=>p.lat&&p.lng&&p.media_type!=='video'&&distKm(p)<=30).sort((a,b)=>distKm(a)-distKm(b)).slice(0,6);
@@ -2425,4 +2426,73 @@ async function checkRaceProgress(){
       });
     }
   }catch(e){}
+}
+
+/* ====== تنبيه: أنت قرب صور ====== */
+async function checkNearby(){
+  const el=$('nearAlert');if(!el)return;
+  try{
+    if(!window.__USER_LAT){el.style.display='none';return}
+    // مخفي هذي الجلسة؟
+    if(sessionStorage.getItem('near_hidden')==='1'){el.style.display='none';return}
+    if(typeof getViewPrefs==='function'&&!getViewPrefs().near){el.style.display='none';return}
+
+    const lat=window.__USER_LAT, lng=window.__USER_LNG;
+    const dist=p=>Math.hypot((p.lat-lat)*111000,(p.lng-lng)*111000*Math.cos(lat*Math.PI/180));
+
+    // صور ضمن ٢ كم، ليست لي، وما زرتها
+    let near=photos.filter(p=>
+      p.lat&&p.lng&&!p.abroad&&p.media_type!=='video'&&
+      (!USER||p.user_id!==USER.id)&&
+      dist(p)<=2000
+    );
+    if(!near.length){el.style.display='none';return}
+
+    // استبعاد ما زرته أو قيّمته
+    if(USER&&!USER.is_anonymous){
+      try{
+        const ids=near.map(p=>p.id);
+        const [v,r]=await Promise.all([
+          sb.from('visits').select('photo_id').eq('user_id',USER.id).in('photo_id',ids),
+          sb.from('ratings').select('photo_id').eq('user_id',USER.id).in('photo_id',ids)
+        ]);
+        const done=new Set([...(v.data||[]),...(r.data||[])].map(x=>x.photo_id));
+        near=near.filter(p=>!done.has(p.id));
+      }catch(e){}
+    }
+    if(!near.length){el.style.display='none';return}
+
+    near.sort((a,b)=>dist(a)-dist(b));
+    const top=near.slice(0,6);
+    const closest=Math.round(dist(top[0]));
+    const canVisit=closest<=500;
+
+    el.style.display='block';
+    el.innerHTML=`
+      <div class="na-head">
+        <span style="font-size:20px">📍</span>
+        <b>أنت قرب ${near.length} ${near.length===1?'صورة':near.length<11?'صور':'صورة'}</b>
+        <button class="na-close" onclick="hideNearby()">✕</button>
+      </div>
+      <div class="na-list">
+        ${top.map(p=>{
+          const d=Math.round(dist(p));
+          const dt=d<1000?(d+' م'):((d/1000).toFixed(1)+' كم');
+          return `<div class="na-item" onclick="openSheet(${p.id})">
+            <img class="na-thumb" src="${thumbUrl(p.image_path)}" loading="lazy" alt="">
+            <div class="na-name">${esc(p.village||p.city)}</div>
+            <div class="na-dist">${dt}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="na-cta">${canVisit
+        ? '👣 أقربها على بعد '+closest+' م — تقدر توثّق زيارتك وتقيّمها'
+        : '⭐ افتحها وقيّمها — أو اقترب لتوثيق زيارتك'}</div>`;
+  }catch(e){el.style.display='none'}
+}
+
+function hideNearby(){
+  try{sessionStorage.setItem('near_hidden','1')}catch(e){}
+  const el=$('nearAlert');
+  if(el)el.style.display='none';
 }
