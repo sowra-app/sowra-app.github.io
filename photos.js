@@ -128,9 +128,13 @@ function vidUrl(path){return sb.storage.from('videos').getPublicUrl(path).data.p
 
 /* ============ تحميل الصور ============ */
 async function loadPhotos(){
-  const { data, error } = await sb.from('photos_ranked').select('*');
+  const { data, error } = await sb.from('photos_ranked')
+    .select('*')
+    .order('created_at',{ascending:false});
   if(error){$('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${error.message}</div>`;return}
   photos = data || [];
+  // نعرض الشبكة فوراً ثم نكمّل التفاصيل بالخلفية
+  if(typeof _viewMode!=='undefined'&&_viewMode==='map'){renderMap()}else{render()}
   await loadVisitCounts();
   await loadClaims();
   if(typeof _viewMode!=='undefined'&&_viewMode==='map'){renderMap();}
@@ -187,24 +191,69 @@ function render(){
   $('totalPill').textContent=`${photos.length} صورة · V1.2`;
   const feed=$('feed');
   if(!list.length){feed.innerHTML=`<div class="empty"><span class="big">🏜️</span>ما فيه صور بعد..<br>كن أول من يصوّر ديرته! اضغط + وشارك</div>`;return}
-  feed.innerHTML=list.map((p,i)=>{
-    const medal=((sortMode==='top'||sortMode==='abroad')&&i<3&&p.ratings_count>0)?['🥇','🥈','🥉'][i]:'';
-    const isV=p.media_type==='video';
-    return `<div class="mcard" onclick="openSheet(${p.id})">
-      ${isV
-        ? `<video src="${vidUrl(p.image_path)}#t=0.5" muted playsinline preload="metadata" style="width:100%;display:block;filter:${(p.filter_key&&p.filter_key!=='none'&&typeof filterCss==='function')?filterCss(p.filter_key):'none'}"></video>`
-        : `<img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="${esc(p.title)}">`}
-      ${medal?`<div class="mc-medal">${medal}</div>`:''}
-      ${VISIT_COUNTS[p.id]?`<div class="mc-visits">👣 ${VISIT_COUNTS[p.id]}</div>`:''}
-      ${claimBadge(p.id)}
-      ${p.visibility==='private'?'<div class="mc-lock">🔒 خاصة</div>':''}
-      ${p.media_type==='video'?'<div class="mc-vid">▶</div>':''}
-      <div class="mc-overlay">
-        <div class="mc-title">${esc(p.title)}</div>
-        <div class="mc-sub">${rankOf(p).ic} ${esc(p.photographer)} · ${p.abroad?esc(p.country||p.city):esc(p.village||p.city)} · 👁️ ${p.views||0}</div>
-      </div>
-    </div>`;
-  }).join('');
+  // ═══ عرض تدريجي ═══
+  window.__renderList=list;
+  window.__renderCount=0;
+  feed.innerHTML='';
+  renderBatch();
+}
+
+/* بناء بطاقة واحدة */
+function buildCard(p,i){
+  const medal=((sortMode==='top'||sortMode==='abroad')&&i<3&&p.ratings_count>0)?['🥇','🥈','🥉'][i]:'';
+  const isV=p.media_type==='video';
+  return `<div class="mcard" onclick="openSheet(${p.id})">
+    ${isV
+      ? `<video src="${vidUrl(p.image_path)}#t=0.5" muted playsinline preload="metadata" style="width:100%;display:block;filter:${(p.filter_key&&p.filter_key!=='none'&&typeof filterCss==='function')?filterCss(p.filter_key):'none'}"></video>`
+      : `<img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" decoding="async" alt="${esc(p.title)}">`}
+    ${medal?`<div class="mc-medal">${medal}</div>`:''}
+    ${VISIT_COUNTS[p.id]?`<div class="mc-visits">👣 ${VISIT_COUNTS[p.id]}</div>`:''}
+    ${claimBadge(p.id)}
+    ${p.visibility==='private'?'<div class="mc-lock">🔒 خاصة</div>':''}
+    ${p.media_type==='video'?'<div class="mc-vid">▶</div>':''}
+    <div class="mc-overlay">
+      <div class="mc-title">${esc(p.title)}</div>
+      <div class="mc-sub">${rankOf(p).ic} ${esc(p.photographer)} · ${p.abroad?esc(p.country||p.city):esc(p.village||p.city)} · 👁️ ${p.views||0}</div>
+    </div>
+  </div>`;
+}
+
+/* دفعة جديدة من البطاقات */
+const RENDER_STEP=24;
+function renderBatch(){
+  const feed=$('feed');if(!feed)return;
+  const list=window.__renderList||[];
+  const from=window.__renderCount||0;
+  if(from>=list.length){removeSentinel();return}
+
+  const to=Math.min(from+RENDER_STEP,list.length);
+  const html=list.slice(from,to).map((p,j)=>buildCard(p,from+j)).join('');
+  removeSentinel();
+  feed.insertAdjacentHTML('beforeend',html);
+  window.__renderCount=to;
+
+  if(to<list.length)addSentinel();
+}
+
+function addSentinel(){
+  const feed=$('feed');if(!feed)return;
+  const s=document.createElement('div');
+  s.id='feedSentinel';
+  s.className='feed-sentinel';
+  s.innerHTML='<div class="fs-dot"></div><div class="fs-dot"></div><div class="fs-dot"></div>';
+  feed.appendChild(s);
+
+  if(window.__feedObs)window.__feedObs.disconnect();
+  window.__feedObs=new IntersectionObserver(function(ents){
+    if(ents[0]&&ents[0].isIntersecting)renderBatch();
+  },{rootMargin:'420px'});
+  window.__feedObs.observe(s);
+}
+
+function removeSentinel(){
+  const s=document.getElementById('feedSentinel');
+  if(s)s.remove();
+  if(window.__feedObs){window.__feedObs.disconnect();window.__feedObs=null}
 }
 
 /* ============ نافذة الصورة ============ */
