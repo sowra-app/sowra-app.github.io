@@ -1948,9 +1948,19 @@ async function uploadAvatar(inp){
         const S=400;
         const cv=document.createElement('canvas');cv.width=S;cv.height=S;
         const ctx=cv.getContext('2d');
-        const rt=Math.max(S/img.width,S/img.height);
-        const dw=img.width*rt,dh=img.height*rt;
-        ctx.drawImage(img,(S-dw)/2,(S-dh)/2,dw,dh);
+
+        // خلفية مضبّبة
+        const cover=Math.max(S/img.width,S/img.height);
+        const cw=img.width*cover, ch=img.height*cover;
+        try{ctx.filter='blur(22px) brightness(.6)'}catch(e){}
+        ctx.drawImage(img,(S-cw)/2,(S-ch)/2,cw,ch);
+        try{ctx.filter='none'}catch(e){}
+
+        // الصورة كاملة
+        const fit=Math.min(S/img.width,S/img.height);
+        const fw=img.width*fit, fh=img.height*fit;
+        ctx.drawImage(img,(S-fw)/2,(S-fh)/2,fw,fh);
+
         URL.revokeObjectURL(img.src);
         cv.toBlob(b=>b?res(b):rej(new Error('فشل')),'image/jpeg',0.88);
       };
@@ -2241,9 +2251,19 @@ async function uploadCover(inp){
         const W=1200,H=400;
         const cv=document.createElement('canvas');cv.width=W;cv.height=H;
         const ctx=cv.getContext('2d');
-        const rt=Math.max(W/img.width,H/img.height);
-        const dw=img.width*rt,dh=img.height*rt;
-        ctx.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh);
+
+        // خلفية: نسخة مكبّرة ومضبّبة تملأ الفراغ
+        const cover=Math.max(W/img.width,H/img.height);
+        const cw=img.width*cover, ch=img.height*cover;
+        try{ctx.filter='blur(28px) brightness(.55)'}catch(e){}
+        ctx.drawImage(img,(W-cw)/2,(H-ch)/2,cw,ch);
+        try{ctx.filter='none'}catch(e){}
+
+        // الصورة كاملة بالوسط بلا قص
+        const fit=Math.min(W/img.width,H/img.height);
+        const fw=img.width*fit, fh=img.height*fit;
+        ctx.drawImage(img,(W-fw)/2,(H-fh)/2,fw,fh);
+
         URL.revokeObjectURL(img.src);
         cv.toBlob(b=>b?res(b):rej(new Error('فشل')),'image/jpeg',0.86);
       };
