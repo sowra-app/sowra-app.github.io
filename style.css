@@ -621,11 +621,11 @@ body.dark .inspect-box.warn{background:linear-gradient(135deg,#2E2519,var(--card
 body.dark .inspect-box.bad{background:#33201D}
 
 /* ====== بروفايل بأسلوب 500px ====== */
-.pf-cover{position:relative;height:190px;margin:0 -14px;background:linear-gradient(135deg,var(--card2),var(--line));overflow:hidden}
+.pf-cover{position:relative;height:170px;margin:0 0 -30px;background:linear-gradient(135deg,var(--card2),var(--line));overflow:hidden;border-radius:18px;border:1.5px solid var(--line)}
 .pf-cover img{width:100%;height:100%;object-fit:cover;display:block}
 .pf-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(10,8,6,.42),transparent 62%)}
 .pf-cover-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px;opacity:.25}
-.pf-head{position:relative;margin-top:-52px;padding:0 4px;text-align:center;z-index:2}
+.pf-head{position:relative;margin-top:0;padding:0 4px;text-align:center;z-index:2}
 .pf-avatar{width:106px;height:106px;border-radius:50%;border:4px solid var(--night);background:var(--card2);object-fit:cover;display:block;margin:0 auto;box-shadow:0 4px 14px rgba(36,31,28,.25)}
 .pf-avatar-ph{width:106px;height:106px;border-radius:50%;border:4px solid var(--night);background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:42px;margin:0 auto;box-shadow:0 4px 14px rgba(36,31,28,.25)}
 .pf-name{font-family:'Reem Kufi',sans-serif;font-size:23px;color:var(--sand);margin-top:10px}
