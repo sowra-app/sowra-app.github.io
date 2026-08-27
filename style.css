@@ -823,3 +823,23 @@ body.dark .near-alert{background:linear-gradient(135deg,#1B2A21,var(--card))}
 .fs-dot:nth-child(2){animation-delay:.16s}
 .fs-dot:nth-child(3){animation-delay:.32s}
 @keyframes fsB{0%,80%,100%{opacity:.3;transform:scale(.85)}40%{opacity:1;transform:scale(1.1)}}
+
+/* ====== الفلتر على الجوال — نافذة منزلقة ====== */
+@media(max-width:640px){
+  .filter-drawer{
+    position:fixed;
+    left:0;right:0;bottom:0;top:auto;
+    max-height:82vh;
+    margin:0;
+    border-radius:22px 22px 0 0;
+    border-width:2px 0 0;
+    padding:16px 16px 0;
+    z-index:200;
+    box-shadow:0 -8px 32px rgba(36,31,28,.28);
+    animation:fdUp .26s ease;
+  }
+  @keyframes fdUp{from{transform:translateY(100%)}to{transform:none}}
+  .fd-scroll{-webkit-overflow-scrolling:touch}
+  .fd-actions{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .fd-backdrop{position:fixed;inset:0;background:rgba(36,31,28,.5);z-index:199;backdrop-filter:blur(2px)}
+}

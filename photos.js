@@ -7,6 +7,23 @@ function toggleFilter(){
   const open=d.style.display==='none';
   d.style.display=open?'flex':'none';
   $('filterBtn').classList.toggle('active',open);
+
+  // خلفية معتمة على الجوال
+  const mob=window.innerWidth<=640;
+  let bd=document.getElementById('fdBackdrop');
+  if(open&&mob){
+    if(!bd){
+      bd=document.createElement('div');
+      bd.id='fdBackdrop';
+      bd.className='fd-backdrop';
+      bd.onclick=toggleFilter;
+      document.body.appendChild(bd);
+    }
+    document.body.style.overflow='hidden';
+  }else{
+    if(bd)bd.remove();
+    document.body.style.overflow='';
+  }
 }
 function fdSetCat(el,k){ 
   _cat=k;
@@ -17,6 +34,7 @@ function fdSetSort(el,s){
   document.querySelectorAll('.fd-chips .fd-chip[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
 }
 function applyFilter(){
+  const _bd=document.getElementById("fdBackdrop");if(_bd)_bd.remove();document.body.style.overflow="";
   catFilter=_cat; 
   sortMode=_sort;
   $('filterDrawer').style.display='none';
@@ -27,6 +45,7 @@ function applyFilter(){
   if(_viewMode==='map'){renderMap();}else{render();}
 }
 function clearFilter(){
+  const _bd=document.getElementById("fdBackdrop");if(_bd)_bd.remove();document.body.style.overflow="";
   window.__fdTags=[];
   window.__onlyClaims=false;
   const _cb=document.getElementById("fdClaimBtn");if(_cb)_cb.classList.remove("on");
