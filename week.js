@@ -169,14 +169,13 @@ function catName(k){
 
 function joinChallenge(){
   go('add');
+  const c=window.__CH||{};
+  if(c.region&&typeof shootThere==='function'){
+    window.__pendingPlace={region:c.region,city:''};
+    if(typeof applyPendingPlace==='function')applyPendingPlace(0);
+  }
   setTimeout(function(){
     try{
-      const c=window.__CH||{};
-      // المنطقة
-      if(c.region&&$('aRegion')){
-        const opt=Array.from($('aRegion').options).find(o=>o.value===c.region||o.textContent.trim()===c.region);
-        if(opt){$('aRegion').value=opt.value;if(typeof fillAddCities==='function')fillAddCities();}
-      }
       // التصنيف
       if(c.cat&&$('aCat')){
         const co=Array.from($('aCat').options).find(o=>o.value===c.cat);

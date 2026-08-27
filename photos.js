@@ -2655,19 +2655,43 @@ function renderWaiting(){
 /* الانتقال للنشر مع تعبئة الموقع */
 function shootThere(region,city){
   go('add');
-  setTimeout(function(){
-    try{
-      if(region&&$('aRegion')){
-        const o=Array.from($('aRegion').options).find(x=>x.value===region||x.textContent.trim()===region);
-        if(o){$('aRegion').value=o.value;if(typeof fillAddCities==='function')fillAddCities();}
-      }
-      if(city)setTimeout(function(){
-        if($('aCity')){
-          const c=Array.from($('aCity').options).find(x=>x.value===city||x.textContent.trim()===city);
-          if(c)$('aCity').value=c.value;
-        }
-      },160);
-      toast('📍 '+(city||region)+' — صوّرها وكن أول من يوثّقها');
-    }catch(e){}
-  },240);
+  window.__pendingPlace={region:region||'',city:city||''};
+  applyPendingPlace(0);
+  toast('📍 '+(city||region)+' — صوّرها وكن أول من يوثّقها');
+}
+
+/* يحاول التعبئة عدة مرات حتى تجهز القوائم */
+function applyPendingPlace(tries){
+  const pp=window.__pendingPlace;
+  if(!pp)return;
+  if(tries>14){window.__pendingPlace=null;return}
+
+  const rs=$('aRegion');
+  if(!rs||!rs.options.length){
+    setTimeout(()=>applyPendingPlace(tries+1),120);
+    return;
+  }
+
+  // المنطقة
+  if(pp.region&&rs.value!==pp.region){
+    const o=Array.from(rs.options).find(x=>x.value===pp.region||x.textContent.trim()===pp.region);
+    if(o){
+      rs.value=o.value;
+      if(typeof fillAddCities==='function')fillAddCities();
+    }
+  }
+
+  // المدينة
+  if(!pp.city){
+    if(pp.region&&rs.value===pp.region){window.__pendingPlace=null;return}
+    setTimeout(()=>applyPendingPlace(tries+1),120);
+    return;
+  }
+
+  const cs=$('aCity');
+  if(cs&&cs.options.length){
+    const c=Array.from(cs.options).find(x=>x.value===pp.city||x.textContent.trim()===pp.city);
+    if(c){cs.value=c.value;window.__pendingPlace=null;return}
+  }
+  setTimeout(()=>applyPendingPlace(tries+1),120);
 }
