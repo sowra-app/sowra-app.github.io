@@ -332,7 +332,7 @@ function initRecBtn(){
 }
 
 async function recOpen(){
-  setTimeout(function(){if(typeof loadGhosts==="function")loadGhosts()},700);
+
   if(!recSupported()){toast('جهازك ما يدعم التسجيل الداخلي — استخدم المعرض',true);return}
   try{
     recStream=await navigator.mediaDevices.getUserMedia({
@@ -343,6 +343,7 @@ async function recOpen(){
   const pv=$('recPreview');
   pv.srcObject=recStream;
   $('recScreen').classList.add('on');
+    setTimeout(function(){try{if(typeof loadGhosts==='function')loadGhosts()}catch(e){}},800);
   document.body.style.overflow='hidden';
   $('recFill').style.width='0%';
   $('recTimer').textContent='00:00';

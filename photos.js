@@ -127,6 +127,8 @@ const $=id=>document.getElementById(id);
 /* تعقيم النصوص — يمنع حقن أي كود في الصفحة */
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const starsTxt=v=>{let f=Math.round(v);return "★".repeat(f)+"☆".repeat(5-f)};
+window.CLAIM_MAP=window.CLAIM_MAP||{};
+var CLAIM_MAP=window.CLAIM_MAP;
 function toast(m,err){const t=$('toast');t.textContent=m;t.className='toast'+(err?' err':'');t.style.display='block';setTimeout(()=>t.style.display='none',2600)}
 function imgUrl(path){return sb.storage.from('photos').getPublicUrl(path).data.publicUrl}
 function vidUrl(path){return sb.storage.from('videos').getPublicUrl(path).data.publicUrl}
@@ -139,7 +141,7 @@ async function loadPhotos(){
   if(error){$('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${error.message}</div>`;return}
   photos = data || [];
   // نعرض الشبكة فوراً ثم نكمّل التفاصيل بالخلفية
-  if(typeof _viewMode!=='undefined'&&_viewMode==='map'){renderMap()}else{render()}
+  try{if(typeof _viewMode!=='undefined'&&_viewMode==='map'){renderMap()}else{render()}}catch(e){console.warn('render early',e)}
   await loadVisitCounts();
   await loadClaims();
   if(typeof _viewMode!=='undefined'&&_viewMode==='map'){renderMap();}
@@ -289,9 +291,9 @@ async function openSheet(id){
         +(p.description_en?esc(p.description_en):'');
     }else en.style.display='none';
   }
-  renderPhotoTags(p);
-  renderPhotoTech(p);
-  renderTimeline(p);
+  try{renderPhotoTags(p)}catch(e){}
+  try{renderPhotoTech(p)}catch(e){}
+  try{renderTimeline(p)}catch(e){}
   // شارة الاستخدام التجاري
   const cb=$('sComm');
   if(cb)cb.style.display=p.commercial?'inline-flex':'none';
@@ -627,7 +629,7 @@ function renderMap(){
     &&(!q||p.title.includes(q)||(p.village||'').includes(q)||(p.city||'').includes(q)||(p.country||'').includes(q)));
   const pts=[];
   list.forEach(p=>{
-    const cl=CLAIM_MAP[p.id];
+    const cl=(typeof CLAIM_MAP!=='undefined'&&CLAIM_MAP)?CLAIM_MAP[p.id]:null;
     const clCls=cl?(' claim-'+cl.state):'';
     const clDot=cl?('<span class="pmark-claim">'+(cl.state==='doubted'?'❓':'🏅')+'</span>'):'';
     const ic=L.divIcon({className:'',html:`<div class="pmark${clCls}"><img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'">${clDot}</div>`,iconSize:[46,46],iconAnchor:[23,23]});
@@ -1448,7 +1450,7 @@ async function reelReport(pid,e){
 }
 
 /* ====== السبق على الموقع ====== */
-let CLAIM_MAP={};
+/* CLAIM_MAP معرّفة بأعلى الملف */
 
 async function loadClaims(){
   try{
@@ -1477,7 +1479,7 @@ async function loadClaims(){
 
 /* شارة السبق حسب حالتها */
 function claimBadge(pid,small){
-  const c=CLAIM_MAP[pid];
+  const c=(typeof CLAIM_MAP!=='undefined'&&CLAIM_MAP)?CLAIM_MAP[pid]:null;
   if(!c)return '';
   const cfg={
     verified:{cls:'ok', ic:'🏅', t:'أول موثّق'},
