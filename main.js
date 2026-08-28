@@ -110,12 +110,13 @@ function go(p){
 }
 
 /* ============ البداية ============ */
+
 (async()=>{
-  if(window.__BOOT_FAIL)return;
-  initTheme();
-  await handleAuthReturn();
-  initEnBar();
-  initViewPrefs();
+  if(window.__BOOT_FAIL){return}
+  try{initTheme();}catch(e){}
+  try{await handleAuthReturn();}catch(e){}
+  try{initEnBar();}catch(e){}
+  try{initViewPrefs();}catch(e){}
   // رابط طوارئ: sowra.app/?admin=1 → يفتح لوحة الإشراف مباشرة
   try{
     if(location.search.indexOf('admin=1')>-1||sessionStorage.getItem('open_admin')==='1'){
@@ -136,10 +137,10 @@ function go(p){
       setTimeout(tryOpen,900);
     }
   }catch(e){}
-  if(typeof renderTagRow==='function')renderTagRow();
-  if(typeof renderFdTags==='function')renderFdTags();
-  initSelects();fillAddCities();
-  const authP=ensureAuth().then(()=>{checkAdmin();loadFavs();}).catch(e=>toast('تعذر الاتصال بالحساب',true));
+  try{if(typeof renderTagRow==='function')renderTagRow();}catch(e){}
+  try{if(typeof renderFdTags==='function')renderFdTags();}catch(e){}
+  try{initSelects();fillAddCities();}catch(e){}
+  const authP=ensureAuth().then(()=>{checkAdmin();loadFavs();}).catch(e=>{});
   try{
     await Promise.all([loadPlaces(),loadPhotos()]);
     loadWeek();loadSponsor();loadChallenge();

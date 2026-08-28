@@ -1,66 +1,107 @@
-/* صورة من بلدي — auth.js | نسخة المختبر م1 */
+/* صورة من بلدي — auth.js */
 /* ============ وضع المشرف ============ */
 let IS_ADMIN=false,admTab='rep';
 let admPhotos=[],admReps={};
 
 async function checkAdmin(){
-  if(!USER||USER.is_anonymous){IS_ADMIN=false;try{localStorage.removeItem('sowra_admin')}catch(e){}$('admGear').style.display='none';return false}
-  const { data } = await sb.from('admins').select('id').maybeSingle();
-  IS_ADMIN=!!data;
-  try{IS_ADMIN?localStorage.setItem('sowra_admin','1'):localStorage.removeItem('sowra_admin')}catch(e){}
-  $('admGear').style.display=IS_ADMIN?'block':'none';
-  return IS_ADMIN;
+  try{
+    if(!USER||USER.is_anonymous){
+      IS_ADMIN=false;
+      try{localStorage.removeItem('sowra_admin')}catch(e){}
+      const g=$('admGear');if(g)g.style.display='none';
+      return false;
+    }
+    const { data } = await sb.from('admins').select('id').maybeSingle();
+    IS_ADMIN=!!data;
+    try{IS_ADMIN?localStorage.setItem('sowra_admin','1'):localStorage.removeItem('sowra_admin')}catch(e){}
+    const g=$('admGear');if(g)g.style.display=IS_ADMIN?'block':'none';
+    return IS_ADMIN;
+  }catch(e){IS_ADMIN=false;return false}
 }
 
 /* ============ الحساب الموحد ============ */
 let accMode='in';
+
 function openAcc(){
   if(USER && !USER.is_anonymous)renderAccIn();
-  else{$('accOut').style.display='block';$('accIn').style.display='none'}
+  else{
+    const o=$('accOut'),i=$('accIn');
+    if(o)o.style.display='block';
+    if(i)i.style.display='none';
+  }
   go('acc');
 }
+
 function accTab(m){
   accMode=m;
-  $('accTabIn').classList.toggle('on',m==='in');
-  $('accTabUp').classList.toggle('on',m==='up');
-  $('accNameGrp').style.display=m==='up'?'block':'none';
-  $('pledgeBox').style.display=m==='up'?'block':'none';
-  $('accGo').textContent=m==='up'?'إنشاء الحساب':'دخول';
+  const ti=$('accTabIn'),tu=$('accTabUp'),ng=$('accNameGrp'),pb=$('pledgeBox'),ag=$('accGo');
+  if(ti)ti.classList.toggle('on',m==='in');
+  if(tu)tu.classList.toggle('on',m==='up');
+  if(ng)ng.style.display=m==='up'?'block':'none';
+  if(pb)pb.style.display=m==='up'?'block':'none';
+  if(ag)ag.textContent=m==='up'?'إنشاء الحساب':'دخول';
 }
+
 async function renderAccIn(){
-const { data } = await sb.from('profiles').select('display_name,bio,region').eq('id',USER.id).maybeSingle();
-  $('accHello').textContent='هلا '+(data?.display_name||'مصوّر');
-  $('accEditName').value=data?.display_name||'';
-const rg2=$('accRegion');if(rg2)rg2.value=data?.region||'';
-  const bo2=$('accBio');if(bo2)bo2.value=data?.bio||'';
-  
-  $('accMail').textContent=USER.email||'';
-  $('accAdminBtn').style.display=IS_ADMIN?'block':'none';
-  $('accOut').style.display='none';$('accIn').style.display='block';
-  renderMyStats();
+  try{
+    let data=null;
+    try{
+      const r=await sb.from('profiles').select('display_name,bio,region').eq('id',USER.id).maybeSingle();
+      data=r.data;
+    }catch(e){}
+
+    const hi=$('accHello');if(hi)hi.textContent='هلا '+((data&&data.display_name)||'مصوّر');
+    const en=$('accEditName');if(en)en.value=(data&&data.display_name)||'';
+    const rg=$('accRegion');if(rg)rg.value=(data&&data.region)||'';
+    const bo=$('accBio');if(bo)bo.value=(data&&data.bio)||'';
+    const ml=$('accMail');if(ml)ml.textContent=USER.email||'';
+    const ab=$('accAdminBtn');if(ab)ab.style.display=IS_ADMIN?'block':'none';
+
+    const o=$('accOut'),i=$('accIn');
+    if(o)o.style.display='none';
+    if(i)i.style.display='block';
+
+    // إضافات اختيارية — لا توقف الصفحة إن أخفقت
+    try{if(typeof renderAccAvatar==='function')renderAccAvatar()}catch(e){}
+    try{if(typeof renderAccCover==='function')renderAccCover()}catch(e){}
+  }catch(e){
+    console.warn('renderAccIn',e);
+    const o=$('accOut'),i=$('accIn');
+    if(o)o.style.display='none';
+    if(i)i.style.display='block';
+  }
 }
 
 async function saveMyName(){
-  const name=$('accEditName').value.trim();
+  const en=$('accEditName');
+  const name=en?en.value.trim():'';
   if(!name)return toast('اكتب اسم',true);
   const upd={display_name:name};
   const rg=$('accRegion');if(rg)upd.region=rg.value.trim();
   const bo=$('accBio');if(bo)upd.bio=bo.value.trim();
   const { error } = await sb.from('profiles').update(upd).eq('id',USER.id);
   if(error){toast('تعذر الحفظ',true);return}
-  $('accHello').textContent='هلا '+name;
+  const hi=$('accHello');if(hi)hi.textContent='هلا '+name;
   toast('انحفظت بياناتك ✅');
-  await loadPhotos();
+  try{await loadPhotos()}catch(e){}
 }
+
 async function accSubmit(){
-  const email=$('accEmail').value.trim(),pass=$('accPass').value;
+  const em=$('accEmail'),pw=$('accPass');
+  const email=em?em.value.trim():'', pass=pw?pw.value:'';
   if(!email||!pass)return toast('عبّي الإيميل وكلمة السر',true);
-  const b=$('accGo');b.disabled=true;const old=b.textContent;b.textContent='⏳';
+
+  const b=$('accGo');
+  const old=b?b.textContent:'دخول';
+  if(b){b.disabled=true;b.textContent='⏳'}
+
   try{
     if(accMode==='up'){
-      const name=$('accName').value.trim();
+      const nm=$('accName');
+      const name=nm?nm.value.trim():'';
       if(!name){toast('اكتب اسمك',true);return}
-      if(!$('pledgeChk').checked){toast('لازم توافق على الشروط والتعهد أول ✋',true);return}
+      const pc=$('pledgeChk');
+      if(pc&&!pc.checked){toast('لازم توافق على الشروط والتعهد أول ✋',true);return}
       const { data, error } = await sb.auth.signUp({
         email,password:pass,options:{data:{display_name:name}}
       });
@@ -73,16 +114,28 @@ async function accSubmit(){
       const { data:{ session } } = await sb.auth.getSession();
       USER=session.user;
     }
-    await checkAdmin();
-    await renderAccIn();
+
+    // كل ما بعد الدخول محصّن — لا يمنع اكتمال العملية
+    try{await checkAdmin()}catch(e){}
+    try{await renderAccIn()}catch(e){}
     toast(IS_ADMIN?'أهلاً بالمشرف 👮':'حياك الله 🌟');
-    if(IS_ADMIN)openAdmin();
-    await loadPhotos();
+    try{if(IS_ADMIN&&typeof openAdmin==='function')openAdmin()}catch(e){}
+    try{await loadPhotos()}catch(e){}
+    try{if(typeof loadFavs==='function')loadFavs()}catch(e){}
   }catch(e){
-    toast(e.message&&e.message.includes('Invalid')?'بيانات الدخول غير صحيحة':(e.message||'تعذرت العملية'),true);
-  }finally{b.disabled=false;b.textContent=old}
+    const msg=(e&&e.message)||'';
+    toast(msg.includes('Invalid')?'بيانات الدخول غير صحيحة':(msg||'تعذرت العملية'),true);
+  }finally{
+    if(b){b.disabled=false;b.textContent=old}
+  }
 }
-async function accLogout(){await sb.auth.signOut();location.reload()}
+
+async function accLogout(){
+  try{await sb.auth.signOut()}catch(e){}
+  try{localStorage.removeItem('sowra_admin')}catch(e){}
+  location.reload();
+}
+
 async function admLogout(){await accLogout()}
 
 /* ====== رسائلي ====== */
@@ -90,6 +143,7 @@ function openMsgs(){
   go('msgs');
   loadMyMsgs();
 }
+
 async function loadMyMsgs(){
   const el=$('myMsgs');if(!el)return;
   if(!USER){el.innerHTML='';return}
@@ -107,15 +161,21 @@ async function loadMyMsgs(){
         <div class="mb">${esc(m.body)}</div>
         ${m.reply?`<div class="msg-reply"><b>رد الإدارة:</b><br>${esc(m.reply)}</div>`:''}
       </div>`).join('')||'<div class="empty" style="padding:18px">ما أرسلت رسائل بعد</div>');
-  }catch(e){el.innerHTML='<div class="empty" style="padding:14px">نفّذ سكربت v15 لعرض السجل</div>'}
+  }catch(e){
+    el.innerHTML='<div class="empty" style="padding:14px">تعذر تحميل السجل</div>';
+  }
 }
+
 async function signInWithGoogle(){
-  const{error}=await sb.auth.signInWithOAuth({
-    provider:'google',
-    options:{redirectTo:window.location.origin}
-  });
-  if(error)toast('تعذر الدخول بـGoogle: '+error.message,true);
+  try{
+    const{error}=await sb.auth.signInWithOAuth({
+      provider:'google',
+      options:{redirectTo:window.location.origin}
+    });
+    if(error)toast('تعذر الدخول بـGoogle: '+error.message,true);
+  }catch(e){toast('تعذر الدخول بـGoogle',true)}
 }
+
 function initGoogleBtn(){
   const wrap=$('googleBtnWrap');if(!wrap)return;
   const sp=window.__SPDATA;
