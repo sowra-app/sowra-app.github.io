@@ -3,6 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <script>
+/* شاشة تشخيص مؤقتة */
+window.addEventListener('error',function(e){
+  var b=document.getElementById('__errbox');
+  if(!b){
+    b=document.createElement('div');
+    b.id='__errbox';
+    b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#8C2F23;color:#fff;font:12px/1.7 monospace;padding:10px 12px;max-height:45vh;overflow:auto;direction:ltr;text-align:left;white-space:pre-wrap';
+    b.onclick=function(){b.remove()};
+    document.documentElement.appendChild(b);
+  }
+  b.textContent += (e.filename||'').split('/').pop() + ':' + e.lineno + '\n' + (e.message||'') + '\n\n';
+},true);
+</script>
+<script>
 /* حارس الصيانة — يعمل قبل رسم الصفحة */
 (function(){
   var U="https://gquzjaxpqeggknhipmzk.supabase.co", K="sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX";
