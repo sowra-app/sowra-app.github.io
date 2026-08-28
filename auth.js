@@ -1,457 +1,193 @@
-/* ====== الوضع الليلي — نهاري · ليلي · تلقائي ====== */
-(function(){
-  try{
-    var t=localStorage.getItem('sowra_theme')||'auto';
-    if(t==='dark')document.documentElement.setAttribute('data-preload-dark','1');
-  }catch(e){}
-})();
+/* صورة من بلدي — auth.js */
+/* ============ وضع المشرف ============ */
+let IS_ADMIN=false,admTab='rep';
+let admPhotos=[],admReps={};
 
-function isNightNow(){
+async function checkAdmin(){
   try{
-    const s=localStorage.getItem('sowra_sun');
-    if(s){
-      const o=JSON.parse(s);
-      const now=Date.now();
-      if(o.rise&&o.set&&(now-o.at)<86400000)return now<o.rise||now>o.set;
+    if(!USER||USER.is_anonymous){
+      IS_ADMIN=false;
+      try{localStorage.removeItem('sowra_admin')}catch(e){}
+      const g=$('admGear');if(g)g.style.display='none';
+      return false;
     }
-  }catch(e){}
-  const h=new Date().getHours();
-  return h<6||h>=18;
+    const { data } = await sb.from('admins').select('id').maybeSingle();
+    IS_ADMIN=!!data;
+    try{IS_ADMIN?localStorage.setItem('sowra_admin','1'):localStorage.removeItem('sowra_admin')}catch(e){}
+    const g=$('admGear');if(g)g.style.display=IS_ADMIN?'block':'none';
+    return IS_ADMIN;
+  }catch(e){IS_ADMIN=false;return false}
 }
 
-async function loadSunTimes(lat,lng){
-  try{
-    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lng
-      +'&daily=sunrise,sunset&timezone=auto&forecast_days=1');
-    const j=await r.json();
-    const rise=new Date(j.daily.sunrise[0]).getTime();
-    const set=new Date(j.daily.sunset[0]).getTime();
-    localStorage.setItem('sowra_sun',JSON.stringify({rise,set,at:Date.now()}));
-    if(getThemeMode()==='auto')applyTheme('auto');
-  }catch(e){}
-}
+/* ============ الحساب الموحد ============ */
+let accMode='in';
 
-function getThemeMode(){
-  try{return localStorage.getItem('sowra_theme')||'auto'}catch(e){return 'auto'}
-}
-
-function resolveTheme(mode){
-  if(mode==='dark')return 'dark';
-  if(mode==='light')return 'light';
-  return isNightNow()?'dark':'light';
-}
-
-function applyTheme(mode){
-  try{
-    if(mode==='auto'||mode==='dark'||mode==='light'){}else{mode=mode==='dark'?'dark':'light'}
-    const eff=resolveTheme(mode);
-    document.body.classList.toggle('dark',eff==='dark');
-    const b=document.getElementById('themeBtn');
-    if(b){
-      b.textContent=mode==='auto'?'🔄':(mode==='dark'?'☀️':'🌙');
-      b.title=mode==='auto'?'تلقائي حسب الوقت':(mode==='dark'?'الوضع النهاري':'الوضع الليلي');
-    }
-    const meta=document.querySelector('meta[name="theme-color"]');
-    if(meta)meta.setAttribute('content',eff==='dark'?'#161310':'#F7F1E3');
-    localStorage.setItem('sowra_theme',mode);
-  }catch(e){}
-}
-
-function toggleTheme(){
-  const cur=getThemeMode();
-  const next=cur==='auto'?'light':(cur==='light'?'dark':'auto');
-  applyTheme(next);
-  const names={auto:'تلقائي حسب الوقت 🔄',light:'الوضع النهاري ☀️',dark:'الوضع الليلي 🌙'};
-  if(typeof toast==='function')toast(names[next]);
-}
-
-function initTheme(){
-  applyTheme(getThemeMode());
-  setInterval(function(){if(getThemeMode()==='auto')applyTheme('auto')},600000);
-}
-
-/* صورة من بلدي — main.js | v1.1 */
-/* ============ التنقل ============ */
-function go(p){
-  if(p==='add' && (!USER || USER.is_anonymous)){
-    toast('سجّل أول عشان تنشر صورك باسمك 📸');
-    p='acc';
-    $('accOut').style.display='block';$('accIn').style.display='none';
+function openAcc(){
+  if(USER && !USER.is_anonymous)renderAccIn();
+  else{
+    const o=$('accOut'),i=$('accIn');
+    if(o)o.style.display='block';
+    if(i)i.style.display='none';
   }
-  if(p==='adm' && !IS_ADMIN)p='feed';
-  document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
-  $('page-'+p).classList.add('on');
-  const wasDark=document.body.classList.contains('dark');
-  document.body.className='page-'+p+(wasDark?' dark':'');
-  if(p==='feed'){
-    if(typeof loadPhotos==='function') loadPhotos().then(()=>{if(typeof render==='function')render();});
-    else if(typeof render==='function') render();
-    const adm=$('page-adm');
-    if(adm&&adm.classList.contains('on')) adm.classList.remove('on');
-  }
-  // أغلق نافذة الصورة عند أي تنقل
-  const _ov=document.getElementById('overlay');
-  if(_ov&&_ov.classList.contains('show')){
-    _ov.classList.remove('show');
-    document.body.style.overflow='';
-  }
-  if(p!=='reels'&&typeof stopAllReels==='function')stopAllReels();
-  if(p==='feed'&&typeof applyViewPrefs==='function')setTimeout(applyViewPrefs,80);
-  if(p==='acc'&&typeof renderAccAvatar==='function')setTimeout(renderAccAvatar,150);
-  if(p==='acc'&&typeof renderAccCover==='function')setTimeout(renderAccCover,150);
-  if(p!=='acc'&&typeof accPanel==='function'&&window.__accOpen)accPanel('');
-  $('nb-feed').classList.toggle('on',p==='feed');
-  const nr=$('nb-reels');if(nr)nr.classList.toggle('on',p==='reels');
-  $('nb-favs').classList.toggle('on',p==='favs');
-  $('nb-msgs').classList.toggle('on',p==='msgs');
-  $('nb-acc').classList.toggle('on',p==='acc');
-  const fb=$('fab');if(fb)fb.style.display=(p==='add')?'none':'block';
-  window.scrollTo(0,0);
+  go('acc');
 }
 
-/* ============ البداية ============ */
+function accTab(m){
+  accMode=m;
+  const ti=$('accTabIn'),tu=$('accTabUp'),ng=$('accNameGrp'),pb=$('pledgeBox'),ag=$('accGo');
+  if(ti)ti.classList.toggle('on',m==='in');
+  if(tu)tu.classList.toggle('on',m==='up');
+  if(ng)ng.style.display=m==='up'?'block':'none';
+  if(pb)pb.style.display=m==='up'?'block':'none';
+  if(ag)ag.textContent=m==='up'?'إنشاء الحساب':'دخول';
+}
 
-(async()=>{
-  if(window.__BOOT_FAIL){return}
-  try{initTheme();}catch(e){}
-  try{await handleAuthReturn();}catch(e){}
-  try{initEnBar();}catch(e){}
-  try{initViewPrefs();}catch(e){}
-  // رابط طوارئ: sowra.app/?admin=1 → يفتح لوحة الإشراف مباشرة
+async function renderAccIn(){
   try{
-    if(location.search.indexOf('admin=1')>-1||sessionStorage.getItem('open_admin')==='1'){
-      sessionStorage.removeItem('open_admin');
-      setTimeout(function(){
-        try{
-          IS_ADMIN=true;
-          const g=document.getElementById('admGear');
-          if(g)g.style.display='block';
-          go('adm');
-          if(typeof loadReports==='function')loadReports();
-        }catch(e){}
-      },600);
-    }
-  }catch(e){}
+    let data=null;
+    try{
+      const r=await sb.from('profiles').select('display_name,bio,region').eq('id',USER.id).maybeSingle();
+      data=r.data;
+    }catch(e){}
 
-  try{if(typeof renderTagRow==='function')renderTagRow();}catch(e){}
-  try{if(typeof renderFdTags==='function')renderFdTags();}catch(e){}
-  try{initSelects();fillAddCities();}catch(e){}
-  const authP=ensureAuth().then(()=>{checkAdmin();loadFavs();}).catch(e=>{});
-  try{
-    await Promise.all([loadPlaces(),loadPhotos()]);
-    loadWeek();loadSponsor();loadChallenge();
-    initHero();
-    showNearby();
-    if(typeof loadWeatherTip==='function')setTimeout(loadWeatherTip,400);
-    if(typeof initGoogleBtn==='function')initGoogleBtn();
-    // محاولات متتابعة حتى تجهز المفاتيح
-    let _gt=0;
-    const _gi=setInterval(function(){
-      _gt++;
-      if(window.__SPDATA||_gt>12){
-        clearInterval(_gi);
-        if(typeof initGoogleBtn==='function')initGoogleBtn();
-      }
-    },500);
+    const hi=$('accHello');if(hi)hi.textContent='هلا '+((data&&data.display_name)||'مصوّر');
+    const en=$('accEditName');if(en)en.value=(data&&data.display_name)||'';
+    const rg=$('accRegion');if(rg)rg.value=(data&&data.region)||'';
+    const bo=$('accBio');if(bo)bo.value=(data&&data.bio)||'';
+    const ml=$('accMail');if(ml)ml.textContent=USER.email||'';
+    const ab=$('accAdminBtn');if(ab)ab.style.display=IS_ADMIN?'block':'none';
+
+    const o=$('accOut'),i=$('accIn');
+    if(o)o.style.display='none';
+    if(i)i.style.display='block';
+
+    // إضافات اختيارية — لا توقف الصفحة إن أخفقت
+    try{if(typeof renderAccAvatar==='function')renderAccAvatar()}catch(e){}
+    try{if(typeof renderAccCover==='function')renderAccCover()}catch(e){}
   }catch(e){
-    $('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${e.message||''}</div>`;
+    console.warn('renderAccIn',e);
+    const o=$('accOut'),i=$('accIn');
+    if(o)o.style.display='none';
+    if(i)i.style.display='block';
   }
-  await authP;
-})();
-
-/* ====== Tap overlay للجوال ====== */
-document.addEventListener('click',function(e){
-  const card=e.target.closest('.mcard');
-  if(!card)return;
-  if(window.matchMedia('(hover:hover)').matches)return;
-  if(!card.classList.contains('tapped')){
-    document.querySelectorAll('.mcard.tapped').forEach(c=>c.classList.remove('tapped'));
-    card.classList.add('tapped');
-    e.stopPropagation();
-    return;
-  }
-},true);
-/* ====== تحديث تلقائي عند العودة للتطبيق ====== */
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'){
-    if(typeof loadPhotos==='function')loadPhotos();
-    if(typeof loadSponsor==='function')loadSponsor();
-    if(typeof loadWeek==='function')loadWeek();
-    if(typeof loadChallenge==='function')loadChallenge();
-  }
-});
-
-/* تحديث دوري كل دقيقتين والتطبيق مفتوح */
-setInterval(()=>{
-  if(document.visibilityState==='visible'&&typeof loadPhotos==='function')loadPhotos();
-},120000);
-
-/* ====== الإشعارات ====== */
-window.__VAPID_PUB='BCeGpOtX3WqUv7u0B8hoOJDdrp8PKUXG1pow2wWyM8sS7bnLJ3v8mzqczz-SmiQJgNeZXz1Z4VouYB9LAwsXe94';
-
-function urlB64ToUint8(b64){
-  const pad='='.repeat((4-b64.length%4)%4);
-  const s=(b64+pad).replace(/-/g,'+').replace(/_/g,'/');
-  const raw=atob(s);
-  const arr=new Uint8Array(raw.length);
-  for(let i=0;i<raw.length;i++)arr[i]=raw.charCodeAt(i);
-  return arr;
 }
 
-function notifSupported(){
-  return ('Notification' in window) && ('serviceWorker' in navigator) && ('PushManager' in window);
+async function saveMyName(){
+  const en=$('accEditName');
+  const name=en?en.value.trim():'';
+  if(!name)return toast('اكتب اسم',true);
+  const upd={display_name:name};
+  const rg=$('accRegion');if(rg)upd.region=rg.value.trim();
+  const bo=$('accBio');if(bo)upd.bio=bo.value.trim();
+  const { error } = await sb.from('profiles').update(upd).eq('id',USER.id);
+  if(error){toast('تعذر الحفظ',true);return}
+  const hi=$('accHello');if(hi)hi.textContent='هلا '+name;
+  toast('انحفظت بياناتك ✅');
+  try{await loadPhotos()}catch(e){}
 }
 
-function isStandalone(){
-  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
-}
+async function accSubmit(){
+  const em=$('accEmail'),pw=$('accPass');
+  const email=em?em.value.trim():'', pass=pw?pw.value:'';
+  if(!email||!pass)return toast('عبّي الإيميل وكلمة السر',true);
 
-async function renderNotifBox(){
-  const box=$('notifBox');if(!box)return;
-  if(!USER||USER.is_anonymous){box.style.display='none';return}
-  box.style.display='block';
+  const b=$('accGo');
+  const old=b?b.textContent:'دخول';
+  if(b){b.disabled=true;b.textContent='⏳'}
 
-  const card=box.querySelector('.notif-card');
-  const st=$('notifState'), btn=$('notifBtn'), hint=$('notifHint');
-  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
-
-  if(!notifSupported()){
-    st.textContent='غير مدعومة بهذا المتصفح';
-    btn.style.display='none';
-    hint.style.display='block';
-    hint.textContent=isIOS
-      ? 'على الأيفون: أضف التطبيق للشاشة الرئيسية أولاً (زر المشاركة ← إضافة إلى الشاشة الرئيسية)، ثم افتحه من الأيقونة.'
-      : 'جرّب متصفحاً أحدث.';
-    return;
-  }
-  if(isIOS && !isStandalone()){
-    st.textContent='تحتاج تثبيت التطبيق أولاً';
-    btn.style.display='none';
-    hint.style.display='block';
-    hint.textContent='اضغط زر المشاركة بسفاري ← «إضافة إلى الشاشة الرئيسية» ← افتح التطبيق من الأيقونة، وبعدها تقدر تفعّل الإشعارات.';
-    return;
-  }
-
-  hint.style.display='none';
-  btn.style.display='block';
-
-  let sub=null;
   try{
-    const reg=await navigator.serviceWorker.ready;
-    sub=await reg.pushManager.getSubscription();
-  }catch(e){}
-
-  const on=!!sub && Notification.permission==='granted';
-  if(card)card.classList.toggle('on',on);
-  st.textContent=on?'● مفعّلة على هذا الجهاز':'غير مفعّلة';
-  btn.textContent=on?'🔕 إيقاف الإشعارات':'🔔 فعّل الإشعارات';
-  btn.style.background=on?'var(--card2)':'var(--sadu)';
-  btn.style.color=on?'var(--txt)':'#fff';
-  btn.style.border=on?'1px solid var(--line)':'none';
-}
-
-async function toggleNotifs(){
-  if(!notifSupported()){toast('جهازك ما يدعم الإشعارات',true);return}
-  const btn=$('notifBtn');
-  btn.disabled=true;
-  try{
-    const reg=await navigator.serviceWorker.ready;
-    const existing=await reg.pushManager.getSubscription();
-
-    if(existing && Notification.permission==='granted'){
-      // إيقاف
-      const ep=existing.endpoint;
-      await existing.unsubscribe();
-      await sb.from('push_subs').delete().eq('endpoint',ep);
-      toast('اتوقفت الإشعارات');
-      renderNotifBox();
-      return;
+    if(accMode==='up'){
+      const nm=$('accName');
+      const name=nm?nm.value.trim():'';
+      if(!name){toast('اكتب اسمك',true);return}
+      const pc=$('pledgeChk');
+      if(pc&&!pc.checked){toast('لازم توافق على الشروط والتعهد أول ✋',true);return}
+      const r=await Promise.race([
+        sb.auth.signUp({email,password:pass,options:{data:{display_name:name}}}),
+        new Promise((_,rj)=>setTimeout(()=>rj(new Error('انتهت المهلة — تحقق من اتصالك')),15000))
+      ]);
+      const data=r.data, error=r.error;
+      if(error)throw error;
+      if(!data.session){toast('أُرسل رابط تأكيد لإيميلك 📧');return}
+      USER=data.session.user;
+    }else{
+      // مهلة ١٥ ثانية — لا ننتظر للأبد
+      const race=await Promise.race([
+        sb.auth.signInWithPassword({email,password:pass}),
+        new Promise((_,rj)=>setTimeout(()=>rj(new Error('انتهت المهلة — تحقق من اتصالك')),15000))
+      ]);
+      if(race.error)throw race.error;
+      const sess=await Promise.race([
+        sb.auth.getSession(),
+        new Promise((_,rj)=>setTimeout(()=>rj(new Error('تعذر قراءة الجلسة')),8000))
+      ]);
+      USER=(sess&&sess.data&&sess.data.session)?sess.data.session.user:(race.data&&race.data.user);
+      if(!USER)throw new Error('ما رجعت الجلسة');
     }
 
-    const perm=await Notification.requestPermission();
-    if(perm!=='granted'){
-      toast(perm==='denied'?'رفضت الإذن — فعّله من إعدادات المتصفح':'ما تم التفعيل',true);
-      renderNotifBox();
-      return;
-    }
-
-    const sub=await reg.pushManager.subscribe({
-      userVisibleOnly:true,
-      applicationServerKey:urlB64ToUint8(window.__VAPID_PUB)
-    });
-    const j=sub.toJSON();
-    const {error}=await sb.from('push_subs').upsert({
-      user_id:USER.id,
-      endpoint:sub.endpoint,
-      p256dh:j.keys.p256dh,
-      auth:j.keys.auth
-    },{onConflict:'endpoint'});
-    if(error)throw error;
-
-    toast('انفعّلت الإشعارات 🔔');
-    reg.showNotification('صورة من بلدي 🇸🇦',{
-      body:'الإشعارات مفعّلة — بنوصلك أول ما يصير جديد',
-      icon:'icon-192.png',dir:'rtl',lang:'ar'
-    });
-    renderNotifBox();
+    // كل ما بعد الدخول محصّن — لا يمنع اكتمال العملية
+    try{await checkAdmin()}catch(e){}
+    try{await renderAccIn()}catch(e){}
+    toast(IS_ADMIN?'أهلاً بالمشرف 👮':'حياك الله 🌟');
+    try{if(IS_ADMIN&&typeof openAdmin==='function')openAdmin()}catch(e){}
+    try{await loadPhotos()}catch(e){}
+    try{if(typeof loadFavs==='function')loadFavs()}catch(e){}
   }catch(e){
-    toast('تعذر التفعيل: '+(e.message||''),true);
-  }finally{btn.disabled=false}
-}
-
-/* ====== دعوة تفعيل الإشعارات بعد أول نشر ====== */
-function askedBefore(){
-  try{return localStorage.getItem('sowra_notif_asked')==='1'}catch(e){return true}
-}
-function markAsked(){
-  try{localStorage.setItem('sowra_notif_asked','1')}catch(e){}
-}
-
-async function maybeAskNotifs(){
-  try{
-    if(askedBefore())return;
-    if(!USER||USER.is_anonymous)return;
-    if(!notifSupported())return;
-    if(Notification.permission!=='default')return;
-    const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
-    if(isIOS&&!isStandalone())return;
-    // تحقق: هل مشترك أصلاً؟
-    const reg=await navigator.serviceWorker.ready;
-    const sub=await reg.pushManager.getSubscription();
-    if(sub)return;
-    setTimeout(()=>{
-      const el=document.getElementById('notifAsk');
-      if(el)el.classList.add('show');
-    },1800);
-  }catch(e){}
-}
-
-function notifAskNo(){
-  markAsked();
-  const el=document.getElementById('notifAsk');
-  if(el)el.classList.remove('show');
-  toast('تقدر تفعّلها من صفحة حسابي متى ما تبي');
-}
-
-async function notifAskYes(){
-  markAsked();
-  const el=document.getElementById('notifAsk');
-  if(el)el.classList.remove('show');
-  if(typeof toggleNotifs==='function')await toggleNotifs();
-}
-
-/* ====== شريط اللغة للأجانب ====== */
-function initEnBar(){
-  try{
-    if(localStorage.getItem('sowra_en_dismissed')==='1')return;
-    const langs=(navigator.languages&&navigator.languages.length)?navigator.languages:[navigator.language||''];
-    const isAr=langs.some(l=>String(l).toLowerCase().startsWith('ar'));
-    if(isAr)return;
-    const el=document.getElementById('enBar');
-    if(el)el.classList.add('show');
-  }catch(e){}
-}
-function dismissEnBar(){
-  try{localStorage.setItem('sowra_en_dismissed','1')}catch(e){}
-  const el=document.getElementById('enBar');
-  if(el)el.classList.remove('show');
-}
-
-/* ====== معالجة عودة تسجيل Google ====== */
-async function handleAuthReturn(){
-  try{
-    const h=window.location.hash||'';
-    const q=window.location.search||'';
-    const hasCode=q.includes('code=');
-    const hasToken=h.includes('access_token');
-    if(!hasCode&&!hasToken)return;
-
-    // تبادل الرمز بجلسة
-    if(hasCode&&sb.auth.exchangeCodeForSession){
-      try{await sb.auth.exchangeCodeForSession(window.location.href)}catch(e){}
-    }
-    // تنظيف الرابط
-    try{history.replaceState({},document.title,window.location.pathname)}catch(e){}
-
-    const s=await sb.auth.getSession();
-    if(s&&s.data&&s.data.session){
-      USER=s.data.session.user;
-      await checkAdmin();
-      if(typeof renderAccIn==='function')await renderAccIn();
-      toast('حياك الله 🌟');
-      await loadPhotos();
-    }
-  }catch(e){}
-}
-
-/* ====== أقسام صفحة حسابي ====== */
-window.__accOpen='';
-
-function accPanel(name){
-  window.__accOpen=(window.__accOpen===name)?'':name;
-  const map={edit:'pnEdit',stats:'pnStats',vault:'pnVault',notif:'pnNotif'};
-  Object.keys(map).forEach(k=>{
-    const el=document.getElementById(map[k]);
-    if(el)el.classList.toggle('on',k===window.__accOpen);
-  });
-  document.querySelectorAll('.acc-tile').forEach((t,i)=>{
-    const keys=['edit','stats','vault','notif'];
-    t.classList.toggle('on',keys[i]===window.__accOpen);
-  });
-  // تحميل عند الفتح
-  if(window.__accOpen==='vault'&&typeof renderVault==='function')renderVault();
-  if(window.__accOpen==='stats'&&typeof renderMyStats==='function')renderMyStats();
-  if(window.__accOpen==='notif'&&typeof renderNotifBox==='function')renderNotifBox();
-  if(window.__accOpen){
-    setTimeout(()=>{
-      const el=document.getElementById(map[window.__accOpen]);
-      if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});
-    },60);
+    const msg=(e&&e.message)||'';
+    toast(msg.includes('Invalid')?'بيانات الدخول غير صحيحة':(msg||'تعذرت العملية'),true);
+  }finally{
+    if(b){b.disabled=false;b.textContent=old}
   }
 }
 
-/* ====== تفضيلات العرض ====== */
-function getViewPrefs(){
-  let p={hero:true,weather:true,challenge:true,near:true};
+async function accLogout(){
+  try{await sb.auth.signOut()}catch(e){}
+  try{localStorage.removeItem('sowra_admin')}catch(e){}
+  location.reload();
+}
+
+async function admLogout(){await accLogout()}
+
+/* ====== رسائلي ====== */
+function openMsgs(){
+  go('msgs');
+  loadMyMsgs();
+}
+
+async function loadMyMsgs(){
+  const el=$('myMsgs');if(!el)return;
+  if(!USER){el.innerHTML='';return}
+  el.innerHTML='<div style="text-align:center;color:var(--txt-dim);padding:8px">⏳</div>';
   try{
-    const s=localStorage.getItem('sowra_view');
-    if(s)p=Object.assign(p,JSON.parse(s));
-  }catch(e){}
-  return p;
+    const r=await sb.from('feedback').select('*').eq('user_id',USER.id).order('created_at',{ascending:false});
+    const list=r.data||[];
+    el.innerHTML=(list.length?'<div style="font-weight:700;font-size:14px;margin-bottom:10px">سجل رسائلك:</div>':'')
+      +(list.map(m=>`
+      <div class="msg-card">
+        <div class="mk">
+          <span>${(typeof FB_AR!=='undefined'&&FB_AR[m.kind])||m.kind} · ${new Date(m.created_at).toLocaleDateString('ar-SA')}</span>
+          <span class="msg-st ${m.status==='new'?'new':'done'}">${m.status==='new'?'⏳ قيد المراجعة':'✅ تمت المعالجة'}</span>
+        </div>
+        <div class="mb">${esc(m.body)}</div>
+        ${m.reply?`<div class="msg-reply"><b>رد الإدارة:</b><br>${esc(m.reply)}</div>`:''}
+      </div>`).join('')||'<div class="empty" style="padding:18px">ما أرسلت رسائل بعد</div>');
+  }catch(e){
+    el.innerHTML='<div class="empty" style="padding:14px">تعذر تحميل السجل</div>';
+  }
 }
 
-function saveViewPrefs(){
-  const p={
-    near:!!(document.getElementById('swNear')&&document.getElementById('swNear').checked),
-    hero:!!(document.getElementById('swHero')&&document.getElementById('swHero').checked),
-    weather:!!(document.getElementById('swWeather')&&document.getElementById('swWeather').checked),
-    challenge:!!(document.getElementById('swChallenge')&&document.getElementById('swChallenge').checked)
-  };
-  try{localStorage.setItem('sowra_view',JSON.stringify(p))}catch(e){}
-  applyViewPrefs();
+async function signInWithGoogle(){
+  try{
+    const{error}=await sb.auth.signInWithOAuth({
+      provider:'google',
+      options:{redirectTo:window.location.origin}
+    });
+    if(error)toast('تعذر الدخول بـGoogle: '+error.message,true);
+  }catch(e){toast('تعذر الدخول بـGoogle',true)}
 }
 
-function applyViewPrefs(){
-  const p=getViewPrefs();
-  const na=document.getElementById('nearAlert');
-  if(na&&!p.near)na.style.display='none';
-  const hero=document.getElementById('homeHero');
-  const wt=document.getElementById('weatherTip');
-  const ch=document.getElementById('challengeStrip');
-  if(hero&&!p.hero)hero.style.display='none';
-  if(wt)wt.style.display=p.weather?'':'none';
-  if(ch&&!p.challenge)ch.style.display='none';
-  if(hero&&p.hero&&typeof renderHomeHero==='function')renderHomeHero();
-  if(ch&&p.challenge&&typeof loadChallenge==='function')loadChallenge();
-}
-
-function initViewPrefs(){
-  const p=getViewPrefs();
-  const n=document.getElementById('swNear');
-  if(n)n.checked=p.near;
-  const a=document.getElementById('swHero'),b=document.getElementById('swWeather'),c=document.getElementById('swChallenge');
-  if(a)a.checked=p.hero;
-  if(b)b.checked=p.weather;
-  if(c)c.checked=p.challenge;
-  applyViewPrefs();
+function initGoogleBtn(){
+  const wrap=$('googleBtnWrap');if(!wrap)return;
+  const sp=window.__SPDATA;
+  wrap.style.display=(sp&&sp.google_login)?'block':'none';
 }
