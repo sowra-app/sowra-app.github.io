@@ -955,6 +955,19 @@ async function addVisit(pid){
   const {error}=await sb.from('visits').insert({photo_id:pid,user_id:USER.id});
   if(error){toast('تعذر التسجيل: '+error.message,true);return}
   toast('انسجّلت زيارتك 👣');
+  // إشعار لصاحب الصورة
+  try{
+    if(ph.user_id&&ph.user_id!==USER.id&&typeof pushNotify==='function'){
+      const me=(await sb.from('profiles').select('display_name').eq('id',USER.id).maybeSingle()).data;
+      const loc=ph.abroad?(ph.country||ph.city):(ph.village||ph.city);
+      pushNotify({
+        title:'👣 أحد زار مكان صورتك',
+        body:((me&&me.display_name)||'زائر')+' وصل إلى '+loc+' — «'+ph.title+'»',
+        url:'/',
+        user_ids:[ph.user_id]
+      });
+    }
+  }catch(e){}
   await loadVisitCounts();render();
   renderVisits(curPhoto);
 }
