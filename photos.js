@@ -140,12 +140,9 @@ async function loadPhotos(){
     .order('created_at',{ascending:false});
   if(error){$('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${error.message}</div>`;return}
   photos = data || [];
-  // نعرض الشبكة فوراً ثم نكمّل التفاصيل بالخلفية
-  try{if(typeof _viewMode!=='undefined'&&_viewMode==='map'){renderMap()}else{render()}}catch(e){console.warn('render early',e)}
-  await loadVisitCounts();
-  await loadClaims();
-  if(typeof _viewMode!=='undefined'&&_viewMode==='map'){renderMap();}
-  else{render();}
+  try{await loadVisitCounts()}catch(e){}
+  try{await loadClaims()}catch(e){}
+  try{if(typeof _viewMode!=='undefined'&&_viewMode==='map'){renderMap()}else{render()}}catch(e){console.warn('render',e)}
 }
 
 /* ============ الفلاتر والعرض ============ */
@@ -207,6 +204,7 @@ function render(){
 
 /* بناء بطاقة واحدة */
 function buildCard(p,i){
+ try{
   const medal=((sortMode==='top'||sortMode==='abroad')&&i<3&&p.ratings_count>0)?['🥇','🥈','🥉'][i]:'';
   const isV=p.media_type==='video';
   return `<div class="mcard" onclick="openSheet(${p.id})">
@@ -223,12 +221,14 @@ function buildCard(p,i){
       <div class="mc-sub">${rankOf(p).ic} ${esc(p.photographer)} · ${p.abroad?esc(p.country||p.city):esc(p.village||p.city)} · 👁️ ${p.views||0}</div>
     </div>
   </div>`;
+ }catch(e){return ''}
 }
 
 /* دفعة جديدة من البطاقات */
 const RENDER_STEP=24;
 function renderBatch(){
   const feed=$('feed');if(!feed)return;
+  try{
   const list=window.__renderList||[];
   const from=window.__renderCount||0;
   if(from>=list.length){removeSentinel();return}
@@ -240,6 +240,10 @@ function renderBatch(){
   window.__renderCount=to;
 
   if(to<list.length)addSentinel();
+  }catch(e){
+    console.warn('renderBatch',e);
+    feed.innerHTML='<div class="empty" style="grid-column:1/-1"><span class="big">⚠️</span>تعذر عرض الصور</div>';
+  }
 }
 
 function addSentinel(){
