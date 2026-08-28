@@ -1711,13 +1711,16 @@ async function publishFromVault(pid){
       });
     }
   }catch(e){}
+  if(_pv)_pv.visibility='public';
+  if(curPhoto&&curPhoto.id===pid)curPhoto.visibility='public';
   await loadPhotos();
-  renderVault();
+  if(typeof renderVault==='function')renderVault();
   if(typeof renderProfTabs==="function"&&PROF_UID){renderProfTabs();renderProfFeed();}
   // حدّث النافذة المفتوحة إن كانت لنفس الصورة
   if(curPhoto&&curPhoto.id===pid){
     const fresh=photos.find(x=>x.id===pid);
     if(fresh){curPhoto=fresh;openSheet(pid);}
+    else if(typeof closeSheet==='function')closeSheet();
   }
   render();
   if(typeof renderMyStats==='function')renderMyStats();
@@ -1730,11 +1733,17 @@ async function moveToVault(pid){
   const {error}=await sb.from('photos').update({visibility:'private'}).eq('id',pid).eq('user_id',USER.id);
   if(error){toast('تعذر السحب',true);return}
   toast(_isVm?'انسحب المقطع لخزنتك 🔒':'انسحبت لخزنتك 🔒');
+  // نحدّث الحالة محلياً فوراً
+  if(_mv)_mv.visibility='private';
+  if(curPhoto&&curPhoto.id===pid)curPhoto.visibility='private';
   await loadPhotos();
-  renderVault();
+  if(typeof renderVault==='function')renderVault();
   if(typeof renderProfTabs==="function"&&PROF_UID){renderProfTabs();renderProfFeed();}
   const fresh=photos.find(x=>x.id===pid);
-  if(fresh&&curPhoto&&curPhoto.id===pid){curPhoto=fresh;openSheet(pid);}
+  if(curPhoto&&curPhoto.id===pid){
+    if(fresh){curPhoto=fresh;openSheet(pid)}
+    else closeSheet();
+  }
   render();
 }
 
