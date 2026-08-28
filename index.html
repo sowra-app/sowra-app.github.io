@@ -13,7 +13,7 @@
     if(location.search.indexOf("admin=1")>-1){
       localStorage.setItem("sowra_admin","1");
       isAdm=true;
-      history.replaceState({},document.title,location.pathname);
+      sessionStorage.setItem("open_admin","1");
     }
   }catch(e){}
   if(isAdm) return;
