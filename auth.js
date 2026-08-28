@@ -102,27 +102,18 @@ async function accSubmit(){
       if(!name){toast('اكتب اسمك',true);return}
       const pc=$('pledgeChk');
       if(pc&&!pc.checked){toast('لازم توافق على الشروط والتعهد أول ✋',true);return}
-      const r=await Promise.race([
-        sb.auth.signUp({email,password:pass,options:{data:{display_name:name}}}),
-        new Promise((_,rj)=>setTimeout(()=>rj(new Error('انتهت المهلة — تحقق من اتصالك')),15000))
-      ]);
-      const data=r.data, error=r.error;
+      const { data, error } = await sb.auth.signUp({
+        email,password:pass,options:{data:{display_name:name}}
+      });
       if(error)throw error;
       if(!data.session){toast('أُرسل رابط تأكيد لإيميلك 📧');return}
       USER=data.session.user;
     }else{
-      // مهلة ١٥ ثانية — لا ننتظر للأبد
-      const race=await Promise.race([
-        sb.auth.signInWithPassword({email,password:pass}),
-        new Promise((_,rj)=>setTimeout(()=>rj(new Error('انتهت المهلة — تحقق من اتصالك')),15000))
-      ]);
-      if(race.error)throw race.error;
-      const sess=await Promise.race([
-        sb.auth.getSession(),
-        new Promise((_,rj)=>setTimeout(()=>rj(new Error('تعذر قراءة الجلسة')),8000))
-      ]);
-      USER=(sess&&sess.data&&sess.data.session)?sess.data.session.user:(race.data&&race.data.user);
-      if(!USER)throw new Error('ما رجعت الجلسة');
+      const { data, error } = await sb.auth.signInWithPassword({email,password:pass});
+      if(error)throw error;
+      const { data:{ session } } = await sb.auth.getSession();
+      USER=(session&&session.user)||(data&&data.user);
+      if(!USER)throw new Error('تعذر قراءة الجلسة');
     }
 
     // كل ما بعد الدخول محصّن — لا يمنع اكتمال العملية
