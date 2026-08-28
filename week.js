@@ -81,6 +81,8 @@ async function loadSponsor(){
     const r=await sb.from('site_banner').select('*').eq('id',1).maybeSingle();
     const b=r.data||null;
     window.__SPDATA=b;
+    // زر جوجل يظهر فور جهوز البيانات
+    try{if(typeof initGoogleBtn==='function')initGoogleBtn()}catch(e){}
     window.__SPB=b||{};
     // البطاقة الجانبية
     if(typeof renderSponsorSide==='function')renderSponsorSide();

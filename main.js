@@ -148,6 +148,15 @@ function go(p){
     showNearby();
     if(typeof loadWeatherTip==='function')setTimeout(loadWeatherTip,400);
     if(typeof initGoogleBtn==='function')initGoogleBtn();
+    // محاولات متتابعة حتى تجهز المفاتيح
+    let _gt=0;
+    const _gi=setInterval(function(){
+      _gt++;
+      if(window.__SPDATA||_gt>12){
+        clearInterval(_gi);
+        if(typeof initGoogleBtn==='function')initGoogleBtn();
+      }
+    },500);
   }catch(e){
     $('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${e.message||''}</div>`;
   }
