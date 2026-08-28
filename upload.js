@@ -169,7 +169,7 @@ function compressTo(file,maxW,quality){
     img.src=URL.createObjectURL(file);
   });
 }
-function compress(file){return compressTo(file,1280,0.8)}
+function compress(file){return compressTo(file,1100,0.74)}
 const thumbPath=p=>p.replace(/\.jpg$/,'_t.jpg');
 function thumbUrl(p){return imgUrl(thumbPath(p))}
 
@@ -248,7 +248,7 @@ async function addPhoto(){
       const ok=await runInspection(blob);
       if(!ok){btn.disabled=false;btn.textContent=(pendingVis==='private'?'🔒 احفظ بخزنتي':'انشر الصورة 🚀');return}
     }
-    const thumb=await compressTo(pendingFile,420,0.7);
+    const thumb=await compressTo(pendingFile,300,0.62);
     const path=`${USER.id}/${Date.now()}.jpg`;
     const [up,upT]=await Promise.all([
       sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',cacheControl:'31536000'}),
@@ -1227,7 +1227,7 @@ function ghostPick(pid,el){
   if(window.__ghostId===pid){ghostClear();return}
 
   window.__ghostId=pid;
-  img.src=imgUrl(p.image_path);
+  img.src=thumbUrl(p.image_path);
   img.style.display='block';
   const sl=$('ghostSlider'), off=$('ghostOff');
   if(sl)sl.style.display='flex';

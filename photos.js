@@ -650,7 +650,7 @@ function renderMap(){
   // دبوس الراعي
   const spd=window.__SPDATA;
   if(spd&&spd.active&&spd.image_path&&spd.sponsor_lat&&spd.sponsor_lng){
-    const sic=L.divIcon({className:'',html:`<div class="pmark sp-pin"><img src="${imgUrl(spd.image_path)}"><div class="sp-pin-label">${esc(spd.sponsor_name||'راعي')}</div></div>`,iconSize:[54,66],iconAnchor:[27,66]});
+    const sic=L.divIcon({className:'',html:`<div class="pmark sp-pin"><img src="${thumbUrl(spd.image_path)}"><div class="sp-pin-label">${esc(spd.sponsor_name||'راعي')}</div></div>`,iconSize:[54,66],iconAnchor:[27,66]});
     L.marker([spd.sponsor_lat,spd.sponsor_lng],{icon:sic,zIndexOffset:1000}).addTo(MARKS).on('click',()=>openSponsorsPage());
   }
   setTimeout(()=>{MAP.invalidateSize();if(window.__USER_LAT)addUserPin(window.__USER_LAT,window.__USER_LNG);},120);
@@ -738,7 +738,7 @@ async function openProfile(uid){
   if(pr.cover_path)coverSrc=coverUrl(pr.cover_path)+'?t='+Date.now();
   else if(pub.length){
     const top1=pub.slice().sort((a,b)=>(b.avg_stars||0)-(a.avg_stars||0))[0];
-    if(top1)coverSrc=imgUrl(top1.image_path);
+    if(top1)coverSrc=thumbUrl(top1.image_path);
   }
 
   const av=pr.avatar_path?(avatarUrl(pr.avatar_path)+'?t='+Date.now()):'';
