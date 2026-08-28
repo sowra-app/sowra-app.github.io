@@ -116,6 +116,26 @@ function go(p){
   await handleAuthReturn();
   initEnBar();
   initViewPrefs();
+  // رابط طوارئ: sowra.app/?admin=1 → يفتح لوحة الإشراف مباشرة
+  try{
+    if(location.search.indexOf('admin=1')>-1||sessionStorage.getItem('open_admin')==='1'){
+      sessionStorage.setItem('open_admin','1');
+      let tries=0;
+      const tryOpen=function(){
+        tries++;
+        if(typeof IS_ADMIN!=='undefined'&&IS_ADMIN){
+          sessionStorage.removeItem('open_admin');
+          go('adm');
+          if(typeof loadReports==='function')loadReports();
+          if(typeof toast==='function')toast('🛡️ لوحة الإشراف');
+          return;
+        }
+        if(tries<20)setTimeout(tryOpen,400);
+        else sessionStorage.removeItem('open_admin');
+      };
+      setTimeout(tryOpen,900);
+    }
+  }catch(e){}
   if(typeof renderTagRow==='function')renderTagRow();
   if(typeof renderFdTags==='function')renderFdTags();
   initSelects();fillAddCities();
