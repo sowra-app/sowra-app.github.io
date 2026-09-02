@@ -1,4 +1,4 @@
-/* صورة من بلدي — upload.js | نسخة المختبر م1 */
+
 /* ============ الإضافة ============ */
 let pendingFile=null,pendingGeo=null,pendingBlob=null,isAbroad=false,pendingVideo=null,pendingVis='public';
 /* ====== مستوى الظهور ====== */
