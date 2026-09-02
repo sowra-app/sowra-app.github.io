@@ -1,4 +1,4 @@
-
+/* صورة من بلدي — upload.js | نسخة المختبر م1 */
 /* ============ الإضافة ============ */
 let pendingFile=null,pendingGeo=null,pendingBlob=null,isAbroad=false,pendingVideo=null,pendingVis='public';
 /* ====== مستوى الظهور ====== */
@@ -29,6 +29,7 @@ function setDest(abroad){
 }
 function applyGeo(pos,source){
   const card=$('geoCard');card.style.display='block';
+  pos=validPos(pos);
   if(!pos){
     card.classList.add('warn');
     $('geoStatus').textContent=source==='live'
@@ -68,12 +69,14 @@ async function pickImg(inp,isLive){
   $('geoCard').style.display='block';$('geoCard').classList.remove('warn');
   $('geoStatus').textContent='⏳ جاري تحديد الموقع...';$('geoCoords').textContent='';
   if(isLive){
-    let pos=await liveLocation();
-    if(!pos)pos=await readExifGPS(f);
+    let pos=validPos(await liveLocation());
+    if(!pos)pos=validPos(await readExifGPS(f));
+    if(!pos)pos=validPos(await readExifGPS2(f));
     applyGeo(pos,'live');
   }else{
-    let pos=await readExifGPS(f);
-    applyGeo(pos,pos?'exif':'exif');
+    let pos=validPos(await readExifGPS(f));
+    if(!pos)pos=validPos(await readExifGPS2(f));
+    applyGeo(pos,'exif');
   }
   // بيانات الكاميرا
   window.__exifTech=await readExifTech(f);
@@ -1250,4 +1253,73 @@ function ghostClear(){
   if(sl)sl.style.display='none';
   if(off)off.style.display='none';
   document.querySelectorAll('.gb-thumb').forEach(t=>t.classList.remove('on'));
+}
+
+
+/* تحقق: إحداثيات صالحة فعلاً؟ */
+function validPos(p){
+  if(!p)return null;
+  const la=Number(p.lat), ln=Number(p.lng);
+  if(!isFinite(la)||!isFinite(ln))return null;
+  if(Math.abs(la)>90||Math.abs(ln)>180)return null;
+  if(la===0&&ln===0)return null;
+  return {lat:la,lng:ln};
+}
+/* ====== قارئ GPS احتياطي — يفكّ EXIF مباشرة ====== */
+async function readExifGPS2(file){
+  try{
+    const buf=await file.slice(0,512*1024).arrayBuffer();
+    const dv=new DataView(buf);
+    if(dv.getUint16(0)!==0xFFD8)return null;
+
+    let off=2, tiff=0;
+    while(off<dv.byteLength-4){
+      const marker=dv.getUint16(off);
+      if(marker===0xFFE1&&dv.getUint32(off+4)===0x45786966){tiff=off+10;break}
+      if((marker&0xFF00)!==0xFF00)break;
+      const len=dv.getUint16(off+2);
+      if(!len)break;
+      off+=2+len;
+    }
+    if(!tiff)return null;
+
+    const le=dv.getUint16(tiff)===0x4949;
+    const u16=p=>dv.getUint16(p,le);
+    const u32=p=>dv.getUint32(p,le);
+
+    const ifd0=tiff+u32(tiff+4);
+    if(ifd0>=dv.byteLength)return null;
+    const n0=u16(ifd0);
+    let gpsOff=0;
+    for(let i=0;i<n0;i++){
+      const e=ifd0+2+i*12;
+      if(e+12>dv.byteLength)break;
+      if(u16(e)===0x8825){gpsOff=tiff+u32(e+8);break}
+    }
+    if(!gpsOff||gpsOff>=dv.byteLength)return null;
+
+    const rat=p=>{const a=u32(p),b=u32(p+4);return b?a/b:0};
+    const g={};
+    const ng=u16(gpsOff);
+    for(let i=0;i<ng;i++){
+      const e=gpsOff+2+i*12;
+      if(e+12>dv.byteLength)break;
+      const tag=u16(e), type=u16(e+2), cnt=u32(e+4);
+      if(tag===1||tag===3){
+        g[tag]=String.fromCharCode(dv.getUint8(e+8));
+      }else if((tag===2||tag===4)&&type===5&&cnt===3){
+        const vo=tiff+u32(e+8);
+        if(vo+24<=dv.byteLength)g[tag]=[rat(vo),rat(vo+8),rat(vo+16)];
+      }
+    }
+    if(!g[2]||!g[4])return null;
+
+    const toDeg=a=>a[0]+a[1]/60+a[2]/3600;
+    let lat=toDeg(g[2]), lng=toDeg(g[4]);
+    if(g[1]==='S')lat=-lat;
+    if(g[3]==='W')lng=-lng;
+    if(!lat&&!lng)return null;
+    if(Math.abs(lat)>90||Math.abs(lng)>180)return null;
+    return {lat,lng};
+  }catch(e){return null}
 }
