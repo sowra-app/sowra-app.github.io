@@ -228,7 +228,7 @@
     </div>
     <div class="geo-card" id="geoCard" style="display:none"><div class="geo-status" id="geoStatus"></div><div class="geo-coords" id="geoCoords"></div></div>
     <input type="file" id="fileLive" accept="image/*" capture="environment" style="display:none" onchange="pickImg(this,true)">
-    <input type="file" id="fileGal" accept="image/*" style="display:none" onchange="pickImg(this,false)">
+    <input type="file" id="fileGal" accept="image/jpeg,image/png,image/heic,image/heif,.jpg,.jpeg,.png,.heic" style="display:none" onchange="pickImg(this,false)">
     <div class="f-group"><label id="lblTitle">عنوان الصورة</label><input id="aTitle" placeholder="مثال: غروب على جبال السودة"></div>
     <div class="f-group" id="descGroup"><label id="lblDesc">وصف الصورة (اختياري)</label>
       <textarea id="aDesc" rows="3" maxlength="600" placeholder="احكِ قصتها: متى صوّرتها · كيف تصل للمكان · أفضل وقت لزيارته..." oninput="descCount()"></textarea>
@@ -705,4 +705,3 @@ if('serviceWorker' in navigator){
 </html>
 </body>
 </html>
-  
