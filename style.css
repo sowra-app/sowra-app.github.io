@@ -888,3 +888,8 @@ body.dark .near-alert{background:linear-gradient(135deg,#1B2A21,var(--card))}
 .gb-slider{display:flex;align-items:center;gap:10px;margin-top:9px;background:rgba(0,0,0,.5);border-radius:12px;padding:8px 13px}
 .gb-slider span{color:#fff;font-size:11.5px;font-weight:700;white-space:nowrap}
 .gb-slider input{flex:1;accent-color:var(--star)}
+
+/* ====== زر الرفع من الملفات ====== */
+.cap-raw{width:100%;background:var(--card2);border:1.5px dashed var(--line);border-radius:14px;padding:12px;margin-top:9px;font-family:'Tajawal';font-size:13.5px;font-weight:700;color:var(--txt);cursor:pointer;transition:.15s}
+.cap-raw span{font-weight:400;font-size:11.5px;color:var(--txt-dim)}
+.cap-raw:active{transform:scale(.985);border-color:var(--qblue)}
