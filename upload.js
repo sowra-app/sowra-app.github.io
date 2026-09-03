@@ -1323,3 +1323,15 @@ async function readExifGPS2(file){
     return {lat,lng};
   }catch(e){return null}
 }
+
+/* ====== الرفع من مدير الملفات — الملف الأصلي كاملاً ====== */
+async function pickRaw(inp){
+  const f=inp.files[0];if(!f)return;
+  // تحقق أنه صورة
+  const ok=/\.(jpe?g|png|heic|heif|webp)$/i.test(f.name)||/^image\//.test(f.type||'');
+  if(!ok){
+    toast('اختر ملف صورة (jpg · png · heic)',true);
+    inp.value='';return;
+  }
+  await pickImg(inp,false);
+}
