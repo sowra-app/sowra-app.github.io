@@ -30,14 +30,19 @@ function setDest(abroad){
 function applyGeo(pos,source){
   const card=$('geoCard');card.style.display='block';
   pos=validPos(pos);
+  const mb=$('geoManualBox');
   if(!pos){
     card.classList.add('warn');
     $('geoStatus').textContent=source==='live'
-      ?'⚠️ ما قدرنا نوصل لموقعك — تأكد أن الموقع مفعّل'
-      :'⚠️ الصورة ما تحتوي معلومات موقع — حدد الموقع يدوياً';
+      ?'⚠️ ما قدرنا نوصل لموقعك'
+      :'⚠️ الصورة ما تحمل موقعاً';
     $('geoCoords').textContent='';
+    if(mb)mb.style.display='block';
+    window.__geoManual=false;
     return;
   }
+  if(mb)mb.style.display='none';
+  window.__geoManual=false;
   card.classList.remove('warn');
   pendingGeo={lat:pos.lat,lng:pos.lng};
   if(isAbroad){
@@ -1324,15 +1329,101 @@ async function readExifGPS2(file){
   }catch(e){return null}
 }
 
-/* ====== الرفع من مدير الملفات — الملف الأصلي كاملاً ====== */
-async function pickRaw(inp){
-  const f=inp.files[0];if(!f)return;
-  // تحقق أنه صورة
-  const ok=/\.(jpe?g|png|heic|heif|webp)$/i.test(f.name)||/^image\//.test(f.type||'');
-  if(!ok){
-    toast('اختر ملف صورة (jpg · png · heic)',true);
-    inp.value='';return;
-  }
-  await pickImg(inp,false);
+
+/* ====== اختيار موقع الصورة من الخريطة ====== */
+window.__gpMap=null;
+
+function openGeoPick(){
+  const box=$('geoPickBox');if(!box)return;
+  box.classList.add('show');
+
+  setTimeout(function(){
+    try{
+      if(!window.__gpMap){
+        // نقطة البداية: المنطقة المختارة أو وسط المملكة
+        let c=[23.8859,45.0792], z=5;
+        const reg=$('aRegion')?$('aRegion').value:'';
+        const RC={
+          'الرياض':[24.7136,46.6753,9],'مكة المكرمة':[21.3891,39.8579,9],
+          'المدينة المنورة':[24.5247,39.5692,9],'القصيم':[26.3260,43.9750,9],
+          'الشرقية':[26.4207,50.0888,8],'عسير':[18.2465,42.5117,9],
+          'تبوك':[28.3835,36.5662,8],'حائل':[27.5219,41.6907,9],
+          'الحدود الشمالية':[30.9843,41.0231,8],'جازان':[16.8892,42.5511,9],
+          'نجران':[17.4924,44.1277,9],'الباحة':[20.0129,41.4677,10],'الجوف':[29.7859,40.2000,8]
+        };
+        if(RC[reg]){c=[RC[reg][0],RC[reg][1]];z=RC[reg][2]}
+        // لو عنده موقع حالي، نبدأ منه
+        else if(window.__USER_LAT){c=[window.__USER_LAT,window.__USER_LNG];z=11}
+
+        window.__gpMap=L.map('gpMap',{zoomControl:true,attributionControl:false}).setView(c,z);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(window.__gpMap);
+
+        // دبابيس صور المنصة القريبة — تساعد على التعرّف
+        try{
+          if(typeof photos!=='undefined'){
+            photos.filter(p=>p.lat&&p.lng&&!p.abroad).slice(0,120).forEach(p=>{
+              const ic=L.divIcon({className:'',html:'<div style="width:22px;height:22px;border-radius:50%;overflow:hidden;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"><img src="'+thumbUrl(p.image_path)+'" style="width:100%;height:100%;object-fit:cover"></div>',iconSize:[22,22],iconAnchor:[11,11]});
+              L.marker([p.lat,p.lng],{icon:ic,interactive:false}).addTo(window.__gpMap);
+            });
+          }
+        }catch(e){}
+
+        window.__gpMap.on('moveend',gpUpdateInfo);
+      }
+      window.__gpMap.invalidateSize();
+      gpUpdateInfo();
+    }catch(e){
+      $('gpInfo').textContent='تعذر تحميل الخريطة';
+    }
+  },220);
 }
-  
+
+function closeGeoPick(){
+  const box=$('geoPickBox');
+  if(box)box.classList.remove('show');
+}
+
+function gpUpdateInfo(){
+  try{
+    const c=window.__gpMap.getCenter();
+    $('gpInfo').innerHTML='📍 '+c.lat.toFixed(5)+' , '+c.lng.toFixed(5)
+      +'<br><span style="font-size:11px">حرّك الخريطة حتى يقع الدبوس على مكان التصوير</span>';
+  }catch(e){}
+}
+
+async function gpSearchPlace(){
+  const q=($('gpSearch').value||'').trim();
+  if(!q)return;
+  $('gpInfo').textContent='⏳ نبحث...';
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=sa&q='+encodeURIComponent(q),
+      {headers:{'Accept-Language':'ar'}});
+    const j=await r.json();
+    if(j&&j[0]){
+      window.__gpMap.setView([parseFloat(j[0].lat),parseFloat(j[0].lon)],13);
+      gpUpdateInfo();
+    }else{
+      $('gpInfo').textContent='ما لقينا المكان — جرّب اسماً آخر أو حرّك الخريطة يدوياً';
+    }
+  }catch(e){
+    $('gpInfo').textContent='تعذر البحث — حرّك الخريطة يدوياً';
+  }
+}
+
+function confirmGeoPick(){
+  try{
+    const c=window.__gpMap.getCenter();
+    pendingGeo={lat:c.lat,lng:c.lng};
+    window.__geoManual=true;
+    const card=$('geoCard');
+    if(card){
+      card.classList.remove('warn');
+      $('geoStatus').innerHTML='🗺️ حدّدت الموقع يدوياً على الخريطة';
+      $('geoCoords').textContent=c.lat.toFixed(5)+', '+c.lng.toFixed(5);
+    }
+    const mb=$('geoManualBox');
+    if(mb)mb.style.display='none';
+    closeGeoPick();
+    toast('انحفظ الموقع 📍');
+  }catch(e){toast('تعذر الحفظ',true)}
+}
