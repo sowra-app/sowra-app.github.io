@@ -43,7 +43,7 @@
 <meta property="og:description" content="عدسات أهل الديار — شارك أجمل صور منطقتك وخلّ الناس تقيّم">
 <meta property="og:type" content="website">
 <meta property="og:image" content="icon-512.png">
-<link rel="manifest" href="manifest.json?x=v1.8">
+<link rel="manifest" href="manifest.json?x=v1.9">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><!-- Google Analytics -->
@@ -56,9 +56,9 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="leaflet.js?x=v1.8"></script>
-<link rel="stylesheet" href="style.css?x=v1.8">
-<link rel="stylesheet" href="leaflet.css?x=v1.8">
+<script src="leaflet.js?x=v1.9"></script>
+<link rel="stylesheet" href="style.css?x=v1.9">
+<link rel="stylesheet" href="leaflet.css?x=v1.9">
 </head>
 <body>
 
@@ -214,9 +214,6 @@
       <button class="cap-btn live" onclick="document.getElementById('fileLive').click()">📸<b>التقط لايف</b><small>كاميرا + موقعك الآن</small></button>
       <button class="cap-btn" onclick="document.getElementById('fileGal').click()">🖼️<b>من المعرض</b><small>نقرأ موقع الصورة</small></button>
     </div>
-    <button class="cap-raw" onclick="document.getElementById('fileRaw').click()">
-      📁 من الملفات <span>— الملف الأصلي بكل بياناته</span>
-    </button>
     <div class="cap-row" id="videoRow" style="display:none">
       <button class="cap-btn" id="recOpenBtn" style="border-color:var(--sadu);display:none" onclick="recOpen()">🔴<b>سجّل الآن</b><small>30 ثانية · داخل التطبيق</small></button>
       <button class="cap-btn" style="border-color:var(--qblue)" onclick="document.getElementById('fileVid').click()">🎬<b>من المعرض</b><small>حتى 25 ميجا · 30 ثانية</small></button>
@@ -229,10 +226,13 @@
       <div id="filterRow" class="filter-row" style="display:none"></div>
       <button id="clearDraft" onclick="clearDraft()" style="display:none;background:none;border:none;color:var(--sadu);font-family:'Tajawal';font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;margin-top:8px">✕ إلغاء والبدء من جديد</button>
     </div>
-    <div class="geo-card" id="geoCard" style="display:none"><div class="geo-status" id="geoStatus"></div><div class="geo-coords" id="geoCoords"></div></div>
+    <div class="geo-card" id="geoCard" style="display:none"><div class="geo-status" id="geoStatus"></div><div class="geo-coords" id="geoCoords"></div>
+      <div id="geoManualBox" class="geo-manual" style="display:none">
+        <div class="gm-txt">⚠️ صورتك ما تحمل موقعاً — بعض الأجهزة تمسحه لحماية الخصوصية</div>
+        <button class="gm-btn" onclick="openGeoPick()">🗺️ حدد المكان على الخريطة</button>
+      </div></div>
     <input type="file" id="fileLive" accept="image/*" capture="environment" style="display:none" onchange="pickImg(this,true)">
     <input type="file" id="fileGal" accept="image/*" style="display:none" onchange="pickImg(this,false)">
-    <input type="file" id="fileRaw" style="display:none" onchange="pickRaw(this)">
     <div class="f-group"><label id="lblTitle">عنوان الصورة</label><input id="aTitle" placeholder="مثال: غروب على جبال السودة"></div>
     <div class="f-group" id="descGroup"><label id="lblDesc">وصف الصورة (اختياري)</label>
       <textarea id="aDesc" rows="3" maxlength="600" placeholder="احكِ قصتها: متى صوّرتها · كيف تصل للمكان · أفضل وقت لزيارته..." oninput="descCount()"></textarea>
@@ -654,6 +654,27 @@
   </div>
 </div>
 
+<!-- ====== اختيار موقع الصورة ====== -->
+<div id="geoPickBox" class="geopick-box">
+  <div class="gp-card">
+    <div class="gp-head">
+      <span>🗺️ وين انلتقطت الصورة؟</span>
+      <button onclick="closeGeoPick()">✕</button>
+    </div>
+    <div class="gp-search">
+      <input id="gpSearch" placeholder="ابحث عن المكان — مثال: وادي لجب" onkeydown="if(event.key==='Enter')gpSearchPlace()">
+      <button onclick="gpSearchPlace()">🔍</button>
+    </div>
+    <div id="gpMap" class="gp-map"></div>
+    <div class="gp-pin">📍</div>
+    <div class="gp-info" id="gpInfo">حرّك الخريطة حتى يقع الدبوس على مكان التصوير</div>
+    <div class="gp-acts">
+      <button class="btn" style="background:var(--palm)" onclick="confirmGeoPick()">✓ هذا هو المكان</button>
+      <button class="btn" style="background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="closeGeoPick()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
 <div id="editBox" class="edit-box">
   <div class="eb-card">
     <div class="eb-title" id="edLabel">عدّل العنوان والوصف</div>
@@ -688,15 +709,15 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="app.js?x=v1.8"></script>
-<script src="places.js?x=v1.8"></script>
-<script src="capture.js?x=v1.8"></script>
-<script src="photos.js?x=v1.8"></script>
-<script src="week.js?x=v1.8"></script>
-<script src="upload.js?x=v1.8"></script>
-<script src="auth.js?x=v1.8"></script>
-<script src="admin.js?x=v1.8"></script>
-<script src="main.js?x=v1.8"></script>
+<script src="app.js?x=v1.9"></script>
+<script src="places.js?x=v1.9"></script>
+<script src="capture.js?x=v1.9"></script>
+<script src="photos.js?x=v1.9"></script>
+<script src="week.js?x=v1.9"></script>
+<script src="upload.js?x=v1.9"></script>
+<script src="auth.js?x=v1.9"></script>
+<script src="admin.js?x=v1.9"></script>
+<script src="main.js?x=v1.9"></script>
 
 <script>
 if('serviceWorker' in navigator){
