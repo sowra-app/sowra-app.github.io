@@ -993,6 +993,12 @@ function resetTranslation(){
 
 /* ====== الفاحص الذكي ====== */
 async function inspectPhoto(blob){
+  // سفاري: نصغّر أولاً لتفادي فشل التحويل
+  try{
+    if(blob&&blob.size>900*1024&&typeof compressTo==='function'){
+      blob=await compressTo(blob,640,0.55);
+    }
+  }catch(e){}
   try{
     // تصغير للفحص (توفير تكلفة وسرعة)
     const dataUrl=await new Promise((res,rej)=>{
@@ -1141,18 +1147,20 @@ function showSuggestions(res){
 }
 
 function useSug(what){
-  const ti=$('aTitle'), de=$('aDesc');
-  if((what==='t'||what==='all')&&ti&&window.__sugT){
-    ti.value=window.__sugT;
-    ti.dispatchEvent(new Event('input',{bubbles:true}));
-  }
-  if((what==='d'||what==='all')&&de&&window.__sugD){
-    de.value=window.__sugD;
-    de.dispatchEvent(new Event('input',{bubbles:true}));
-    if(typeof descCount==='function')descCount();
-  }
-  toast('انتقل للحقل ✍️');
-  if(what==='all')hideSuggestions();
+  try{
+    const ti=$('aTitle'), de=$('aDesc');
+    if((what==='t'||what==='all')&&ti&&window.__sugT){
+      ti.value=window.__sugT;
+      try{ti.dispatchEvent(new Event('input',{bubbles:true}))}catch(e){}
+    }
+    if((what==='d'||what==='all')&&de&&window.__sugD){
+      de.value=window.__sugD;
+      try{de.dispatchEvent(new Event('input',{bubbles:true}))}catch(e){}
+      if(typeof descCount==='function')descCount();
+    }
+    toast('انتقل للحقل ✍️');
+    if(what==='all')hideSuggestions();
+  }catch(e){toast('تعذر النقل',true)}
 }
 
 function hideSuggestions(){
@@ -1520,9 +1528,14 @@ async function earlySuggest(){
   try{
     const on=!!(window.__SPDATA&&window.__SPDATA.inspect_enabled)||!!window.INSPECT_ON;
     if(!on)return;
+    // سفاري يحتاج مهلة أطول لاكتمال الضغط
+    let tries=0;
+    while(!pendingBlob&&!pendingFile&&tries<20){
+      await new Promise(r=>setTimeout(r,150));
+      tries++;
+    }
     const blob=pendingBlob||pendingFile;
     if(!blob)return;
-    // ننتظر استنتاج المكان ليصل للفاحص
     await new Promise(r=>setTimeout(r,900));
 
     const box=$('sugBox');
