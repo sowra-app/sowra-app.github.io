@@ -84,9 +84,12 @@ async function pickImg(inp,isLive){
     applyGeo(pos,'exif');
   }
   // بيانات الكاميرا
+  window.__earlyRes=null;
   window.__exifTech=await readExifTech(f);
   renderTechCard();
   inp.value='';
+  // اقتراح ذكي مبكر — لا يمنع النشر
+  earlySuggest();
 }
 
 /* ====== بطاقة بيانات الكاميرا ====== */
@@ -240,7 +243,7 @@ async function addPhoto(){
       pendingVideo=null;resetFilter();pendingVis='public';setVis('public');const _c1=$('clearDraft');if(_c1)_c1.style.display='none';
       const pv=$('videoPreview');if(pv){pv.src='';pv.style.display='none';}
       $('drop').style.display='none';$('geoCard').style.display='none';
-      $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();window.__pickedTags=[];renderTagRow();if(typeof hideSuggestions==='function')hideSuggestions();window.__exifTech=null;renderTechCard();
+      $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();window.__pickedTags=[];renderTagRow();if(typeof hideSuggestions==='function')hideSuggestions();window.__earlyRes=null;window.__exifTech=null;renderTechCard();
       if(typeof logRate==='function')logRate('photo');
       toast('انرفع الفيديو 🎬');
       try{sortMode='new';_sort='new';}catch(e){}
@@ -252,7 +255,8 @@ async function addPhoto(){
     }
     const blob=pendingBlob||await compress(pendingFile);
     // الفاحص الذكي
-    if(typeof INSPECT_ON!=='undefined'&&INSPECT_ON&&typeof runInspection==='function'){
+    const _insp=!!(window.__SPDATA&&window.__SPDATA.inspect_enabled)||!!window.INSPECT_ON;
+    if(_insp&&typeof runInspection==='function'){
       const ok=await runInspection(blob);
       if(!ok){btn.disabled=false;btn.textContent=(pendingVis==='private'?'🔒 احفظ بخزنتي':'انشر الصورة 🚀');return}
     }
@@ -302,7 +306,7 @@ async function addPhoto(){
     }
     pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();pendingVis='public';setVis('public');const _c2=$('clearDraft');if(_c2)_c2.style.display='none';
     $('preview').style.display='none';$('drop').style.display='none';$('geoCard').style.display='none';
-    $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();window.__pickedTags=[];renderTagRow();if(typeof hideSuggestions==='function')hideSuggestions();window.__exifTech=null;renderTechCard();
+    $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();window.__pickedTags=[];renderTagRow();if(typeof hideSuggestions==='function')hideSuggestions();window.__earlyRes=null;window.__exifTech=null;renderTechCard();
     if(typeof logRate==='function')logRate('photo');
     toast(pendingVis==='private'?'انحفظت بخزنتك 🔒':'نُشرت صورتك 🎉');
     const wasAbroad=isAbroad;
@@ -1056,7 +1060,7 @@ async function inspectPhoto(blob){
 async function runInspection(blob){
   const st=$('inspectStatus');
   if(st){st.style.display='block';st.className='inspect-box';st.innerHTML='🤖 نفحص الصورة...'}
-  const res=await inspectPhoto(blob);
+  const res=window.__earlyRes||await inspectPhoto(blob);
   if(!res){
     if(st){
       if(window.__inspErr){
@@ -1504,4 +1508,38 @@ function confirmGeoPick(){
     closeGeoPick();
     toast('انحفظ الموقع 📍');
   }catch(e){toast('تعذر الحفظ',true)}
+}
+
+/* ====== اقتراح مبكر عند اختيار الصورة ====== */
+async function earlySuggest(){
+  try{
+    const on=!!(window.__SPDATA&&window.__SPDATA.inspect_enabled)||!!window.INSPECT_ON;
+    if(!on)return;
+    const blob=pendingBlob||pendingFile;
+    if(!blob)return;
+
+    const box=$('sugBox');
+    if(box){
+      box.style.display='block';
+      box.innerHTML='<div class="sg-head"><span>✨ نقرأ الصورة...</span></div>';
+    }
+
+    const res=await inspectPhoto(blob);
+    if(!res){
+      if(box){
+        if(window.__inspErr){
+          box.innerHTML='<div class="sg-head"><span>⚠️ تعذر الاقتراح</span><button onclick="hideSuggestions()">✕</button></div>'
+            +'<div style="font-size:11px;direction:ltr;color:var(--txt-dim);padding:4px 2px">'+esc(window.__inspErr)+'</div>';
+        }else box.style.display='none';
+      }
+      return;
+    }
+    window.__earlyRes=res;
+    showSuggestions(res);
+    // التصنيف
+    if(res.category&&$('aCat')){
+      const opt=Array.from($('aCat').options).find(o=>o.value===res.category);
+      if(opt&&!$('aCat').value)$('aCat').value=res.category;
+    }
+  }catch(e){}
 }
