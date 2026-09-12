@@ -43,6 +43,8 @@ function applyGeo(pos,source){
   }
   if(mb)mb.style.display='none';
   window.__geoManual=false;
+  // نستنتج المنطقة والمدينة
+  if(typeof fillPlaceFromGeo==='function')fillPlaceFromGeo(pos.lat,pos.lng);
   card.classList.remove('warn');
   pendingGeo={lat:pos.lat,lng:pos.lng};
   if(isAbroad){
@@ -84,7 +86,7 @@ async function pickImg(inp,isLive){
     applyGeo(pos,'exif');
   }
   // بيانات الكاميرا
-  window.__earlyRes=null;
+  window.__earlyRes=null;window.__geoPlace=null;
   window.__exifTech=await readExifTech(f);
   renderTechCard();
   inp.value='';
@@ -1011,10 +1013,11 @@ async function inspectPhoto(blob){
 
     let data=null,err=null;
     try{
+      const _gp=window.__geoPlace||{};
       const _pl={
-        region:($('aRegion')&&$('aRegion').value)||'',
-        city:($('aCity')&&$('aCity').value)||'',
-        village:($('aVillage')&&$('aVillage').value)||''
+        region:($('aRegion')&&$('aRegion').value)||_gp.region||'',
+        city:($('aCity')&&$('aCity').value)||_gp.city||'',
+        village:($('aVillage')&&$('aVillage').value)||_gp.village||''
       };
       const r=await sb.functions.invoke('translate',{body:{action:'inspect',image:dataUrl,..._pl}});
       data=r.data;err=r.error;
@@ -1029,10 +1032,11 @@ async function inspectPhoto(blob){
           {'Content-Type':'application/json','apikey':'sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX'},
           tok?{'Authorization':'Bearer '+tok}:{}
         ),
-        body:JSON.stringify({action:'inspect',image:dataUrl,
-          region:($('aRegion')&&$('aRegion').value)||'',
-          city:($('aCity')&&$('aCity').value)||'',
-          village:($('aVillage')&&$('aVillage').value)||''})
+        body:JSON.stringify(Object.assign({action:'inspect',image:dataUrl},{
+          region:($('aRegion')&&$('aRegion').value)||(window.__geoPlace&&window.__geoPlace.region)||'',
+          city:($('aCity')&&$('aCity').value)||(window.__geoPlace&&window.__geoPlace.city)||'',
+          village:($('aVillage')&&$('aVillage').value)||(window.__geoPlace&&window.__geoPlace.village)||''
+        }))
       });
       if(!r.ok){
         let t='';try{t=await r.text()}catch(e){}
@@ -1507,6 +1511,7 @@ function confirmGeoPick(){
     if(mb)mb.style.display='none';
     closeGeoPick();
     toast('انحفظ الموقع 📍');
+    if(typeof fillPlaceFromGeo==='function')fillPlaceFromGeo(c.lat,c.lng);
   }catch(e){toast('تعذر الحفظ',true)}
 }
 
@@ -1517,6 +1522,8 @@ async function earlySuggest(){
     if(!on)return;
     const blob=pendingBlob||pendingFile;
     if(!blob)return;
+    // ننتظر استنتاج المكان ليصل للفاحص
+    await new Promise(r=>setTimeout(r,900));
 
     const box=$('sugBox');
     if(box){
@@ -1536,10 +1543,111 @@ async function earlySuggest(){
     }
     window.__earlyRes=res;
     showSuggestions(res);
+
+    // التحذيرات مبكراً — قبل كتابة العنوان
+    const warns=[];
+    if(res.face)warns.push('🙂 فيها وجه واضح — تأكد من إذن صاحبه');
+    if(res.plate)warns.push('🚗 لوحة مركبة مقروءة');
+    if(res.indoor_private)warns.push('🏠 تبدو من داخل منزل خاص');
+    if(res.military)warns.push('🚫 قد تكون منشأة عسكرية — تصويرها محظور نظاماً');
+    const st=$('inspectStatus');
+    if(st){
+      if(res.nsfw||res.violence){
+        st.style.display='block';
+        st.className='inspect-box bad';
+        st.innerHTML='⛔ <b>الصورة مرفوضة</b><br><span style="font-size:12px">محتوى مخالف — اختر صورة أخرى</span>';
+      }else if(warns.length){
+        st.style.display='block';
+        st.className='inspect-box warn';
+        st.innerHTML='⚠️ <b>تنبيه</b><br><span style="font-size:12px;line-height:1.9">'+warns.join('<br>')+'</span>';
+      }else{
+        st.style.display='block';
+        st.className='inspect-box ok';
+        st.innerHTML='✅ <b>الصورة سليمة</b>';
+        setTimeout(()=>{if(st&&st.className.indexOf('ok')>-1)st.style.display='none'},2600);
+      }
+    }
     // التصنيف
     if(res.category&&$('aCat')){
       const opt=Array.from($('aCat').options).find(o=>o.value===res.category);
       if(opt&&!$('aCat').value)$('aCat').value=res.category;
     }
   }catch(e){}
+}
+
+/* ====== استنتاج المنطقة والمدينة من الإحداثيات ====== */
+async function reverseGeo(lat,lng){
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/reverse?format=json&zoom=12&lat='+lat+'&lon='+lng,
+      {headers:{'Accept-Language':'ar'}});
+    if(!r.ok)return null;
+    const j=await r.json();
+    const a=j.address||{};
+    return {
+      region:a.state||a.region||'',
+      city:a.city||a.town||a.municipality||a.county||'',
+      village:a.village||a.suburb||a.neighbourhood||a.hamlet||'',
+      country:a.country||''
+    };
+  }catch(e){return null}
+}
+
+/* تطبيع للمطابقة المرنة */
+function _nrm(s){
+  return String(s||'')
+    .replace(/[\u064B-\u0652\u0640]/g,'')
+    .replace(/[أإآا]/g,'ا').replace(/[ىي]/g,'ي').replace(/ة/g,'ه')
+    .replace(/منطقة|محافظة|امارة|مدينة/g,'')
+    .replace(/\s+/g,'').trim();
+}
+
+function _pickOpt(sel,want){
+  if(!sel||!want)return null;
+  const w=_nrm(want);
+  if(!w)return null;
+  return Array.from(sel.options).find(o=>_nrm(o.value)===w||_nrm(o.textContent)===w)
+      || Array.from(sel.options).find(o=>{
+           const t=_nrm(o.textContent);
+           return t&&(t.includes(w)||w.includes(t));
+         })
+      || null;
+}
+
+/* يملأ القوائم من الإحداثيات */
+async function fillPlaceFromGeo(lat,lng,silent){
+  try{
+    const info=await reverseGeo(lat,lng);
+    if(!info)return null;
+    window.__geoPlace=info;
+
+    // خارج المملكة؟
+    if(info.country&&!/السعود/.test(info.country)){
+      if(!silent&&typeof toast==='function')toast('📍 '+info.country+' — استخدم «عدسة مسافر»');
+      return info;
+    }
+
+    const rs=$('aRegion');
+    const ro=_pickOpt(rs,info.region);
+    if(ro&&rs){
+      rs.value=ro.value;
+      if(typeof fillAddCities==='function')fillAddCities();
+      await new Promise(r=>setTimeout(r,180));
+    }
+
+    const cs=$('aCity');
+    const co=_pickOpt(cs,info.city)||_pickOpt(cs,info.village);
+    if(co&&cs)cs.value=co.value;
+
+    // القرية حقل نصي غالباً
+    const vs=$('aVillage');
+    if(vs&&info.village&&!vs.value.trim()&&vs.tagName==='INPUT'){
+      vs.value=info.village;
+    }
+
+    if(!silent&&typeof toast==='function'){
+      const parts=[info.village,info.city,info.region].filter(Boolean).slice(0,2);
+      if(parts.length)toast('📍 '+parts.join(' · '));
+    }
+    return info;
+  }catch(e){return null}
 }
