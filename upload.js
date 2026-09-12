@@ -240,7 +240,7 @@ async function addPhoto(){
       pendingVideo=null;resetFilter();pendingVis='public';setVis('public');const _c1=$('clearDraft');if(_c1)_c1.style.display='none';
       const pv=$('videoPreview');if(pv){pv.src='';pv.style.display='none';}
       $('drop').style.display='none';$('geoCard').style.display='none';
-      $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();window.__pickedTags=[];renderTagRow();window.__exifTech=null;renderTechCard();
+      $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();window.__pickedTags=[];renderTagRow();if(typeof hideSuggestions==='function')hideSuggestions();window.__exifTech=null;renderTechCard();
       if(typeof logRate==='function')logRate('photo');
       toast('انرفع الفيديو 🎬');
       try{sortMode='new';_sort='new';}catch(e){}
@@ -302,7 +302,7 @@ async function addPhoto(){
     }
     pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();pendingVis='public';setVis('public');const _c2=$('clearDraft');if(_c2)_c2.style.display='none';
     $('preview').style.display='none';$('drop').style.display='none';$('geoCard').style.display='none';
-    $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();window.__pickedTags=[];renderTagRow();window.__exifTech=null;renderTechCard();
+    $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();window.__pickedTags=[];renderTagRow();if(typeof hideSuggestions==='function')hideSuggestions();window.__exifTech=null;renderTechCard();
     if(typeof logRate==='function')logRate('photo');
     toast(pendingVis==='private'?'انحفظت بخزنتك 🔒':'نُشرت صورتك 🎉');
     const wasAbroad=isAbroad;
@@ -1007,7 +1007,12 @@ async function inspectPhoto(blob){
 
     let data=null,err=null;
     try{
-      const r=await sb.functions.invoke('translate',{body:{action:'inspect',image:dataUrl}});
+      const _pl={
+        region:($('aRegion')&&$('aRegion').value)||'',
+        city:($('aCity')&&$('aCity').value)||'',
+        village:($('aVillage')&&$('aVillage').value)||''
+      };
+      const r=await sb.functions.invoke('translate',{body:{action:'inspect',image:dataUrl,..._pl}});
       data=r.data;err=r.error;
     }catch(e){err=e}
 
@@ -1020,7 +1025,10 @@ async function inspectPhoto(blob){
           {'Content-Type':'application/json','apikey':'sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX'},
           tok?{'Authorization':'Bearer '+tok}:{}
         ),
-        body:JSON.stringify({action:'inspect',image:dataUrl})
+        body:JSON.stringify({action:'inspect',image:dataUrl,
+          region:($('aRegion')&&$('aRegion').value)||'',
+          city:($('aCity')&&$('aCity').value)||'',
+          village:($('aVillage')&&$('aVillage').value)||''})
       });
       if(!r.ok)return null;
       data=await r.json();
@@ -1068,10 +1076,56 @@ async function runInspection(blob){
     const opt=Array.from($('aCat').options).find(o=>o.value===res.category);
     if(opt)$('aCat').value=res.category;
   }
-  if(res.suggested_title_ar&&$('aTitle')&&!$('aTitle').value.trim()){
-    $('aTitle').placeholder='اقتراح: '+res.suggested_title_ar;
-  }
+  showSuggestions(res);
   return true;
+}
+
+/* ====== بطاقة الاقتراحات الذكية ====== */
+function showSuggestions(res){
+  const box=$('sugBox');if(!box)return;
+  const t=(res.suggested_title_ar||'').trim();
+  const d=(res.suggested_desc_ar||'').trim();
+  if(!t&&!d){box.style.display='none';return}
+
+  window.__sugT=t; window.__sugD=d;
+  box.style.display='block';
+  box.innerHTML=`
+    <div class="sg-head">
+      <span>✨ اقتراح ذكي</span>
+      <button onclick="hideSuggestions()">✕</button>
+    </div>
+    ${t?`<div class="sg-row">
+      <div class="sg-lbl">العنوان</div>
+      <div class="sg-txt">${esc(t)}</div>
+      <button class="sg-use" onclick="useSug('t')">استخدمه</button>
+    </div>`:''}
+    ${d?`<div class="sg-row">
+      <div class="sg-lbl">الوصف</div>
+      <div class="sg-txt">${esc(d)}</div>
+      <button class="sg-use" onclick="useSug('d')">استخدمه</button>
+    </div>`:''}
+    ${(t&&d)?`<button class="sg-all" onclick="useSug('all')">✓ استخدم الاثنين</button>`:''}
+    <div class="sg-note">اقتراح من الذكاء الاصطناعي — عدّله كما تحب</div>`;
+}
+
+function useSug(what){
+  const ti=$('aTitle'), de=$('aDesc');
+  if((what==='t'||what==='all')&&ti&&window.__sugT){
+    ti.value=window.__sugT;
+    ti.dispatchEvent(new Event('input',{bubbles:true}));
+  }
+  if((what==='d'||what==='all')&&de&&window.__sugD){
+    de.value=window.__sugD;
+    de.dispatchEvent(new Event('input',{bubbles:true}));
+    if(typeof descCount==='function')descCount();
+  }
+  toast('انتقل للحقل ✍️');
+  if(what==='all')hideSuggestions();
+}
+
+function hideSuggestions(){
+  const box=$('sugBox');
+  if(box)box.style.display='none';
 }
 
 /* ====== سمات الصورة ====== */

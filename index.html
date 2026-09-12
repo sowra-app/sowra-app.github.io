@@ -43,7 +43,7 @@
 <meta property="og:description" content="عدسات أهل الديار — شارك أجمل صور منطقتك وخلّ الناس تقيّم">
 <meta property="og:type" content="website">
 <meta property="og:image" content="icon-512.png">
-<link rel="manifest" href="manifest.json?x=v1.9">
+<link rel="manifest" href="manifest.json?x=v2.0">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><!-- Google Analytics -->
@@ -56,9 +56,9 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="leaflet.js?x=v1.9"></script>
-<link rel="stylesheet" href="style.css?x=v1.9">
-<link rel="stylesheet" href="leaflet.css?x=v1.9">
+<script src="leaflet.js?x=v2.0"></script>
+<link rel="stylesheet" href="style.css?x=v2.0">
+<link rel="stylesheet" href="leaflet.css?x=v2.0">
 </head>
 <body>
 
@@ -233,6 +233,7 @@
       </div></div>
     <input type="file" id="fileLive" accept="image/*" capture="environment" style="display:none" onchange="pickImg(this,true)">
     <input type="file" id="fileGal" accept="image/*" style="display:none" onchange="pickImg(this,false)">
+    <div id="sugBox" class="sug-box" style="display:none"></div>
     <div class="f-group"><label id="lblTitle">عنوان الصورة</label><input id="aTitle" placeholder="مثال: غروب على جبال السودة"></div>
     <div class="f-group" id="descGroup"><label id="lblDesc">وصف الصورة (اختياري)</label>
       <textarea id="aDesc" rows="3" maxlength="600" placeholder="احكِ قصتها: متى صوّرتها · كيف تصل للمكان · أفضل وقت لزيارته..." oninput="descCount()"></textarea>
@@ -709,15 +710,15 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="app.js?x=v1.9"></script>
-<script src="places.js?x=v1.9"></script>
-<script src="capture.js?x=v1.9"></script>
-<script src="photos.js?x=v1.9"></script>
-<script src="week.js?x=v1.9"></script>
-<script src="upload.js?x=v1.9"></script>
-<script src="auth.js?x=v1.9"></script>
-<script src="admin.js?x=v1.9"></script>
-<script src="main.js?x=v1.9"></script>
+<script src="app.js?x=v2.0"></script>
+<script src="places.js?x=v2.0"></script>
+<script src="capture.js?x=v2.0"></script>
+<script src="photos.js?x=v2.0"></script>
+<script src="week.js?x=v2.0"></script>
+<script src="upload.js?x=v2.0"></script>
+<script src="auth.js?x=v2.0"></script>
+<script src="admin.js?x=v2.0"></script>
+<script src="main.js?x=v2.0"></script>
 
 <script>
 if('serviceWorker' in navigator){

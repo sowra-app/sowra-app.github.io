@@ -914,3 +914,19 @@ body.dark .near-alert{background:linear-gradient(135deg,#1B2A21,var(--card))}
 .gm-btn{width:100%;background:var(--star);border:none;border-radius:11px;padding:11px;font-family:'Tajawal';font-size:13.5px;font-weight:700;color:var(--ink);cursor:pointer}
 body.dark .geo-manual{background:#2E2519}
 body.dark .gm-txt{color:var(--star)}
+
+/* ====== بطاقة الاقتراح الذكي ====== */
+.sug-box{background:linear-gradient(135deg,#F3EEFB,var(--card));border:1.5px solid #9B7EBD;border-radius:15px;padding:13px 15px;margin-bottom:14px;animation:sgIn .3s ease}
+@keyframes sgIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.sg-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sg-head span{font-size:13px;font-weight:700;color:#6B4E9B}
+.sg-head button{background:none;border:none;color:var(--txt-dim);font-size:14px;cursor:pointer;padding:2px 5px}
+.sg-row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.sg-lbl{font-size:10.5px;color:var(--txt-dim);font-weight:700;margin-bottom:4px}
+.sg-txt{font-size:13px;line-height:1.9;margin-bottom:8px}
+.sg-use{background:var(--card2);border:1.5px solid #9B7EBD;border-radius:10px;padding:6px 14px;font-family:'Tajawal';font-size:12px;font-weight:700;color:#6B4E9B;cursor:pointer}
+.sg-use:active{transform:scale(.96)}
+.sg-all{width:100%;background:#6B4E9B;border:none;border-radius:11px;padding:10px;font-family:'Tajawal';font-size:13px;font-weight:700;color:#fff;cursor:pointer;margin-top:2px}
+.sg-note{font-size:10.5px;color:var(--txt-dim);text-align:center;margin-top:9px;line-height:1.7}
+body.dark .sug-box{background:linear-gradient(135deg,#251E33,var(--card))}
+body.dark .sg-head span,body.dark .sg-use{color:#B89BD9}
