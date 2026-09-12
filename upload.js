@@ -1030,11 +1030,26 @@ async function inspectPhoto(blob){
           city:($('aCity')&&$('aCity').value)||'',
           village:($('aVillage')&&$('aVillage').value)||''})
       });
-      if(!r.ok)return null;
+      if(!r.ok){
+        let t='';try{t=await r.text()}catch(e){}
+        console.warn('inspect HTTP',r.status,t);
+        window.__inspErr='HTTP '+r.status+' '+t.slice(0,120);
+        return null;
+      }
       data=await r.json();
     }
-    return (data&&!data.error)?data:null;
-  }catch(e){return null}
+    if(data&&data.error){
+      console.warn('inspect error',data.error);
+      window.__inspErr=String(data.error).slice(0,140);
+      return null;
+    }
+    window.__inspErr='';
+    return data||null;
+  }catch(e){
+    console.warn('inspect exception',e);
+    window.__inspErr=(e&&e.message)||'استثناء';
+    return null;
+  }
 }
 
 /* يرجع true إذا يُسمح بالمتابعة */
@@ -1042,7 +1057,16 @@ async function runInspection(blob){
   const st=$('inspectStatus');
   if(st){st.style.display='block';st.className='inspect-box';st.innerHTML='🤖 نفحص الصورة...'}
   const res=await inspectPhoto(blob);
-  if(!res){if(st)st.style.display='none';return true}
+  if(!res){
+    if(st){
+      if(window.__inspErr){
+        st.className='inspect-box bad';
+        st.innerHTML='⚠️ <b>تعذر الفحص</b><br><span style="font-size:11px;direction:ltr;display:inline-block">'+esc(window.__inspErr)+'</span>';
+        setTimeout(()=>{if(st)st.style.display='none'},9000);
+      }else st.style.display='none';
+    }
+    return true;
+  }
 
   // منع صريح
   if(res.nsfw||res.violence){
