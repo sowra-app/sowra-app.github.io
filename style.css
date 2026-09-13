@@ -755,8 +755,6 @@ body.dark .inspect-box.bad{background:#33201D}
 .pm-acts .btn{flex:1;padding:11px;font-size:13px}
 
 /* ====== تفضيلات العرض بالفلتر ====== */
-.fd-view{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:12px 0 8px}
-.fd-view-lb{font-size:12px;font-weight:700;color:var(--txt-dim);margin-bottom:9px}
 .fd-sw{display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer}
 .fd-sw input{width:19px;height:19px;accent-color:var(--palm);flex-shrink:0;margin:0}
 .fd-sw span{font-size:13px}
@@ -1024,3 +1022,12 @@ body.dark .tm-picked{background:#1B2A21}
 .tm-add select{flex:1}
 .tm-add button{flex:1;padding:10px;font-family:'Tajawal';font-size:12.5px;font-weight:700;background:var(--palm);border:none;border-radius:10px;color:#fff;cursor:pointer;width:auto}
 .tm-add button:disabled{opacity:.45;cursor:default}
+
+/* ====== قسم التصفّح بالفلتر ====== */
+.fd-nav-sec{border-top:1.5px dashed var(--line);padding-top:14px;margin-top:4px}
+.fd-nav{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.fd-nav button{display:flex;align-items:center;gap:9px;background:var(--card2);border:1.5px solid var(--line);border-radius:13px;padding:12px 13px;font-family:'Tajawal';font-size:13px;font-weight:700;color:var(--txt);cursor:pointer;text-align:right;transition:.15s}
+.fd-nav button span{font-size:18px;line-height:1}
+.fd-nav button:active{transform:scale(.97);border-color:var(--sadu)}
+.fd-view{background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:10px 13px}
+@media(max-width:380px){.fd-nav{grid-template-columns:1fr}}

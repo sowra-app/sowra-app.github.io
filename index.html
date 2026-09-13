@@ -43,7 +43,7 @@
 <meta property="og:description" content="عدسات أهل الديار — شارك أجمل صور منطقتك وخلّ الناس تقيّم">
 <meta property="og:type" content="website">
 <meta property="og:image" content="icon-512.png">
-<link rel="manifest" href="manifest.json?x=v2.2">
+<link rel="manifest" href="manifest.json?x=v2.3">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><!-- Google Analytics -->
@@ -56,9 +56,9 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="leaflet.js?x=v2.2"></script>
-<link rel="stylesheet" href="style.css?x=v2.2">
-<link rel="stylesheet" href="leaflet.css?x=v2.2">
+<script src="leaflet.js?x=v2.3"></script>
+<link rel="stylesheet" href="style.css?x=v2.3">
+<link rel="stylesheet" href="leaflet.css?x=v2.3">
 </head>
 <body>
 
@@ -102,53 +102,83 @@
     </div>
     <div class="filter-drawer" id="filterDrawer" style="display:none">
       <div class="fd-scroll">
-      <div class="fd-section">
-        <div class="fd-label">التصنيف</div>
-        <div class="fd-chips">
-          <button class="fd-chip on" data-k="all" onclick="fdSetCat(this,'all')">الكل</button>
-          <button class="fd-chip" data-k="nature" onclick="fdSetCat(this,'nature')">🌿 طبيعة</button>
-          <button class="fd-chip" data-k="arch" onclick="fdSetCat(this,'arch')">🏛️ عمارة</button>
-          <button class="fd-chip" data-k="wildlife" onclick="fdSetCat(this,'wildlife')">🦅 طيور وحيوانات</button>
-          <button class="fd-chip" data-k="people" onclick="fdSetCat(this,'people')">👥 أشخاص</button>
-          <button class="fd-chip" data-k="bw" onclick="fdSetCat(this,'bw')">⬛ أبيض وأسود</button>
-          <button class="fd-chip" data-k="heritage" onclick="fdSetCat(this,'heritage')">🏺 تراث</button><button class="fd-chip" data-k="landmark" onclick="fdSetCat(this,'landmark')">🕌 معلم</button>
-          <button class="fd-chip" data-k="other" onclick="fdSetCat(this,'other')">📷 أخرى</button>
-        </div>
-      </div>
-      <div class="fd-section">
-        <div class="fd-label">المنطقة والمدينة</div>
-        <div style="display:flex;gap:8px">
-          <select id="fRegion" style="flex:1" onchange="fillCities();render()"><option value="">كل المناطق</option></select>
-          <select id="fCity" style="flex:1" onchange="render()"><option value="">كل المدن</option></select>
-        </div>
-      </div>
-      <div class="fd-section">
-        <div class="fd-label">الترتيب</div>
-        <div class="fd-chips">
-          <button class="fd-chip on" data-s="top" onclick="fdSetSort(this,'top')">⭐ الأعلى</button>
-          <button class="fd-chip" data-s="new" onclick="fdSetSort(this,'new')">🕐 الأحدث</button>
-          <button class="fd-chip" data-s="abroad" onclick="fdSetSort(this,'abroad')">🌍 عدسة مسافر</button>
+
+        <!-- ═══ النطاق ═══ -->
+        <div class="fd-section">
+          <div class="fd-label">النطاق</div>
+          <div class="fd-chips">
+            <button class="fd-chip on" data-sc="home" onclick="fdSetScope(this,'home')">🇸🇦 داخل المملكة</button>
+            <button class="fd-chip" data-sc="abroad" onclick="fdSetScope(this,'abroad')">🌍 عدسة مسافر</button>
           </div>
-        <div class="fd-lb" style="margin-top:12px">السمات</div>
-        <div class="fd-chips" id="fdTags"></div>
-        <div class="fd-chips" style="margin-top:8px">
-          <button class="fd-chip" id="fdClaimBtn" onclick="toggleClaimFilter(this)">🏅 صور لها سبق</button>
         </div>
-        <div class="fd-chips">
-          <button class="fd-chip" onclick="applyFilter();openRace()">🏁 سباق الديار</button>
-          <button class="fd-chip" onclick="applyFilter();openWaiting()">🗺️ تنتظر عدستك</button>
-          <button class="fd-chip" onclick="applyFilter();openUserSearch()">🔍 ابحث عن مصوّر</button>
-          <button class="fd-chip" onclick="applyFilter();openQuests()">🏆 كنوز الديرة</button>
-          <button class="fd-chip" id="fdSponsorsBtn" style="display:none" onclick="applyFilter();openSponsorsPage()">🤝 الرعاة</button>
+
+        <!-- ═══ التصنيف ═══ -->
+        <div class="fd-section">
+          <div class="fd-label">التصنيف</div>
+          <div class="fd-chips">
+            <button class="fd-chip on" data-k="all" onclick="fdSetCat(this,'all')">الكل</button>
+            <button class="fd-chip" data-k="nature" onclick="fdSetCat(this,'nature')">🌿 طبيعة</button>
+            <button class="fd-chip" data-k="arch" onclick="fdSetCat(this,'arch')">🏛️ عمارة</button>
+            <button class="fd-chip" data-k="wildlife" onclick="fdSetCat(this,'wildlife')">🦅 طيور وحيوانات</button>
+            <button class="fd-chip" data-k="people" onclick="fdSetCat(this,'people')">👥 أشخاص</button>
+            <button class="fd-chip" data-k="bw" onclick="fdSetCat(this,'bw')">⬛ أبيض وأسود</button>
+            <button class="fd-chip" data-k="heritage" onclick="fdSetCat(this,'heritage')">🏺 تراث</button>
+            <button class="fd-chip" data-k="landmark" onclick="fdSetCat(this,'landmark')">🕌 معلم</button>
+            <button class="fd-chip" data-k="other" onclick="fdSetCat(this,'other')">📷 أخرى</button>
+          </div>
         </div>
-      </div>
-      <div class="fd-view">
-        <div class="fd-view-lb">ما يظهر بالرئيسية</div>
-        <label class="fd-sw"><input type="checkbox" id="swNear" onchange="saveViewPrefs()"><span>📍 تنبيه الصور القريبة</span></label>
-        <label class="fd-sw"><input type="checkbox" id="swHero" onchange="saveViewPrefs()"><span>📍 بنر ديرتك</span></label>
-        <label class="fd-sw"><input type="checkbox" id="swWeather" onchange="saveViewPrefs()"><span>🌤️ نصيحة الطقس</span></label>
-        <label class="fd-sw"><input type="checkbox" id="swChallenge" onchange="saveViewPrefs()"><span>🎯 تحدي الأسبوع</span></label>
-      </div>
+
+        <!-- ═══ المكان ═══ -->
+        <div class="fd-section" id="fdPlaceSec">
+          <div class="fd-label">المنطقة والمدينة</div>
+          <div style="display:flex;gap:8px">
+            <select id="fRegion" style="flex:1" onchange="fillCities();render()"><option value="">كل المناطق</option></select>
+            <select id="fCity" style="flex:1" onchange="render()"><option value="">كل المدن</option></select>
+          </div>
+        </div>
+
+        <!-- ═══ الترتيب ═══ -->
+        <div class="fd-section">
+          <div class="fd-label">الترتيب</div>
+          <div class="fd-chips">
+            <button class="fd-chip on" data-s="top" onclick="fdSetSort(this,'top')">⭐ الأعلى تقييماً</button>
+            <button class="fd-chip" data-s="new" onclick="fdSetSort(this,'new')">🕐 الأحدث</button>
+            <button class="fd-chip" data-s="visits" onclick="fdSetSort(this,'visits')">👣 الأكثر زيارة</button>
+          </div>
+        </div>
+
+        <!-- ═══ السمات ═══ -->
+        <div class="fd-section">
+          <div class="fd-label">السمات</div>
+          <div class="fd-chips" id="fdTags"></div>
+          <div class="fd-chips" style="margin-top:8px">
+            <button class="fd-chip" id="fdClaimBtn" onclick="toggleClaimFilter(this)">🏅 لها سبق موثّق</button>
+          </div>
+        </div>
+
+        <!-- ═══ تفضيلات العرض ═══ -->
+        <div class="fd-section">
+          <div class="fd-label">ما يظهر بالرئيسية</div>
+          <div class="fd-view">
+            <label class="fd-sw"><input type="checkbox" id="swNear" onchange="saveViewPrefs()"><span>📍 تنبيه الصور القريبة</span></label>
+            <label class="fd-sw"><input type="checkbox" id="swHero" onchange="saveViewPrefs()"><span>📍 بنر ديرتك</span></label>
+            <label class="fd-sw"><input type="checkbox" id="swWeather" onchange="saveViewPrefs()"><span>🌤️ نصيحة الطقس</span></label>
+            <label class="fd-sw"><input type="checkbox" id="swChallenge" onchange="saveViewPrefs()"><span>🎯 تحدي الأسبوع</span></label>
+          </div>
+        </div>
+
+        <!-- ═══ تصفّح — ينقلك لصفحات أخرى ═══ -->
+        <div class="fd-section fd-nav-sec">
+          <div class="fd-label">تصفّح</div>
+          <div class="fd-nav">
+            <button onclick="fdNav('race')"><span>🏁</span>سباق الديار</button>
+            <button onclick="fdNav('waiting')"><span>🗺️</span>تنتظر عدستك</button>
+            <button onclick="fdNav('quests')"><span>🏆</span>كنوز الديرة</button>
+            <button onclick="fdNav('search')"><span>🔍</span>ابحث عن مصوّر</button>
+            <button id="fdSponsorsBtn" style="display:none" onclick="fdNav('sponsors')"><span>🤝</span>الرعاة</button>
+          </div>
+        </div>
+
       </div>
       <div class="fd-actions">
         <button class="btn" style="background:var(--palm)" onclick="applyFilter()">✓ تطبيق</button>
@@ -747,15 +777,15 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="app.js?x=v2.2"></script>
-<script src="places.js?x=v2.2"></script>
-<script src="capture.js?x=v2.2"></script>
-<script src="photos.js?x=v2.2"></script>
-<script src="week.js?x=v2.2"></script>
-<script src="upload.js?x=v2.2"></script>
-<script src="auth.js?x=v2.2"></script>
-<script src="admin.js?x=v2.2"></script>
-<script src="main.js?x=v2.2"></script>
+<script src="app.js?x=v2.3"></script>
+<script src="places.js?x=v2.3"></script>
+<script src="capture.js?x=v2.3"></script>
+<script src="photos.js?x=v2.3"></script>
+<script src="week.js?x=v2.3"></script>
+<script src="upload.js?x=v2.3"></script>
+<script src="auth.js?x=v2.3"></script>
+<script src="admin.js?x=v2.3"></script>
+<script src="main.js?x=v2.3"></script>
 
 <script>
 if('serviceWorker' in navigator){

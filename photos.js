@@ -1,7 +1,8 @@
 let _viewMode='grid';
 
 /* ====== الفلتر الموحد ====== */
-let _cat='all', _sort='top';
+let _cat='all', _sort='top', _scope='home';
+window.__scope='home';
 function toggleFilter(){
   const d=$('filterDrawer');
   const open=d.style.display==='none';
@@ -21,14 +22,29 @@ function fdSetSort(el,s){
   _sort=s;
   document.querySelectorAll('.fd-chips .fd-chip[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
 }
+
+function fdSetScope(el,sc){
+  _scope=sc;
+  document.querySelectorAll('.fd-chip[data-sc]').forEach(b=>b.classList.toggle('on',b.dataset.sc===sc));
+  // قسم المنطقة يخص المملكة وحدها
+  const ps=document.getElementById('fdPlaceSec');
+  if(ps)ps.style.display=(sc==='abroad')?'none':'';
+}
 function applyFilter(){
-  catFilter=_cat; 
+  catFilter=_cat;
   sortMode=_sort;
+  window.__scope=_scope;
   $('filterDrawer').style.display='none';
-  $('filterBtn').classList.remove('active'); 
-  const badge=$('filterBadge');
-  badge.style.display=(catFilter!=='all'||_sort!=='top')?'inline':'none';
-  $('abroadHint').style.display=sortMode==='abroad'?'block':'none';
+  $('filterBtn').classList.remove('active');
+  const active=(catFilter!=='all')||(_sort!=='top')||(_scope!=='home')
+    ||(window.__fdTags&&window.__fdTags.length)||window.__onlyClaims;
+  $('filterBadge').style.display=active?'inline':'none';
+  $('abroadHint').style.display=(_scope==='abroad')?'block':'none';
+  // ارجع للرئيسية إن كنا بصفحة أخرى
+  try{
+    const cur=document.querySelector('.page.on');
+    if(cur&&cur.id!=='page-feed'&&typeof go==='function')go('feed');
+  }catch(e){}
   if(_viewMode==='map'){renderMap();}else{render();}
 }
 function clearFilter(){
@@ -36,14 +52,23 @@ function clearFilter(){
   window.__onlyClaims=false;
   const _cb=document.getElementById("fdClaimBtn");if(_cb)_cb.classList.remove("on");
   if(typeof renderFdTags==="function")renderFdTags();
-  _cat='all';_sort='top';
+  _cat='all';_sort='top';_scope='home';
+  window.__scope='home';
   document.querySelectorAll('.fd-chip[data-k]').forEach(b=>b.classList.toggle('on',b.dataset.k==='all'));
   document.querySelectorAll('.fd-chip[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s==='top'));
+  document.querySelectorAll('.fd-chip[data-sc]').forEach(b=>b.classList.toggle('on',b.dataset.sc==='home'));
+  const _ps=document.getElementById('fdPlaceSec');if(_ps)_ps.style.display='';
+  const _fr=document.getElementById('fRegion');if(_fr)_fr.value='';
+  const _fc=document.getElementById('fCity');if(_fc)_fc.value='';
   catFilter='all';sortMode='top';
   $('filterBadge').style.display='none';
   $('abroadHint').style.display='none';
   $('filterDrawer').style.display='none';
   $('filterBtn').classList.remove('active');
+  try{
+    const cur=document.querySelector('.page.on');
+    if(cur&&cur.id!=='page-feed'&&typeof go==='function')go('feed');
+  }catch(e){}
   render();
 }
 
@@ -170,7 +195,7 @@ function render(){
   const q=$('q').value.trim(), r=$('fRegion').value, c=$('fCity').value;
   const mw=$('mapWrap');if(mw)mw.style.display='none';
   $('feed').style.display='';
-  const abroadView=sortMode==='abroad';
+  const abroadView=(window.__scope==='abroad');
   let list=photos.filter(p=>!!p.abroad===abroadView&&p.media_type!=='video');
   if(window.__onlyClaims)list=list.filter(p=>CLAIM_MAP[p.id]);
   if(window.__fdTags&&window.__fdTags.length){
@@ -182,15 +207,21 @@ function render(){
   if(catFilter!=='all')list=list.filter(p=>(p.category||'other')===catFilter);
   if(abroadView){
     list=list.filter(p=>!q||p.title.includes(q)||(p.country||'').includes(q));
-    list.sort((a,b)=>(b.avg_stars-a.avg_stars)||(b.ratings_count-a.ratings_count)||(new Date(b.created_at)-new Date(a.created_at)));
   }else{
     list=list.filter(p=>
       (!r||p.region===r)&&(!c||p.city===c)&&
       (!q||p.title.includes(q)||(p.village||'').includes(q)||p.city.includes(q)||p.region.includes(q))
     );
-    list.sort((a,b)=>sortMode==='top'
-      ?(b.avg_stars-a.avg_stars)||(b.ratings_count-a.ratings_count)
-      :new Date(b.created_at)-new Date(a.created_at));
+  }
+  // الترتيب يعمل بالنطاقين
+  if(sortMode==='new'){
+    list.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  }else if(sortMode==='visits'){
+    list.sort((a,b)=>((VISIT_COUNTS[b.id]||0)-(VISIT_COUNTS[a.id]||0))
+      ||(b.avg_stars-a.avg_stars));
+  }else{
+    list.sort((a,b)=>(b.avg_stars-a.avg_stars)||(b.ratings_count-a.ratings_count)
+      ||(new Date(b.created_at)-new Date(a.created_at)));
   }
   $('totalPill').textContent=`${photos.length} صورة · V1.2`;
   const feed=$('feed');
@@ -205,7 +236,7 @@ function render(){
 /* بناء بطاقة واحدة */
 function buildCard(p,i){
  try{
-  const medal=((sortMode==='top'||sortMode==='abroad')&&i<3&&p.ratings_count>0)?['🥇','🥈','🥉'][i]:'';
+  const medal=(sortMode==='top'&&i<3&&p.ratings_count>0)?['🥇','🥈','🥉'][i]:'';
   const isV=p.media_type==='video';
   return `<div class="mcard" onclick="openSheet(${p.id})">
     ${isV
@@ -3087,4 +3118,23 @@ async function runUserSearch(){
   }catch(e){
     box.innerHTML='<div class="us-hint">تعذر البحث</div>';
   }
+}
+
+/* ====== التنقل من الفلتر ====== */
+function fdNav(where){
+  // نغلق الدرج بلا تطبيق الفلتر
+  const d=$('filterDrawer');
+  if(d)d.style.display='none';
+  const b=$('filterBtn');
+  if(b)b.classList.remove('active');
+
+  setTimeout(function(){
+    try{
+      if(where==='race'&&typeof openRace==='function')openRace();
+      else if(where==='waiting'&&typeof openWaiting==='function')openWaiting();
+      else if(where==='quests'&&typeof openQuests==='function')openQuests();
+      else if(where==='search'&&typeof openUserSearch==='function')openUserSearch();
+      else if(where==='sponsors'&&typeof openSponsorsPage==='function')openSponsorsPage();
+    }catch(e){}
+  },80);
 }
