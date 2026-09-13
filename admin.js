@@ -1047,18 +1047,19 @@ async function admTeamBlock(){
       👑 <b>مالك:</b> كل الصلاحيات · ✏️ <b>محرّر:</b> المسابقة والكنوز والأماكن · 🛡️ <b>مراجع:</b> البلاغات والإخفاء والرسائل
     </div>
     ${rows}
-    <div class="tm-add">
-      <input id="tmUid" placeholder="معرّف المستخدم (UUID)">
-      <input id="tmName" placeholder="الاسم" style="max-width:110px">
-      <select id="tmRole">
-        <option value="mod">🛡️ مراجع</option>
-        <option value="editor">✏️ محرّر</option>
-        <option value="owner">👑 مالك</option>
-      </select>
-      <button onclick="admAddMember()">➕</button>
-    </div>
-    <div style="font-size:10.5px;color:var(--txt-dim);margin-top:8px;line-height:1.75">
-      💡 لإيجاد المعرّف: SQL Editor ← <code style="font-size:10px">select id,email from auth.users where email='...';</code>
+    <div class="tm-add-wrap">
+      <div class="tm-lbl">➕ أضف مشرفاً</div>
+      <input id="tmSearch" placeholder="ابحث عن العضو بالاسم..." oninput="tmSearchUsers()" autocomplete="off">
+      <div id="tmResults" class="tm-results"></div>
+      <div id="tmPicked" class="tm-picked" style="display:none"></div>
+      <div class="tm-add">
+        <select id="tmRole">
+          <option value="mod">🛡️ مراجع</option>
+          <option value="editor">✏️ محرّر</option>
+          <option value="owner">👑 مالك</option>
+        </select>
+        <button id="tmAddBtn" onclick="admAddMember()" disabled>➕ عيّنه</button>
+      </div>
     </div>
   </div>`;
 }
@@ -1080,15 +1081,65 @@ async function admRemove(uid){
   loadAdmWeek();
 }
 
+let _tmT=null;
+window.__tmPick=null;
+
+function tmSearchUsers(){
+  clearTimeout(_tmT);
+  _tmT=setTimeout(_tmRun,400);
+}
+
+async function _tmRun(){
+  const q=($('tmSearch').value||'').trim();
+  const box=$('tmResults');if(!box)return;
+  if(q.length<2){box.innerHTML='';return}
+  box.innerHTML='<div class="tm-hint">⏳</div>';
+  try{
+    const r=await sb.from('profiles').select('id,display_name,region')
+      .ilike('display_name','%'+q+'%').limit(12);
+    let list=r.data||[];
+    // استبعاد المشرفين الحاليين
+    try{
+      const ex=await sb.from('admins').select('id');
+      const have=(ex.data||[]).map(x=>x.id);
+      list=list.filter(u=>!have.includes(u.id));
+    }catch(e){}
+
+    if(!list.length){box.innerHTML='<div class="tm-hint">ما لقينا أحداً</div>';return}
+    box.innerHTML=list.map(u=>`
+      <div class="tm-res" onclick="tmPick('${u.id}','${esc(u.display_name||'مصوّر').replace(/'/g,"&#39;")}')">
+        <span>${esc(u.display_name||'مصوّر')}</span>
+        ${u.region?`<small>${esc(u.region)}</small>`:''}
+      </div>`).join('');
+  }catch(e){box.innerHTML='<div class="tm-hint">تعذر البحث</div>'}
+}
+
+function tmPick(id,name){
+  window.__tmPick={id,name};
+  $('tmResults').innerHTML='';
+  $('tmSearch').value='';
+  const p=$('tmPicked');
+  if(p){
+    p.style.display='flex';
+    p.innerHTML='<b>'+esc(name)+'</b><button onclick="tmClearPick()">✕</button>';
+  }
+  const b=$('tmAddBtn');if(b)b.disabled=false;
+}
+
+function tmClearPick(){
+  window.__tmPick=null;
+  const p=$('tmPicked');if(p)p.style.display='none';
+  const b=$('tmAddBtn');if(b)b.disabled=true;
+}
+
 async function admAddMember(){
   if(!needOwner('تعيين المشرفين'))return;
-  const uid=($('tmUid').value||'').trim();
-  const name=($('tmName').value||'').trim();
+  const pick=window.__tmPick;
+  if(!pick){toast('اختر العضو أول',true);return}
   const role=$('tmRole').value;
-  if(!/^[0-9a-f-]{36}$/i.test(uid)){toast('المعرّف غير صحيح',true);return}
-  const {error}=await sb.from('admins').insert({id:uid,role,name});
+  const {error}=await sb.from('admins').insert({id:pick.id,role,name:pick.name});
   if(error){toast('تعذرت الإضافة: '+error.message,true);return}
-  toast('انضاف المشرف ✅');
-  $('tmUid').value='';$('tmName').value='';
+  toast('✅ '+pick.name+' صار '+((ADM_ROLES[role]||{}).n||role));
+  tmClearPick();
   loadAdmWeek();
 }
