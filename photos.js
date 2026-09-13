@@ -1270,7 +1270,14 @@ function initVideoUpload(){
   // وضع «قريباً» يوقف الرفع أيضاً — لا معنى لنشر مقطع لا يظهر
   const on=!!(sp&&sp.video_enabled)&&!(sp&&sp.reels_soon);
   row.style.display=on?'flex':'none';
-  if(on&&typeof initRecBtn==='function')initRecBtn();
+  if(typeof initRecBtn==='function')initRecBtn();
+  // إخفاء صريح لكل عناصر الفيديو
+  if(!on){
+    ['recOpenBtn','fileVid','videoRow'].forEach(function(id){
+      const e=document.getElementById(id);
+      if(e)e.style.display='none';
+    });
+  }
 }
 
 /* ====== أضواء الديرة — منصة الفيديو ====== */
