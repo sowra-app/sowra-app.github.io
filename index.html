@@ -43,7 +43,7 @@
 <meta property="og:description" content="عدسات أهل الديار — شارك أجمل صور منطقتك وخلّ الناس تقيّم">
 <meta property="og:type" content="website">
 <meta property="og:image" content="icon-512.png">
-<link rel="manifest" href="manifest.json?x=v2.0">
+<link rel="manifest" href="manifest.json?x=v2.1">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><!-- Google Analytics -->
@@ -56,9 +56,9 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="leaflet.js?x=v2.0"></script>
-<link rel="stylesheet" href="style.css?x=v2.0">
-<link rel="stylesheet" href="leaflet.css?x=v2.0">
+<script src="leaflet.js?x=v2.1"></script>
+<link rel="stylesheet" href="style.css?x=v2.1">
+<link rel="stylesheet" href="leaflet.css?x=v2.1">
 </head>
 <body>
 
@@ -466,6 +466,10 @@
         <button class="acc-tile" onclick="accPanel('vault')">
           <span class="at-ic">🔒</span><span class="at-lb">خزنتي</span>
         </button>
+        <button class="acc-tile" onclick="accPanel('inbox')">
+          <span class="at-ic">✉️</span><span class="at-lb">الوارد</span>
+          <span class="dm-badge" id="dmBadge" style="display:none">0</span>
+        </button>
         <button class="acc-tile" onclick="accPanel('notif')">
           <span class="at-ic">🔔</span><span class="at-lb">الإشعارات</span>
         </button>
@@ -491,6 +495,12 @@
           <div style="font-size:12px;color:var(--txt-dim);margin-bottom:10px;line-height:1.9">صورك الخاصة — راجعها وانشر ما يعجبك</div>
           <div id="vaultFeed"></div>
         </div>
+      </div>
+
+      <div class="acc-panel" id="pnInbox">
+        <div class="ap-head"><span>✉️ الوارد</span><button onclick="accPanel('')">✕</button></div>
+        <label class="dm-sw"><input type="checkbox" id="dmOpenSw" onchange="toggleDmOpen(this)" checked><span>أستقبل رسائل من الأعضاء</span></label>
+        <div id="inboxList"></div>
       </div>
 
       <div class="acc-panel" id="pnNotif">
@@ -656,6 +666,20 @@
 </div>
 
 <!-- ====== اختيار موقع الصورة ====== -->
+<!-- ====== رسالة لعضو ====== -->
+<div id="dmBox" class="dm-box" onclick="if(event.target===this)closeDmBox()">
+  <div class="dmb-card">
+    <div class="dmb-head"><span id="dmTitle">✉️ رسالة</span><button onclick="closeDmBox()">✕</button></div>
+    <textarea id="dmText" rows="5" maxlength="400" placeholder="اكتب رسالتك — سؤال عن الطريق، أو تعليق على صورته..." oninput="dmCount()"></textarea>
+    <div class="dmb-count" id="dmCount">0 / 400</div>
+    <div class="dmb-note">🔒 رسالة واحدة تصله بصندوقه — يرد إن حب. حد رسالتين يومياً.</div>
+    <div class="dmb-acts">
+      <button class="btn" id="dmSend" onclick="sendDm()">✉️ أرسل</button>
+      <button class="btn" style="background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="closeDmBox()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
 <div id="geoPickBox" class="geopick-box">
   <div class="gp-card">
     <div class="gp-head">
@@ -710,15 +734,15 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="app.js?x=v2.0"></script>
-<script src="places.js?x=v2.0"></script>
-<script src="capture.js?x=v2.0"></script>
-<script src="photos.js?x=v2.0"></script>
-<script src="week.js?x=v2.0"></script>
-<script src="upload.js?x=v2.0"></script>
-<script src="auth.js?x=v2.0"></script>
-<script src="admin.js?x=v2.0"></script>
-<script src="main.js?x=v2.0"></script>
+<script src="app.js?x=v2.1"></script>
+<script src="places.js?x=v2.1"></script>
+<script src="capture.js?x=v2.1"></script>
+<script src="photos.js?x=v2.1"></script>
+<script src="week.js?x=v2.1"></script>
+<script src="upload.js?x=v2.1"></script>
+<script src="auth.js?x=v2.1"></script>
+<script src="admin.js?x=v2.1"></script>
+<script src="main.js?x=v2.1"></script>
 
 <script>
 if('serviceWorker' in navigator){

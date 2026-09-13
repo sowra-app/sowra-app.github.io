@@ -719,7 +719,7 @@ async function openProfile(uid){
   go('profile');
   PROF_UID=uid;PROF_TAB='public';
   $('profHead').innerHTML='<div class="loader">⏳</div>';
-  const r=await sb.from('profiles').select('display_name,bio,region,avatar_path,cover_path').eq('id',uid).maybeSingle();
+  const r=await sb.from('profiles').select('display_name,bio,region,avatar_path,cover_path,dm_open').eq('id',uid).maybeSingle();
   const pr=r.data||{};
   const mine=photos.filter(x=>x.user_id===uid);
   const pub=mine.filter(x=>x.visibility!=='private');
@@ -767,6 +767,7 @@ async function openProfile(uid){
       </div>
       <div class="pf-acts">
         <button class="pf-act" onclick="shareProfile('${uid}')">📤 شارك</button>
+        ${(!isMe&&USER&&!USER.is_anonymous&&pr.dm_open!==false)?`<button class="pf-act" onclick="openDmBox('${uid}','${esc(pr.display_name||'مصوّر')}')">✉️ راسله</button>`:''}
         ${isMe?`<button class="pf-act primary" onclick="go('acc')">⚙️ عدّل بياناتي</button>`:''}
       </div>
       <div class="pf-badges" id="profBadges"></div>
@@ -2840,4 +2841,169 @@ function renderTimeline(p){
         </div>`;
       }).join('')}
     </div>`;
+}
+
+/* ====== الرسائل بين الأعضاء ====== */
+window.__dmTo=null;
+
+function openDmBox(uid,name){
+  if(!USER||USER.is_anonymous){toast('سجّل أول',true);return}
+  window.__dmTo={id:uid,name:name};
+  const el=$('dmBox');if(!el)return;
+  $('dmTitle').textContent='✉️ رسالة إلى '+name;
+  $('dmText').value='';
+  $('dmCount').textContent='0 / 400';
+  el.classList.add('show');
+  setTimeout(()=>{const t=$('dmText');if(t)t.focus()},220);
+}
+
+function closeDmBox(){
+  const el=$('dmBox');
+  if(el)el.classList.remove('show');
+  window.__dmTo=null;
+}
+
+function dmCount(){
+  const t=$('dmText');if(!t)return;
+  const n=t.value.length;
+  $('dmCount').textContent=n+' / 400';
+}
+
+async function sendDm(){
+  const to=window.__dmTo;
+  if(!to){closeDmBox();return}
+  const body=($('dmText').value||'').trim();
+  if(body.length<5){toast('اكتب رسالة أوضح',true);return}
+  if(body.length>400){toast('الحد ٤٠٠ حرف',true);return}
+
+  // فلتر الألفاظ
+  if(typeof checkText==='function'){
+    const bad=checkText(body);
+    if(bad){toast(bad,true);return}
+  }
+
+  const btn=$('dmSend');
+  const old=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='⏳'}
+
+  try{
+    // حد: رسالتان يومياً لنفس الشخص
+    const since=new Date(Date.now()-86400000).toISOString();
+    const c=await sb.from('dm').select('id',{count:'exact',head:true})
+      .eq('from_id',USER.id).eq('to_id',to.id).gte('created_at',since);
+    if((c.count||0)>=2){
+      toast('أرسلت رسالتين له اليوم — انتظر رده',true);
+      return;
+    }
+
+    const {error}=await sb.from('dm').insert({
+      from_id:USER.id, to_id:to.id, body,
+      photo_id:(curPhoto&&curPhoto.user_id===to.id)?curPhoto.id:null
+    });
+    if(error)throw error;
+
+    // إشعار للمستقبِل
+    try{
+      const me=(await sb.from('profiles').select('display_name').eq('id',USER.id).maybeSingle()).data;
+      if(typeof pushNotify==='function')pushNotify({
+        title:'✉️ رسالة جديدة',
+        body:((me&&me.display_name)||'مصوّر')+' راسلك',
+        url:'/',
+        user_ids:[to.id]
+      });
+    }catch(e){}
+
+    toast('انرسلت رسالتك ✅');
+    closeDmBox();
+  }catch(e){
+    toast('تعذر الإرسال: '+((e&&e.message)||''),true);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=old}
+  }
+}
+
+/* ====== صندوق الوارد ====== */
+async function renderInbox(){
+  const el=$('inboxList');if(!el)return;
+  if(!USER||USER.is_anonymous){el.innerHTML='';return}
+  el.innerHTML='<div class="loader" style="padding:16px">⏳</div>';
+  try{
+    const r=await sb.from('dm')
+      .select('*,from_p:profiles!dm_from_id_fkey(display_name,avatar_path)')
+      .eq('to_id',USER.id).order('created_at',{ascending:false}).limit(60);
+    const list=r.data||[];
+    if(!list.length){
+      el.innerHTML='<div class="empty" style="padding:22px"><span class="big">📭</span>ما وصلك رسائل</div>';
+      return;
+    }
+    el.innerHTML=list.map(m=>{
+      const nm=(m.from_p&&m.from_p.display_name)||'مصوّر';
+      const unread=!m.read_at;
+      return `<div class="dm-card${unread?' unread':''}">
+        <div class="dm-top">
+          <span class="dm-from" onclick="openProfile('${m.from_id}')">${esc(nm)}</span>
+          <span class="dm-time">${timeAgo(m.created_at)}</span>
+        </div>
+        <div class="dm-body">${esc(m.body)}</div>
+        <div class="dm-acts">
+          <button onclick="openDmBox('${m.from_id}','${esc(nm)}')">↩️ رد</button>
+          <button onclick="delDm(${m.id})">🗑️ حذف</button>
+          <button onclick="reportDm(${m.id})">🚩 إبلاغ</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    // تعليم المقروء
+    const un=list.filter(m=>!m.read_at).map(m=>m.id);
+    if(un.length){
+      try{await sb.from('dm').update({read_at:new Date().toISOString()}).in('id',un)}catch(e){}
+    }
+  }catch(e){
+    el.innerHTML='<div class="empty" style="padding:18px">تعذر تحميل الرسائل</div>';
+  }
+}
+
+async function delDm(id){
+  if(!confirm('حذف الرسالة؟'))return;
+  const {error}=await sb.from('dm').delete().eq('id',id);
+  if(error){toast('تعذر الحذف',true);return}
+  toast('انحذفت');
+  renderInbox();
+}
+
+async function reportDm(id){
+  if(!confirm('إبلاغ الإدارة عن هذي الرسالة؟'))return;
+  try{
+    const m=(await sb.from('dm').select('body,from_id').eq('id',id).maybeSingle()).data;
+    await sb.from('feedback').insert({
+      user_id:USER.id, kind:'other',
+      body:'🚩 إبلاغ عن رسالة خاصة\nمن: '+(m?m.from_id:'')+'\nالنص: '+(m?m.body:'')
+    });
+    toast('وصل بلاغك للإدارة ✅');
+  }catch(e){toast('تعذر الإبلاغ',true)}
+}
+
+/* عدّاد الرسائل غير المقروءة */
+async function dmUnreadCount(){
+  try{
+    if(!USER||USER.is_anonymous)return 0;
+    const r=await sb.from('dm').select('id',{count:'exact',head:true})
+      .eq('to_id',USER.id).is('read_at',null);
+    const n=r.count||0;
+    const b=$('dmBadge');
+    if(b){
+      b.textContent=n>9?'9+':String(n);
+      b.style.display=n?'inline-flex':'none';
+    }
+    return n;
+  }catch(e){return 0}
+}
+
+/* مفتاح استقبال الرسائل */
+async function toggleDmOpen(cb){
+  if(!USER||USER.is_anonymous)return;
+  const v=!!cb.checked;
+  const {error}=await sb.from('profiles').update({dm_open:v}).eq('id',USER.id);
+  if(error){toast('تعذر الحفظ',true);cb.checked=!v;return}
+  toast(v?'صرت تستقبل الرسائل ✉️':'أقفلت الرسائل 🔕');
 }

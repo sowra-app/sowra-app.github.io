@@ -942,3 +942,30 @@ body.dark .sg-head span,body.dark .sg-use{color:#B89BD9}
 .rs-list{display:flex;flex-direction:column;gap:11px;margin-bottom:28px;width:100%;max-width:290px}
 .rs-list div{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:13px;padding:11px 15px;font-size:13.5px;color:rgba(255,255,255,.82)}
 .rs-foot{font-size:12.5px;color:rgba(255,255,255,.5);line-height:1.9}
+
+/* ====== الرسائل بين الأعضاء ====== */
+.dm-box{display:none;position:fixed;inset:0;background:rgba(36,31,28,.66);z-index:9985;align-items:center;justify-content:center;padding:18px}
+.dm-box.show{display:flex}
+.dmb-card{background:var(--card);border:2px solid var(--ink);border-radius:20px;padding:18px;width:100%;max-width:440px}
+.dmb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.dmb-head span{font-family:'Reem Kufi',sans-serif;font-size:17px;color:var(--sand)}
+.dmb-head button{background:var(--card2);border:1px solid var(--line);border-radius:50%;width:30px;height:30px;color:var(--txt-dim);font-size:14px;cursor:pointer}
+.dmb-card textarea{width:100%;background:var(--card2);border:1.5px solid var(--line);border-radius:13px;padding:12px;color:var(--txt);font-family:'Tajawal';font-size:13.5px;line-height:1.9;resize:vertical;outline:none}
+.dmb-count{font-size:11px;color:var(--txt-dim);text-align:left;margin-top:5px}
+.dmb-note{font-size:11.5px;color:var(--txt-dim);background:var(--card2);border-radius:11px;padding:9px 12px;margin:10px 0 12px;line-height:1.8}
+.dmb-acts{display:flex;gap:8px}
+.dmb-acts .btn{flex:1;padding:12px;font-size:14px}
+.dm-badge{position:absolute;top:6px;left:6px;background:var(--sadu);color:#fff;border-radius:9px;min-width:19px;height:19px;font-size:10.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
+.acc-tile{position:relative}
+.dm-sw{display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:14px;cursor:pointer}
+.dm-sw input{width:18px;height:18px;accent-color:var(--palm);margin:0}
+.dm-sw span{font-size:12.5px;font-weight:700}
+.dm-card{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:9px}
+.dm-card.unread{border-color:var(--sadu);border-width:1.5px;background:linear-gradient(160deg,var(--card2),rgba(214,58,47,.06))}
+.dm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.dm-from{font-weight:700;font-size:13.5px;color:var(--sadu);cursor:pointer}
+.dm-time{font-size:10.5px;color:var(--txt-dim)}
+.dm-body{font-size:13px;line-height:1.95;margin-bottom:9px;white-space:pre-wrap}
+.dm-acts{display:flex;gap:7px}
+.dm-acts button{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:5px 11px;font-family:'Tajawal';font-size:11px;font-weight:700;color:var(--txt-dim);cursor:pointer}
+.dm-acts button:active{transform:scale(.96)}
