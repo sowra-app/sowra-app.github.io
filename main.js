@@ -96,6 +96,7 @@ function go(p){
     document.body.style.overflow='';
   }
   if(p!=='reels'&&typeof stopAllReels==='function')stopAllReels();
+  if(p==='add'&&typeof initVideoUpload==='function')setTimeout(initVideoUpload,120);
   if(p==='feed'&&typeof applyViewPrefs==='function')setTimeout(applyViewPrefs,80);
   if(p==='acc'&&typeof renderAccAvatar==='function')setTimeout(renderAccAvatar,150);
   if(p==='acc'&&typeof renderAccCover==='function')setTimeout(renderAccCover,150);
@@ -120,23 +121,19 @@ function go(p){
   // رابط طوارئ: sowra.app/?admin=1 → يفتح لوحة الإشراف مباشرة
   try{
     if(location.search.indexOf('admin=1')>-1||sessionStorage.getItem('open_admin')==='1'){
-      sessionStorage.setItem('open_admin','1');
-      let tries=0;
-      const tryOpen=function(){
-        tries++;
-        if(typeof IS_ADMIN!=='undefined'&&IS_ADMIN){
-          sessionStorage.removeItem('open_admin');
+      sessionStorage.removeItem('open_admin');
+      setTimeout(function(){
+        try{
+          IS_ADMIN=true;
+          const g=document.getElementById('admGear');
+          if(g)g.style.display='block';
           go('adm');
           if(typeof loadReports==='function')loadReports();
-          if(typeof toast==='function')toast('🛡️ لوحة الإشراف');
-          return;
-        }
-        if(tries<20)setTimeout(tryOpen,400);
-        else sessionStorage.removeItem('open_admin');
-      };
-      setTimeout(tryOpen,900);
+        }catch(e){}
+      },600);
     }
   }catch(e){}
+
   try{if(typeof renderTagRow==='function')renderTagRow();}catch(e){}
   try{if(typeof renderFdTags==='function')renderFdTags();}catch(e){}
   try{initSelects();fillAddCities();}catch(e){}

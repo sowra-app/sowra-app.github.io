@@ -680,7 +680,9 @@ async function admVideoToggle(){
   const {error}=await sb.from('site_banner').update({video_enabled:!b.video_enabled}).eq('id',1);
   if(error){toast('فشلت العملية: '+error.message,true);return}
   toast(!b.video_enabled?'رفع الفيديو مفعّل 🎬':'اتوقف رفع الفيديو');
-  await loadSponsor();await loadAdmWeek();
+  await loadSponsor();
+  await loadAdmWeek();
+  try{if(typeof initVideoUpload==='function')initVideoUpload()}catch(e){}
 }
 
 /* ====== وضع «قريباً» للأضواء ====== */
@@ -699,7 +701,10 @@ async function admReelsSoonToggle(){
   const {error}=await sb.from('site_banner').update({reels_soon:!b.reels_soon}).eq('id',1);
   if(error){toast('فشلت العملية: '+error.message,true);return}
   toast(!b.reels_soon?'وضع «قريباً» مفعّل 🎬':'الأضواء مفتوحة للجميع ✅');
-  await loadSponsor();await loadAdmWeek();
+  await loadSponsor();
+  await loadAdmWeek();
+  // تحديث عناصر الفيديو فوراً
+  try{if(typeof initVideoUpload==='function')initVideoUpload()}catch(e){}
 }
 
 /* ====== تنظيف الملفات اليتيمة ====== */
