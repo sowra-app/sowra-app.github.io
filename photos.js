@@ -3007,3 +3007,73 @@ async function toggleDmOpen(cb){
   if(error){toast('تعذر الحفظ',true);cb.checked=!v;return}
   toast(v?'صرت تستقبل الرسائل ✉️':'أقفلت الرسائل 🔕');
 }
+
+/* ====== البحث عن مصورين ====== */
+let _uSearchT=null;
+
+function openUserSearch(){
+  const el=$('userSearchBox');if(!el)return;
+  el.classList.add('show');
+  $('usInput').value='';
+  $('usResults').innerHTML='<div class="us-hint">اكتب اسم المصوّر أو جزءاً منه</div>';
+  setTimeout(()=>{const i=$('usInput');if(i)i.focus()},220);
+}
+
+function closeUserSearch(){
+  const el=$('userSearchBox');
+  if(el)el.classList.remove('show');
+  clearTimeout(_uSearchT);
+}
+
+function onUserSearchInput(){
+  clearTimeout(_uSearchT);
+  _uSearchT=setTimeout(runUserSearch,420);
+}
+
+async function runUserSearch(){
+  const q=($('usInput').value||'').trim();
+  const box=$('usResults');if(!box)return;
+
+  if(q.length<2){
+    box.innerHTML='<div class="us-hint">اكتب حرفين على الأقل</div>';
+    return;
+  }
+  box.innerHTML='<div class="loader" style="padding:18px">⏳</div>';
+
+  try{
+    const r=await sb.from('profiles')
+      .select('id,display_name,region,avatar_path,bio')
+      .ilike('display_name','%'+q+'%')
+      .limit(24);
+    let list=r.data||[];
+    if(USER)list=list.filter(u=>u.id!==USER.id);
+
+    if(!list.length){
+      box.innerHTML='<div class="us-hint">ما لقينا أحداً بهذا الاسم</div>';
+      return;
+    }
+
+    // عدد صور كل واحد
+    const ids=list.map(u=>u.id);
+    const counts={};
+    try{
+      photos.forEach(p=>{
+        if(ids.includes(p.user_id))counts[p.user_id]=(counts[p.user_id]||0)+1;
+      });
+    }catch(e){}
+
+    box.innerHTML=list.map(u=>{
+      const n=counts[u.id]||0;
+      return `<div class="us-row" onclick="closeUserSearch();openProfile('${u.id}')">
+        ${u.avatar_path?`<img src="${avatarUrl(u.avatar_path)}" alt="">`:'<div class="us-ph">📷</div>'}
+        <div class="us-info">
+          <div class="us-name">${esc(u.display_name||'مصوّر')}</div>
+          <div class="us-meta">${u.region?'📍 '+esc(u.region)+' · ':''}${n} ${n===1?'صورة':n<11?'صور':'صورة'}</div>
+        </div>
+        <span class="us-go">←</span>
+      </div>`;
+    }).join('');
+  }catch(e){
+    box.innerHTML='<div class="us-hint">تعذر البحث</div>';
+  }
+}

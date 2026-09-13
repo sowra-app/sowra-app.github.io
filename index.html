@@ -43,7 +43,7 @@
 <meta property="og:description" content="عدسات أهل الديار — شارك أجمل صور منطقتك وخلّ الناس تقيّم">
 <meta property="og:type" content="website">
 <meta property="og:image" content="icon-512.png">
-<link rel="manifest" href="manifest.json?x=v2.1">
+<link rel="manifest" href="manifest.json?x=v2.2">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><!-- Google Analytics -->
@@ -56,9 +56,9 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="leaflet.js?x=v2.1"></script>
-<link rel="stylesheet" href="style.css?x=v2.1">
-<link rel="stylesheet" href="leaflet.css?x=v2.1">
+<script src="leaflet.js?x=v2.2"></script>
+<link rel="stylesheet" href="style.css?x=v2.2">
+<link rel="stylesheet" href="leaflet.css?x=v2.2">
 </head>
 <body>
 
@@ -137,6 +137,7 @@
         <div class="fd-chips">
           <button class="fd-chip" onclick="applyFilter();openRace()">🏁 سباق الديار</button>
           <button class="fd-chip" onclick="applyFilter();openWaiting()">🗺️ تنتظر عدستك</button>
+          <button class="fd-chip" onclick="applyFilter();openUserSearch()">🔍 ابحث عن مصوّر</button>
           <button class="fd-chip" onclick="applyFilter();openQuests()">🏆 كنوز الديرة</button>
           <button class="fd-chip" id="fdSponsorsBtn" style="display:none" onclick="applyFilter();openSponsorsPage()">🤝 الرعاة</button>
         </div>
@@ -667,6 +668,18 @@
 
 <!-- ====== اختيار موقع الصورة ====== -->
 <!-- ====== رسالة لعضو ====== -->
+<!-- ====== البحث عن مصورين ====== -->
+<div id="userSearchBox" class="us-box" onclick="if(event.target===this)closeUserSearch()">
+  <div class="us-card">
+    <div class="us-head">
+      <span>🔍 ابحث عن مصوّر</span>
+      <button onclick="closeUserSearch()">✕</button>
+    </div>
+    <input id="usInput" placeholder="اسم المصوّر..." oninput="onUserSearchInput()" autocomplete="off">
+    <div id="usResults" class="us-results"></div>
+  </div>
+</div>
+
 <div id="dmBox" class="dm-box" onclick="if(event.target===this)closeDmBox()">
   <div class="dmb-card">
     <div class="dmb-head"><span id="dmTitle">✉️ رسالة</span><button onclick="closeDmBox()">✕</button></div>
@@ -734,15 +747,15 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="app.js?x=v2.1"></script>
-<script src="places.js?x=v2.1"></script>
-<script src="capture.js?x=v2.1"></script>
-<script src="photos.js?x=v2.1"></script>
-<script src="week.js?x=v2.1"></script>
-<script src="upload.js?x=v2.1"></script>
-<script src="auth.js?x=v2.1"></script>
-<script src="admin.js?x=v2.1"></script>
-<script src="main.js?x=v2.1"></script>
+<script src="app.js?x=v2.2"></script>
+<script src="places.js?x=v2.2"></script>
+<script src="capture.js?x=v2.2"></script>
+<script src="photos.js?x=v2.2"></script>
+<script src="week.js?x=v2.2"></script>
+<script src="upload.js?x=v2.2"></script>
+<script src="auth.js?x=v2.2"></script>
+<script src="admin.js?x=v2.2"></script>
+<script src="main.js?x=v2.2"></script>
 
 <script>
 if('serviceWorker' in navigator){
