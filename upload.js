@@ -441,6 +441,8 @@ async function recBegin(){
   buzz(60);
   recStart=Date.now();
   $('recBtn').classList.add('recording');
+  const _h=document.getElementById('recHint');
+  if(_h)_h.textContent='● يسجّل — اضغط الزر للإيقاف';
   $('recTimer').classList.add('live');
   $('recHint').textContent='ارفع إصبعك للإيقاف';
   recTimer=setInterval(()=>{
@@ -455,9 +457,12 @@ async function recBegin(){
 }
 
 function recStop(silent){
+  window.__recStart=null;
   if(recTimer){clearInterval(recTimer);recTimer=null;if(!silent)buzz([40,40,40]);}
   stopMixer();
   $('recBtn').classList.remove('recording');
+  const _h2=document.getElementById('recHint');
+  if(_h2)_h2.textContent='اضغط الزر لبدء التسجيل';
   $('recTimer').classList.remove('live');
   $('recHint').textContent='اضغط مطولاً للتسجيل';
   if(recorder&&recorder.state!=='inactive'){
@@ -507,17 +512,27 @@ function bindRecBtn(){
   const b=$('recBtn');
   if(!b||b._bound)return;
   b._bound=true;
-  const down=e=>{
-    if(e.target!==b&&!b.contains(e.target))return;
-    e.preventDefault();recBegin().catch(()=>{});
+
+  // ضغطة واحدة: تبدأ · ضغطة ثانية: توقف
+  const toggle=function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    if(recorder){
+      // حد أدنى ثانيتان قبل السماح بالإيقاف
+      if(window.__recStart&&(Date.now()-window.__recStart)<2000){
+        toast('سجّل ثانيتين على الأقل',true);
+        return;
+      }
+      recStop();
+    }else{
+      window.__recStart=Date.now();
+      recBegin().catch(()=>{});
+    }
   };
-  const up=e=>{e.preventDefault();if(recorder)recStop()};
-  b.addEventListener('touchstart',down,{passive:false});
-  b.addEventListener('touchend',up,{passive:false});
-  b.addEventListener('touchcancel',up,{passive:false});
-  b.addEventListener('mousedown',down);
-  b.addEventListener('mouseup',up);
-  b.addEventListener('mouseleave',up);
+
+  b.addEventListener('click',toggle);
+  // منع التمرير من تشغيل الزر
+  b.addEventListener('touchstart',function(e){e.stopPropagation()},{passive:true});
 }
 
 /* ====== فلاتر بهوية سعودية ====== */
