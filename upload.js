@@ -117,8 +117,7 @@ function renderTechCard(){
 
 /* ====== اختيار فيديو ====== */
 async function pickVideo(inp){
-  const _sp=window.__SPDATA||{};
-  if(!_sp.video_enabled||_sp.reels_soon){toast('رفع المقاطع مغلق حالياً 🎬',true);inp.value='';return}
+  if(!videoAllowed()){toast('رفع المقاطع مغلق حالياً 🎬',true);inp.value='';return}
   const f=inp.files[0];if(!f)return;
   const MAXMB=25, MAXSEC=30;
   if(f.size>MAXMB*1024*1024){toast('الفيديو كبير — الحد '+MAXMB+' ميجا',true);inp.value='';return}
@@ -342,16 +341,20 @@ function recSupported(){
   return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
 }
 
+function videoAllowed(){
+  const a=window.__SPDATA||{}, b=window.__SPB||{};
+  const ve=('video_enabled' in a)?a.video_enabled:b.video_enabled;
+  const rs=('reels_soon' in a)?a.reels_soon:b.reels_soon;
+  return !!ve && !rs;
+}
+
 function initRecBtn(){
   const b=$('recOpenBtn');if(!b)return;
-  const sp=window.__SPDATA||{};
-  const allowed=!!sp.video_enabled&&!sp.reels_soon;
-  b.style.display=(allowed&&recSupported())?'flex':'none';
+  b.style.display=(videoAllowed()&&recSupported())?'flex':'none';
 }
 
 async function recOpen(){
-  const _sp=window.__SPDATA||{};
-  if(!_sp.video_enabled||_sp.reels_soon){toast('رفع المقاطع مغلق حالياً 🎬',true);return}
+  if(!videoAllowed()){toast('رفع المقاطع مغلق حالياً 🎬',true);return}
   if(!recSupported()){toast('جهازك ما يدعم التسجيل الداخلي — استخدم المعرض',true);return}
   try{
     recStream=await navigator.mediaDevices.getUserMedia({

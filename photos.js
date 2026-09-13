@@ -1266,9 +1266,7 @@ function initCommBox(){
 
 function initVideoUpload(){
   const row=$('videoRow');if(!row)return;
-  const sp=window.__SPDATA;
-  // وضع «قريباً» يوقف الرفع أيضاً — لا معنى لنشر مقطع لا يظهر
-  const on=!!(sp&&sp.video_enabled)&&!(sp&&sp.reels_soon);
+  const on=(typeof videoAllowed==='function')?videoAllowed():false;
   row.style.display=on?'flex':'none';
   if(typeof initRecBtn==='function')initRecBtn();
   // إخفاء صريح لكل عناصر الفيديو
@@ -1288,7 +1286,8 @@ async function openReels(){
   const wrap=$('reelsWrap');if(!wrap)return;
 
   // وضع «قريباً» — مفتاح بالترس
-  if(window.__SPDATA&&window.__SPDATA.reels_soon){
+  const _rs=(window.__SPDATA&&('reels_soon' in window.__SPDATA))?window.__SPDATA.reels_soon:(window.__SPB&&window.__SPB.reels_soon);
+  if(_rs){
     wrap.innerHTML=`<div class="reels-soon">
       <div class="rs-ic">🎬</div>
       <div class="rs-title">أضواء الديرة</div>
