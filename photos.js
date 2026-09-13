@@ -1267,7 +1267,8 @@ function initCommBox(){
 function initVideoUpload(){
   const row=$('videoRow');if(!row)return;
   const sp=window.__SPDATA;
-  const on=!!(sp&&sp.video_enabled);
+  // وضع «قريباً» يوقف الرفع أيضاً — لا معنى لنشر مقطع لا يظهر
+  const on=!!(sp&&sp.video_enabled)&&!(sp&&sp.reels_soon);
   row.style.display=on?'flex':'none';
   if(on&&typeof initRecBtn==='function')initRecBtn();
 }

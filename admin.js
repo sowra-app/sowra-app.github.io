@@ -689,7 +689,7 @@ function admReelsSoonBlock(){
   const on=!!b.reels_soon;
   return `<div style="background:var(--card);border:1.5px solid ${on?'var(--star)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
     <div style="font-weight:700;font-size:14px;margin-bottom:6px">🎬 أضواء الديرة — وضع «قريباً» <span style="font-size:11px;font-weight:700;color:${on?'var(--star)':'var(--txt-dim)'}">${on?'● مفعّل':'○ مطفأ'}</span></div>
-    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px;line-height:1.85">لما يكون مفعّلاً، التبويب يعرض شاشة تشويق بدل المقاطع — يبني التوقع بلا استهلاك نقل.</div>
+    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px;line-height:1.85">لما يكون مفعّلاً، التبويب يعرض شاشة تشويق بدل المقاطع — <b>ويتوقف رفع الفيديو تلقائياً</b> لأن المقطع لن يظهر لأحد.</div>
     <button class="btn" style="width:100%;${on?'background:var(--palm)':'background:var(--star);color:var(--ink)'}" onclick="admReelsSoonToggle()">${on?'▶️ افتح الأضواء للجميع':'🎬 فعّل وضع «قريباً»'}</button>
   </div>`;
 }
