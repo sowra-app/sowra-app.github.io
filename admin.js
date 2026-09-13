@@ -222,7 +222,7 @@ function admRender(){
 }
 async function admHide(id,hide){
   const { error } = await sb.from('photos').update({hidden:hide}).eq('id',id);
-  if(error){toast('فشلت العملية',true);return}
+  if(error){toast('فشلت العملية: '+(error.message||error.code||''),true);return}
   toast(hide?'أُخفيت الصورة':'أُظهرت الصورة');
   await openAdmin();await loadPhotos();
 }
