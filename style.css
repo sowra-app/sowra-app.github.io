@@ -930,3 +930,15 @@ body.dark .gm-txt{color:var(--star)}
 .sg-note{font-size:10.5px;color:var(--txt-dim);text-align:center;margin-top:9px;line-height:1.7}
 body.dark .sug-box{background:linear-gradient(135deg,#251E33,var(--card))}
 body.dark .sg-head span,body.dark .sg-use{color:#B89BD9}
+
+/* ====== أضواء الديرة — وضع قريباً ====== */
+.reels-soon{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:78vh;text-align:center;padding:30px 26px;color:#fff}
+.rs-ic{font-size:66px;margin-bottom:14px;animation:rsF 3s ease-in-out infinite}
+@keyframes rsF{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.rs-title{font-family:'Reem Kufi',sans-serif;font-size:30px;color:#E8A020;margin-bottom:10px}
+.rs-badge{background:var(--sadu);color:#fff;border-radius:14px;padding:5px 18px;font-size:13px;font-weight:700;margin-bottom:22px;letter-spacing:.5px}
+.rs-txt{font-size:15.5px;line-height:2.1;color:rgba(255,255,255,.88);margin-bottom:26px}
+.rs-txt b{color:#E8A020}
+.rs-list{display:flex;flex-direction:column;gap:11px;margin-bottom:28px;width:100%;max-width:290px}
+.rs-list div{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:13px;padding:11px 15px;font-size:13.5px;color:rgba(255,255,255,.82)}
+.rs-foot{font-size:12.5px;color:rgba(255,255,255,.5);line-height:1.9}

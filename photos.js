@@ -1278,6 +1278,27 @@ let REELS=[], reelObserver=null, reelsMuted=true;
 async function openReels(){
   go('reels');
   const wrap=$('reelsWrap');if(!wrap)return;
+
+  // وضع «قريباً» — مفتاح بالترس
+  if(window.__SPDATA&&window.__SPDATA.reels_soon){
+    wrap.innerHTML=`<div class="reels-soon">
+      <div class="rs-ic">🎬</div>
+      <div class="rs-title">أضواء الديرة</div>
+      <div class="rs-badge">قريباً</div>
+      <div class="rs-txt">
+        الصورة تريك كيف <b>يبدو</b> المكان<br>
+        والمقطع يريك كيف <b>يُحَس</b>
+      </div>
+      <div class="rs-list">
+        <div>🌬️ صوت الريح على القمم</div>
+        <div>💧 خرير الماء بالأودية</div>
+        <div>🚶 وقع الخطى على الدرب</div>
+      </div>
+      <div class="rs-foot">جهّز عدستك — نفتحها قريباً بإذن الله</div>
+    </div>`;
+    return;
+  }
+
   wrap.innerHTML='<div class="reels-empty"><span class="big">⏳</span></div>';
   REELS=photos.filter(p=>p.media_type==='video');
   if(!REELS.length){
