@@ -284,6 +284,7 @@ async function admSpBlock(){
   const r=await sb.from('site_banner').select('*').eq('id',1).maybeSingle();
   const b=r.data||{active:false,image_path:'',link_url:''};
   window.__SPB=b;
+  window.__SPDATA=b;
   return `
   <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:16px">
     <div style="font-weight:700;font-size:14px;margin-bottom:6px">📣 بنر الراعي (رأس الصفحة) ${b.active?'<span style="font-size:11px;color:var(--palm);font-weight:700">● ظاهر</span>':'<span style="font-size:11px;color:var(--txt-dim)">○ مخفي</span>'}</div>
@@ -667,7 +668,7 @@ async function admAddToQuest(pid){
 
 /* ====== تفعيل رفع الفيديو ====== */
 function admVideoBlock(){
-  const b=window.__SPB||{};
+  const b=window.__SPDATA||window.__SPB||{};
   const on=!!b.video_enabled;
   return `<div style="background:var(--card);border:1.5px solid ${on?'var(--qblue)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
     <div style="font-weight:700;font-size:14px;margin-bottom:6px">🎬 رفع الفيديوهات <span style="font-size:11px;font-weight:700;color:${on?'var(--qblue)':'var(--txt-dim)'}">${on?'● مفعّل':'○ مطفأ'}</span></div>
@@ -676,7 +677,7 @@ function admVideoBlock(){
   </div>`;
 }
 async function admVideoToggle(){
-  const b=window.__SPB||{};
+  const b=window.__SPDATA||window.__SPB||{};
   const nv=!b.video_enabled;
   const {error}=await sb.from('site_banner').update({video_enabled:nv}).eq('id',1);
   if(error){toast('فشلت العملية: '+error.message,true);return}
@@ -690,7 +691,7 @@ async function admVideoToggle(){
 
 /* ====== وضع «قريباً» للأضواء ====== */
 function admReelsSoonBlock(){
-  const b=window.__SPB||{};
+  const b=window.__SPDATA||window.__SPB||{};
   const on=!!b.reels_soon;
   return `<div style="background:var(--card);border:1.5px solid ${on?'var(--star)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
     <div style="font-weight:700;font-size:14px;margin-bottom:6px">🎬 أضواء الديرة — وضع «قريباً» <span style="font-size:11px;font-weight:700;color:${on?'var(--star)':'var(--txt-dim)'}">${on?'● مفعّل':'○ مطفأ'}</span></div>
@@ -700,7 +701,7 @@ function admReelsSoonBlock(){
 }
 
 async function admReelsSoonToggle(){
-  const b=window.__SPB||{};
+  const b=window.__SPDATA||window.__SPB||{};
   const nv=!b.reels_soon;
   const {error}=await sb.from('site_banner').update({reels_soon:nv}).eq('id',1);
   if(error){toast('فشلت العملية: '+error.message,true);return}
