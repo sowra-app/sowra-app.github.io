@@ -26,6 +26,21 @@ function setDest(abroad){
   $('grpRegion').style.display=abroad?'none':'block';
   $('grpCity').style.display=abroad?'none':'block';
   $('grpVillage').style.display=abroad?'none':'block';
+
+  // تنظيف الحقول المخفية — لئلا تتسرب قيم خاطئة
+  try{
+    if(abroad){
+      if($('aRegion'))$('aRegion').value='';
+      if($('aCity'))$('aCity').value='';
+      if($('aVillage'))$('aVillage').value='';
+    }else{
+      if($('aCountry'))$('aCountry').value='';
+    }
+    // استنتاج جديد للموقع الحالي إن وُجد
+    if(pendingGeo&&typeof fillPlaceFromGeo==='function'){
+      fillPlaceFromGeo(pendingGeo.lat,pendingGeo.lng,true);
+    }
+  }catch(e){}
 }
 function applyGeo(pos,source){
   const card=$('geoCard');card.style.display='block';
@@ -1656,15 +1671,30 @@ async function fillPlaceFromGeo(lat,lng,silent){
     if(!info)return null;
     window.__geoPlace=info;
 
-    // خارج المملكة؟
-    if(info.country&&!/السعود/.test(info.country)){
-      if(!silent&&typeof toast==='function')toast('📍 '+info.country+' — استخدم «عدسة مسافر»');
+    const outside=!!(info.country&&!/السعود|Saudi/i.test(info.country));
+
+    // ═══ وضع عدسة مسافر ═══
+    if(typeof isAbroad!=='undefined'&&isAbroad){
+      const ct=$('aCountry');
+      if(ct&&!ct.value.trim()){
+        const parts=[info.city||info.village,info.country].filter(Boolean);
+        ct.value=parts.join('، ');
+      }
+      if(!silent&&typeof toast==='function'&&info.country)toast('🌍 '+info.country);
+      return info;
+    }
+
+    // ═══ الموقع خارج المملكة ووضع «ديرتي» مفعّل ═══
+    if(outside){
+      if(!silent&&typeof toast==='function'){
+        toast('🌍 الصورة من '+info.country+' — بدّل لـ«عدسة مسافر»',true);
+      }
       return info;
     }
 
     const rs=$('aRegion');
     const ro=_pickOpt(rs,info.region);
-    if(ro&&rs){
+    if(ro&&rs&&!rs.value){
       rs.value=ro.value;
       if(typeof fillAddCities==='function')fillAddCities();
       await new Promise(r=>setTimeout(r,180));
@@ -1672,7 +1702,7 @@ async function fillPlaceFromGeo(lat,lng,silent){
 
     const cs=$('aCity');
     const co=_pickOpt(cs,info.city)||_pickOpt(cs,info.village);
-    if(co&&cs)cs.value=co.value;
+    if(co&&cs&&!cs.value)cs.value=co.value;
 
     // القرية حقل نصي غالباً
     const vs=$('aVillage');
