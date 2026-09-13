@@ -683,7 +683,7 @@ async function admVideoToggle(){
   if(error){toast('فشلت العملية: '+error.message,true);return}
   if(window.__SPB)window.__SPB.video_enabled=nv;
   if(window.__SPDATA)window.__SPDATA.video_enabled=nv;
-  toast(!b.video_enabled?'رفع الفيديو مفعّل 🎬':'اتوقف رفع الفيديو');
+  toast(nv?'رفع الفيديو مفعّل 🎬':'اتوقف رفع الفيديو');
   await loadSponsor();
   await loadAdmWeek();
   try{if(typeof initVideoUpload==='function')initVideoUpload()}catch(e){}
@@ -708,7 +708,7 @@ async function admReelsSoonToggle(){
   // تحديث محلي فوري للمصدرين
   if(window.__SPB)window.__SPB.reels_soon=nv;
   if(window.__SPDATA)window.__SPDATA.reels_soon=nv;
-  toast(!b.reels_soon?'وضع «قريباً» مفعّل 🎬':'الأضواء مفتوحة للجميع ✅');
+  toast(nv?'وضع «قريباً» مفعّل 🎬':'الأضواء مفتوحة للجميع ✅');
   await loadSponsor();
   await loadAdmWeek();
   // تحديث عناصر الفيديو فوراً
