@@ -12,9 +12,20 @@ async function checkAdmin(){
       const g=$('admGear');if(g)g.style.display='none';
       return false;
     }
-    const { data } = await sb.from('admins').select('id,role').maybeSingle();
+    let data=null;
+    try{
+      const r=await sb.from('admins').select('id,role').eq('id',USER.id).maybeSingle();
+      data=r.data;
+    }catch(e){}
+    // احتياطي: لو فشل عمود role
+    if(!data){
+      try{
+        const r2=await sb.from('admins').select('id').eq('id',USER.id).maybeSingle();
+        data=r2.data;
+      }catch(e){}
+    }
     IS_ADMIN=!!data;
-    window.ADM_ROLE=(data&&data.role)||'';
+    window.ADM_ROLE=(data&&data.role)||(data?'owner':'');
     try{IS_ADMIN?localStorage.setItem('sowra_admin','1'):localStorage.removeItem('sowra_admin')}catch(e){}
     const g=$('admGear');if(g)g.style.display=IS_ADMIN?'block':'none';
     return IS_ADMIN;
