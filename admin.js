@@ -1,4 +1,5 @@
 async function openAdmin(){
+  setTimeout(function(){if(typeof hideRestrictedTabs==='function')hideRestrictedTabs()},150);
   go('adm');
   $('admList').innerHTML='<div class="empty">⏳ جاري التحميل...</div>';
   const [ph,rp]=await Promise.all([
@@ -12,6 +13,17 @@ async function openAdmin(){
   (rp.data||[]).forEach(r=>admReps[r.photo_id]=(admReps[r.photo_id]||0)+1);
   admSetTab(admTab);
 }
+function hideRestrictedTabs(){
+  try{
+    const st=document.getElementById('admTabSt');
+    if(st)st.style.display=isOwner()?'':'none';
+    ['Wk','Qs','Plc','Mu'].forEach(function(x){
+      const e=document.getElementById('admTab'+x);
+      if(e)e.style.display=isEditor()?'':'none';
+    });
+  }catch(e){}
+}
+
 function admRoleBadge(){
   const r=admRole();
   if(!r)return '';
@@ -22,6 +34,7 @@ function admRoleBadge(){
 function admSetTab(t){
   // فحص الصلاحية
   const need={wk:'editor',qs:'editor',plc:'editor',mu:'editor'};
+  if(t==='st'&&!isOwner()){toast('🔒 الإحصائيات للمالك فقط',true);return}
   if(need[t]&&!isEditor()){toast('🔒 هذا القسم يحتاج صلاحية أعلى',true);return}
 
   admTab=t;
@@ -46,6 +59,11 @@ function admSetTab(t){
 
 /* ====== الإحصائيات ====== */
 async function loadStats(){
+  if(!isOwner()){
+    const e=$('admSt');
+    if(e)e.innerHTML='<div class="empty" style="padding:26px"><span class="big">🔒</span>الإحصائيات للمالك فقط</div>';
+    return;
+  }
   $('admSt').innerHTML='<div class="empty">⏳</div>';
   const [st,us]=await Promise.all([sb.rpc('admin_stats'),sb.rpc('admin_users')]);
   if(st.error||!st.data){$('admSt').innerHTML=`<div class="empty">⚠️ تعذر تحميل الإحصائيات<br><span style="font-size:11px">${esc(st.error?.message||'لا توجد بيانات')}</span></div>`;return}
