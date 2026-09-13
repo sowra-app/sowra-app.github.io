@@ -212,7 +212,10 @@ async function admDelPlace(id,name){
 }
 function admRender(){
   let list=admTab==='rep'?admPhotos.filter(p=>(admReps[p.id]||0)>0||p.hidden):admPhotos;
-  if(!list.length){$('admList').innerHTML=`<div class="empty">${admTab==='rep'?'✅ ما فيه بلاغات — الساحة نظيفة':'ما فيه صور'}</div>`;return}
+  if(admTab==='rep'){
+    list=list.slice().sort((x,y)=>((admReps[y.id]||0)-(admReps[x.id]||0)));
+  }
+  if(!list.length){$('admList').innerHTML=`<div class="empty">${admTab==='rep'?'✅ ما فيه شيء للمراجعة — الساحة نظيفة':'ما فيه صور'}</div>`;return}
   $('admList').innerHTML=list.map(p=>{
     const rc=admReps[p.id]||0;
     return `<div class="card" style="margin-bottom:12px;cursor:default">
@@ -222,7 +225,7 @@ function admRender(){
         <div class="card-meta" style="margin-bottom:8px"><span>📷 ${p.profiles?.display_name||'?'} · 📍 ${p.city}</span></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
           ${rc?`<span style="font-size:11px;padding:3px 9px;border-radius:10px;font-weight:700;background:rgba(242,179,61,.15);color:var(--star);border:1px solid var(--star)">🚩 ${rc} بلاغ</span>`:''}
-          ${p.hidden?`<span style="font-size:11px;padding:3px 9px;border-radius:10px;font-weight:700;background:rgba(192,57,43,.15);color:var(--sadu);border:1px solid var(--sadu)">مخفية</span>`:''}
+          ${p.hidden?`<span style="font-size:11px;padding:3px 9px;border-radius:10px;font-weight:700;background:rgba(107,98,89,.15);color:var(--txt-dim);border:1px solid var(--line)">🙈 مخفية بقرار إشراف</span>`:''}
           ${p.profiles?.banned?`<span style="font-size:11px;padding:3px 9px;border-radius:10px;font-weight:700;background:rgba(192,57,43,.3);color:#fff;border:1px solid var(--sadu)">صاحبها محظور</span>`:''}
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
