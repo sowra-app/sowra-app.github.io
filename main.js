@@ -218,12 +218,18 @@ async function renderNotifBox(){
   const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
 
   if(!notifSupported()){
-    st.textContent='غير مدعومة بهذا المتصفح';
+    st.textContent=isIOS?'تحتاج تثبيت التطبيق':'غير مدعومة بهذا المتصفح';
     btn.style.display='none';
     hint.style.display='block';
-    hint.textContent=isIOS
-      ? 'على الأيفون: أضف التطبيق للشاشة الرئيسية أولاً (زر المشاركة ← إضافة إلى الشاشة الرئيسية)، ثم افتحه من الأيقونة.'
-      : 'جرّب متصفحاً أحدث.';
+    hint.innerHTML=isIOS
+      ? '<b>خطوات التفعيل على الأيفون:</b><br>'
+        +'١. افتح sowra.app بمتصفح <b>Safari</b><br>'
+        +'٢. اضغط زر المشاركة <b>⬆️</b> بالأسفل<br>'
+        +'٣. اختر <b>«إضافة إلى الشاشة الرئيسية»</b><br>'
+        +'٤. افتح التطبيق من الأيقونة الجديدة<br>'
+        +'٥. ارجع هنا وفعّل الإشعارات<br><br>'
+        +'<span style="opacity:.75">آبل تشترط تثبيت التطبيق قبل السماح بالإشعارات — لا يمكن تفعيلها من المتصفح مباشرة.</span>'
+      : 'متصفحك لا يدعم الإشعارات — جرّب كروم أو سفاري حديثاً.';
     return;
   }
   if(isIOS && !isStandalone()){

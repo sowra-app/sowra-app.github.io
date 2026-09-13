@@ -2929,15 +2929,26 @@ async function renderInbox(){
   el.innerHTML='<div class="loader" style="padding:16px">⏳</div>';
   try{
     const r=await sb.from('dm')
-      .select('*,from_p:profiles!dm_from_id_fkey(display_name,avatar_path)')
+      .select('*')
       .eq('to_id',USER.id).order('created_at',{ascending:false}).limit(60);
-    const list=r.data||[];
+    if(r.error)throw r.error;
+    let list=r.data||[];
+
+    // أسماء المرسلين — استعلام منفصل (أوثق من الربط)
+    const names={};
+    if(list.length){
+      try{
+        const ids=[...new Set(list.map(m=>m.from_id))];
+        const pr=await sb.from('profiles').select('id,display_name').in('id',ids);
+        (pr.data||[]).forEach(u=>{names[u.id]=u.display_name||'مصوّر'});
+      }catch(e){}
+    }
     if(!list.length){
       el.innerHTML='<div class="empty" style="padding:22px"><span class="big">📭</span>ما وصلك رسائل</div>';
       return;
     }
     el.innerHTML=list.map(m=>{
-      const nm=(m.from_p&&m.from_p.display_name)||'مصوّر';
+      const nm=names[m.from_id]||'مصوّر';
       const unread=!m.read_at;
       return `<div class="dm-card${unread?' unread':''}">
         <div class="dm-top">
@@ -2959,7 +2970,7 @@ async function renderInbox(){
       try{await sb.from('dm').update({read_at:new Date().toISOString()}).in('id',un)}catch(e){}
     }
   }catch(e){
-    el.innerHTML='<div class="empty" style="padding:18px">تعذر تحميل الرسائل</div>';
+    el.innerHTML='<div class="empty" style="padding:18px">تعذر تحميل الرسائل<br><span style="font-size:11px;direction:ltr;display:inline-block">'+esc((e&&e.message)||'')+'</span></div>';
   }
 }
 
