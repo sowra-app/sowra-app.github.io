@@ -12,7 +12,18 @@ async function openAdmin(){
   (rp.data||[]).forEach(r=>admReps[r.photo_id]=(admReps[r.photo_id]||0)+1);
   admSetTab(admTab);
 }
+function admRoleBadge(){
+  const r=admRole();
+  if(!r)return '';
+  const x=ADM_ROLES[r]||ADM_ROLES.mod;
+  return `<div class="adm-role" style="border-color:${x.c};color:${x.c}">${x.ic} ${x.n}</div>`;
+}
+
 function admSetTab(t){
+  // فحص الصلاحية
+  const need={wk:'editor',qs:'editor',plc:'editor',mu:'editor'};
+  if(need[t]&&!isEditor()){toast('🔒 هذا القسم يحتاج صلاحية أعلى',true);return}
+
   admTab=t;
   ['Rep','All','Plc','Fb','St','Wk','Qs','Mu'].forEach(x=>{const e=$('admTab'+x);if(e)e.classList.remove('on')});
   const m={rep:'Rep',all:'All',plc:'Plc',fb:'Fb',st:'St',wk:'Wk',qs:'Qs',mu:'Mu'};
@@ -174,6 +185,7 @@ async function admAddPlace(){
   await loadPlaces();renderPlaces();
 }
 async function admDelPlace(id,name){
+  if(!needEditor('إدارة الأماكن'))return;
   if(!confirm(`حذف «${name}» من القوائم؟ (الصور المنشورة عليه ما تتأثر)`))return;
   const { error } = await sb.from('custom_places').delete().eq('id',id);
   if(error){toast('تعذر الحذف',true);return}
@@ -215,6 +227,7 @@ async function admHide(id,hide){
   await openAdmin();await loadPhotos();
 }
 async function admDel(id,path){
+  if(!needOwner('حذف الصور نهائياً'))return;
   if(!confirm('حذف نهائي؟ لا يمكن التراجع.'))return;
   const it=(admPhotos||[]).find(x=>x.id===id)||photos.find(x=>x.id===id);
   const isVid=it&&it.media_type==='video';
@@ -228,6 +241,7 @@ async function admDel(id,path){
   await openAdmin();await loadPhotos();
 }
 async function admBan(uid,ban){
+  if(!needOwner('حظر المستخدمين'))return;
   if(ban&&!confirm('حظر المصور؟ لن يستطيع النشر أو التعليق.'))return;
   const { error } = await sb.from('profiles').update({banned:ban}).eq('id',uid);
   if(error){toast('فشلت العملية',true);return}
@@ -277,7 +291,7 @@ async function loadAdmWeek(){
       <div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px">
         <div style="flex:1"><b style="font-size:13px">#${p.id} · ${esc(p.title)}</b></div>
         <button class="btn" style="font-size:12px;padding:7px 12px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admWeekRemove(${p.id})">إزالة</button>
-      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + admChallengeBlock() + admVideoBlock() + admReelsSoonBlock() + admInspectBlock() + admCommBlock() + admCleanupBlock() + await admSpBlock() + admSponsorsBtn() + admSponsorSideBlock() +  admGoogleLoginBlock() + admMaintBlock();
+      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + admChallengeBlock() + admVideoBlock() + admReelsSoonBlock() + admInspectBlock() + admCommBlock() + admCleanupBlock() + await admSpBlock() + admSponsorsBtn() + admSponsorSideBlock() +  admGoogleLoginBlock() + admMaintBlock() + await admTeamBlock();
 }
 /* ====== بنر الراعي ====== */
 async function admSpBlock(){
@@ -326,6 +340,7 @@ async function admSpSaveLink(){
   toast('انحفظ الرابط ✅');loadSponsor();
 }
 async function admSpToggle(){
+  if(!needEditor('بنر الراعي'))return;
   const b=window.__SPB;
   const {error}=await sb.from('site_banner').update({active:!b.active}).eq('id',1);
   if(error){toast('فشلت العملية',true);return}
@@ -341,6 +356,7 @@ async function admWeekSave(){
   toast('انحفظت المسابقة ✅');await loadAdmWeek();await loadWeek();
 }
 async function admWeekToggle(){
+  if(!needEditor('المسابقة'))return;
   const {error}=await sb.from('weekly_contest').update({active:!CW.active}).eq('id',CW.id);
   if(error){toast('فشلت العملية',true);return}
   toast(CW.active?'أُوقفت المسابقة':'انطلقت المسابقة للجمهور 🎉');
@@ -378,6 +394,7 @@ async function admWeekNew(){
 }
 
 async function admSpDelete(){
+  if(!needEditor('حذف الراعي'))return;
   const b=window.__SPB;
   if(!confirm('حذف بنر الراعي نهائياً؟ الصورة تنمسح من المخزن والإعدادات تتصفّر.'))return;
   if(b.image_path)await sb.storage.from('photos').remove([b.image_path]).catch(()=>{});
@@ -388,6 +405,7 @@ async function admSpDelete(){
 }
 
 async function admWeekDelete(){
+  if(!needEditor('حذف الجولة'))return;
   if(!confirm(`حذف مسابقة «${CW.week_label||'بلا وسم'}» نهائياً؟ تنمسح بترشيحاتها وأصواتها، ويختفي أي تتويج مرتبط بها من الرئيسية.`))return;
   const {error}=await sb.from('weekly_contest').delete().eq('id',CW.id);
   if(error){toast('فشل الحذف: '+error.message,true);return}
@@ -427,6 +445,7 @@ function admSponsorsBtn(){
   </div>`;
 }
 async function admSponsorsBtnToggle(){
+  if(!needEditor('صفحة الرعاة'))return;
   const b=window.__SPB||{};
   const{error}=await sb.from('site_banner').update({sponsors_btn:!b.sponsors_btn}).eq('id',1);
   if(error){toast('فشلت العملية',true);return}
@@ -444,6 +463,7 @@ function admSponsorSideBlock(){
   </div>`;
 }
 async function admSideBannerToggle(){
+  if(!needEditor('البطاقة الجانبية'))return;
   const b=window.__SPB||{};
   const {error}=await sb.from('site_banner').update({side_active:!b.side_active}).eq('id',1);
   if(error){toast('فشلت العملية: '+error.message,true);return}
@@ -460,6 +480,7 @@ function admGoogleLoginBlock(){
   </div>`;
 }
 async function admGoogleToggle(){
+  if(!needOwner('مفاتيح الدخول'))return;
   const b=window.__SPB||{};
   const {error}=await sb.from('site_banner').update({google_login:!b.google_login}).eq('id',1);
   if(error){toast('فشلت العملية: '+error.message,true);return}
@@ -481,6 +502,7 @@ function admMaintBlock(){
   </div>`;
 }
 async function admMaintToggle(){
+  if(!needOwner('ستارة الصيانة'))return;
   const b=window.__SPB||{};
   const to=!b.maintenance;
   if(to&&!confirm('تفعيل وضع الصيانة؟ كل الزوار (عدا المشرفين) بيشوفون صفحة تحت التطوير.'))return;
@@ -627,6 +649,7 @@ function renderQIcons(){
 }
 
 async function qCreate(){
+  if(!needEditor('الكنوز'))return;
   const title=$('qTitle').value.trim();
   if(!title){toast('اكتب اسم الرحلة',true);return}
   const {error}=await sb.from('quests').insert({
@@ -677,6 +700,7 @@ function admVideoBlock(){
   </div>`;
 }
 async function admVideoToggle(){
+  if(!needOwner('مفتاح الفيديو'))return;
   const b=window.__SPDATA||window.__SPB||{};
   const nv=!b.video_enabled;
   const {error}=await sb.from('site_banner').update({video_enabled:nv}).eq('id',1);
@@ -701,6 +725,7 @@ function admReelsSoonBlock(){
 }
 
 async function admReelsSoonToggle(){
+  if(!needOwner('مفتاح الأضواء'))return;
   const b=window.__SPDATA||window.__SPB||{};
   const nv=!b.reels_soon;
   const {error}=await sb.from('site_banner').update({reels_soon:nv}).eq('id',1);
@@ -933,6 +958,7 @@ function admCommBlock(){
   </div>`;
 }
 async function admCommToggle(){
+  if(!needOwner('الاستخدام التجاري'))return;
   const b=window.__SPB||{};
   const {error}=await sb.from('site_banner').update({commercial_enabled:!b.commercial_enabled}).eq('id',1);
   if(error){toast('فشلت العملية: '+error.message,true);return}
@@ -951,6 +977,7 @@ function admInspectBlock(){
   </div>`;
 }
 async function admInspectToggle(){
+  if(!needOwner('الفاحص الذكي'))return;
   const b=window.__SPB||{};
   const {error}=await sb.from('site_banner').update({inspect_enabled:!b.inspect_enabled}).eq('id',1);
   if(error){toast('فشلت العملية: '+error.message,true);return}
@@ -966,4 +993,102 @@ function chIdea(title,region,cat){
   const d=new Date();d.setDate(d.getDate()+7);
   if($('chEnds'))$('chEnds').value=d.toISOString().slice(0,10);
   toast('اضغط حفظ ثم تفعيل 🎯');
+}
+
+/* ====== نظام الرتب ====== */
+const ADM_ROLES={
+  owner:  {n:'مالك',   ic:'👑', c:'#D63A2F'},
+  editor: {n:'محرّر',  ic:'✏️', c:'#E8A020'},
+  mod:    {n:'مراجع',  ic:'🛡️', c:'#2E8B57'}
+};
+
+function admRole(){ return window.ADM_ROLE||''; }
+function isOwner(){ return admRole()==='owner'; }
+function isEditor(){ return admRole()==='owner'||admRole()==='editor'; }
+
+/* فحص صلاحية قبل أي فعل حساس */
+function needOwner(what){
+  if(isOwner())return true;
+  toast('🔒 '+(what||'هذا الإجراء')+' للمالك فقط',true);
+  return false;
+}
+function needEditor(what){
+  if(isEditor())return true;
+  toast('🔒 '+(what||'هذا الإجراء')+' يحتاج صلاحية أعلى',true);
+  return false;
+}
+
+/* ====== إدارة المشرفين (للمالك) ====== */
+async function admTeamBlock(){
+  if(!isOwner())return '';
+  let rows='';
+  try{
+    const r=await sb.from('admins').select('id,role,name,added_at').order('added_at');
+    const list=r.data||[];
+    rows=list.map(x=>{
+      const rl=ADM_ROLES[x.role]||ADM_ROLES.mod;
+      const me=!!(USER&&x.id===USER.id);
+      return `<div class="tm-row">
+        <div class="tm-info">
+          <div class="tm-name">${rl.ic} ${esc(x.name||'مشرف')}${me?' <span style="font-size:10px;color:var(--txt-dim)">(أنت)</span>':''}</div>
+          <div class="tm-id">${x.id.slice(0,8)}…</div>
+        </div>
+        <select class="tm-sel" ${me?'disabled':''} onchange="admSetRole('${x.id}',this.value)">
+          ${Object.keys(ADM_ROLES).map(k=>`<option value="${k}" ${x.role===k?'selected':''}>${ADM_ROLES[k].ic} ${ADM_ROLES[k].n}</option>`).join('')}
+        </select>
+        ${me?'':`<button class="tm-del" onclick="admRemove('${x.id}')">✕</button>`}
+      </div>`;
+    }).join('');
+  }catch(e){rows='<div style="font-size:12px;color:var(--txt-dim)">تعذر التحميل</div>'}
+
+  return `<div style="background:var(--card);border:1.5px solid var(--sadu);border-radius:14px;padding:14px;margin-top:12px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:4px">👥 فريق الإشراف <span style="font-size:11px;color:var(--sadu)">● للمالك</span></div>
+    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:11px;line-height:1.85">
+      👑 <b>مالك:</b> كل الصلاحيات · ✏️ <b>محرّر:</b> المسابقة والكنوز والأماكن · 🛡️ <b>مراجع:</b> البلاغات والإخفاء والرسائل
+    </div>
+    ${rows}
+    <div class="tm-add">
+      <input id="tmUid" placeholder="معرّف المستخدم (UUID)">
+      <input id="tmName" placeholder="الاسم" style="max-width:110px">
+      <select id="tmRole">
+        <option value="mod">🛡️ مراجع</option>
+        <option value="editor">✏️ محرّر</option>
+        <option value="owner">👑 مالك</option>
+      </select>
+      <button onclick="admAddMember()">➕</button>
+    </div>
+    <div style="font-size:10.5px;color:var(--txt-dim);margin-top:8px;line-height:1.75">
+      💡 لإيجاد المعرّف: SQL Editor ← <code style="font-size:10px">select id,email from auth.users where email='...';</code>
+    </div>
+  </div>`;
+}
+
+async function admSetRole(uid,role){
+  if(!needOwner('تغيير الرتب'))return;
+  const {error}=await sb.from('admins').update({role}).eq('id',uid);
+  if(error){toast('تعذر التغيير: '+error.message,true);return}
+  toast('انتغيّرت الرتبة ✅');
+  loadAdmWeek();
+}
+
+async function admRemove(uid){
+  if(!needOwner('إزالة المشرفين'))return;
+  if(!confirm('إزالة هذا المشرف نهائياً؟'))return;
+  const {error}=await sb.from('admins').delete().eq('id',uid);
+  if(error){toast('تعذرت الإزالة: '+error.message,true);return}
+  toast('انحذف المشرف');
+  loadAdmWeek();
+}
+
+async function admAddMember(){
+  if(!needOwner('تعيين المشرفين'))return;
+  const uid=($('tmUid').value||'').trim();
+  const name=($('tmName').value||'').trim();
+  const role=$('tmRole').value;
+  if(!/^[0-9a-f-]{36}$/i.test(uid)){toast('المعرّف غير صحيح',true);return}
+  const {error}=await sb.from('admins').insert({id:uid,role,name});
+  if(error){toast('تعذرت الإضافة: '+error.message,true);return}
+  toast('انضاف المشرف ✅');
+  $('tmUid').value='';$('tmName').value='';
+  loadAdmWeek();
 }

@@ -7,12 +7,14 @@ async function checkAdmin(){
   try{
     if(!USER||USER.is_anonymous){
       IS_ADMIN=false;
+      window.ADM_ROLE='';
       try{localStorage.removeItem('sowra_admin')}catch(e){}
       const g=$('admGear');if(g)g.style.display='none';
       return false;
     }
-    const { data } = await sb.from('admins').select('id').maybeSingle();
+    const { data } = await sb.from('admins').select('id,role').maybeSingle();
     IS_ADMIN=!!data;
+    window.ADM_ROLE=(data&&data.role)||'';
     try{IS_ADMIN?localStorage.setItem('sowra_admin','1'):localStorage.removeItem('sowra_admin')}catch(e){}
     const g=$('admGear');if(g)g.style.display=IS_ADMIN?'block':'none';
     return IS_ADMIN;
