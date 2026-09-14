@@ -3036,16 +3036,30 @@ async function reportDm(id){
     }
 
     const when=new Date(inf.created_at).toLocaleDateString('ar-SA');
+    // body = ما يراه المبلّغ · admin_note = ما تراه الإدارة وحدها
     await sb.from('feedback').insert({
       user_id:USER.id, kind:'other',
-      body:'🚩 بلاغ عن رسالة خاصة\n\n'
-        +'المرسِل: '+(inf.name||'مصوّر')+'\n'
+      body:'🚩 بلاغ عن رسالة خاصة وصلتني بتاريخ '+when,
+      admin_note:'المرسِل: '+(inf.name||'مصوّر')+'\n'
         +(inf.email?('البريد: '+inf.email+'\n'):'')
-        +'التاريخ: '+when+'\n'
-        +'المعرّف: '+inf.uid+'\n\n'
+        +'المعرّف: '+inf.uid+'\n'
+        +'التاريخ: '+when+'\n\n'
         +'نص الرسالة:\n«'+(inf.body||'')+'»'
     });
-    toast('وصل بلاغك للإدارة ✅');
+    toast('✅ وصل بلاغك — تشوف رد الإدارة بـ«رسائلي»');
+    // إشعار للإدارة
+    try{
+      const adm=await sb.from('admins').select('id');
+      const ids=(adm.data||[]).map(x=>x.id);
+      if(ids.length&&typeof pushNotify==='function'){
+        pushNotify({
+          title:'🚩 بلاغ جديد',
+          body:'رسالة خاصة من '+(inf.name||'مصوّر'),
+          url:'/',
+          user_ids:ids
+        });
+      }
+    }catch(e){}
   }catch(e){toast('تعذر الإبلاغ: '+((e&&e.message)||''),true)}
 }
 

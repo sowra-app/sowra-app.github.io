@@ -127,7 +127,8 @@ async function loadFb(){
         <span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:10px;background:var(--card2);border:1px solid var(--line)">${FB_AR[f.kind]||f.kind}</span>
         <span style="font-size:11px;color:var(--txt-dim)">${esc(f.profiles?.display_name||'زائر')} · ${new Date(f.created_at).toLocaleDateString('ar-SA')}</span>
       </div>
-      <div style="font-size:14px;line-height:1.8;margin-bottom:10px">${esc(f.body)}</div>
+      <div style="font-size:14px;line-height:1.8;margin-bottom:${f.admin_note?'8px':'10px'}">${esc(f.body)}</div>
+      ${f.admin_note?`<div style="background:var(--card2);border:1px solid var(--star);border-radius:11px;padding:10px 12px;margin-bottom:10px;font-size:12.5px;line-height:1.9;white-space:pre-wrap;color:var(--txt-dim)"><b style="color:var(--star);display:block;margin-bottom:5px">🔒 تفاصيل للإدارة</b>${esc(f.admin_note)}</div>`:''}
       <div style="display:flex;gap:8px">
         ${f.status==='new'
           ?`<button class="btn" style="font-size:12px;padding:7px 14px;background:var(--qblue)" onclick="fbReply(${f.id})">💬 رد</button>
