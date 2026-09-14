@@ -259,6 +259,8 @@ function buildCard(p,i){
         <span class="mc-who" onclick="event.stopPropagation();openProfile('${p.user_id}')">${rankOf(p).ic} ${esc(p.photographer)}</span>
         <span class="mc-dot">·</span>
         <span>${p.abroad?esc(p.country||p.city):esc(p.village||p.city)}</span>
+        <span class="mc-dot">·</span>
+        <span>👁️ ${p.views||0}</span>
       </div>
     </div>
   </div>`;
