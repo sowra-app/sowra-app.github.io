@@ -2978,7 +2978,7 @@ function setDmTab(t){
 
 async function renderInbox(){
   const el=$('inboxList');if(!el)return;
-  if(!window.__myBlocks||!window.__myBlocks.size)await loadMyBlocks();
+  await loadMyBlocks();
   if(!USER||USER.is_anonymous){el.innerHTML='';return}
   const tab=window.__dmTab||'in';
   const isOut=(tab==='out');
@@ -3286,9 +3286,12 @@ async function blockUser(uid,name){
   if(error&&error.code!=='23505'){toast('تعذر الحظر: '+error.message,true);return}
   window.__myBlocks.add(uid);
   toast('🚫 انحظر — ما راح يوصلك منه شيء');
-  if(typeof renderInbox==='function')renderInbox();
-  if(typeof dmUnreadCount==='function')dmUnreadCount();
   if(typeof closeDmBox==='function')closeDmBox();
+  await loadMyBlocks();
+  if(typeof renderInbox==='function')renderInbox();
+  if(typeof renderBlockList==='function')renderBlockList();
+  if(typeof dmUnreadCount==='function')dmUnreadCount();
+  if(typeof PROF_UID!=='undefined'&&PROF_UID===uid&&typeof openProfile==='function')openProfile(uid);
 }
 
 async function unblockUser(uid,name){
@@ -3298,7 +3301,10 @@ async function unblockUser(uid,name){
   if(error){toast('تعذر الفك: '+error.message,true);return}
   window.__myBlocks.delete(uid);
   toast('✅ انفك الحظر');
+  await loadMyBlocks();
   renderBlockList();
+  if(typeof renderInbox==='function')renderInbox();
+  if(typeof PROF_UID!=='undefined'&&PROF_UID===uid&&typeof openProfile==='function')openProfile(uid);
 }
 
 /* قائمة المحظورين */
