@@ -1177,8 +1177,15 @@ async function fbClearDone(n){
   if(!confirm('مسح '+n+' رسالة منتهية؟\n\nالرسائل الجديدة تبقى — والمسح نهائي.'))return;
   if(!confirm('تأكيد أخير: هذا الإجراء لا يمكن التراجع عنه.'))return;
 
-  const {error}=await sb.from('feedback').delete().neq('status','new');
-  if(error){toast('تعذر المسح: '+error.message,true);return}
-  toast('انمسحت الرسائل المنتهية ✅');
+  // نجلب المعرّفات أولاً ثم نحذفها — أوثق من neq
+  const q=await sb.from('feedback').select('id').eq('status','done');
+  if(q.error){toast('تعذر القراءة: '+q.error.message,true);return}
+  const ids=(q.data||[]).map(x=>x.id);
+  if(!ids.length){toast('ما فيه رسائل منتهية',true);return}
+  const {data,error}=await sb.from('feedback').delete().in('id',ids).select('id');
+  if(error){toast('تعذر المسح: '+(error.message||error.code||''),true);return}
+  const n2=(data||[]).length;
+  if(!n2){toast('ما انمسح شيء — تحقق من صلاحيات الحذف',true);return}
+  toast('انمسحت '+n2+' رسالة ✅');
   loadFb();
 }
