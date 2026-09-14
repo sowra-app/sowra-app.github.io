@@ -3269,7 +3269,8 @@ function fdNav(where){
 
   setTimeout(function(){
     try{
-      if(where==='race'&&typeof openRace==='function')openRace();
+      if(where==='shooters'&&typeof openShooters==='function')openShooters();
+      else if(where==='race'&&typeof openRace==='function')openRace();
       else if(where==='waiting'&&typeof openWaiting==='function')openWaiting();
       else if(where==='quests'&&typeof openQuests==='function')openQuests();
       else if(where==='search'&&typeof openUserSearch==='function')openUserSearch();
@@ -3525,4 +3526,96 @@ function jumpToPlace(name){
   if(inp)inp.value=name;
   closeUni();
   render();
+}
+
+/* ====== صفحة المصوّرين ====== */
+window.__shSort='photos';
+
+function openShooters(){
+  go('shooters');
+  renderShooters();
+}
+
+function shSetSort(s){
+  window.__shSort=s;
+  renderShooters();
+}
+
+async function renderShooters(){
+  const el=$('shootersBody');if(!el)return;
+  el.innerHTML='<div class="loader" style="padding:20px">⏳</div>';
+
+  // شريط الفرز
+  const sb_=$('shSort');
+  const S=window.__shSort;
+  if(sb_){
+    sb_.innerHTML=[
+      ['photos','📷 الأكثر نشراً'],
+      ['stars','⭐ الأعلى تقييماً'],
+      ['visits','👣 الأكثر زيارة'],
+      ['new','🕐 الأحدث']
+    ].map(x=>`<button class="${S===x[0]?'on':''}" onclick="shSetSort('${x[0]}')">${x[1]}</button>`).join('');
+  }
+
+  try{
+    // نجمّع من الصور المنشورة
+    const agg={};
+    photos.filter(p=>p.visibility!=='private').forEach(p=>{
+      if(!p.user_id)return;
+      const a=agg[p.user_id]=agg[p.user_id]||{
+        uid:p.user_id, name:p.photographer||'مصوّر',
+        n:0, stars:0, rated:0, visits:0, last:p.created_at, region:p.region||''
+      };
+      a.n++;
+      if(p.avg_stars>0){a.stars+=Number(p.avg_stars);a.rated++}
+      a.visits+=(VISIT_COUNTS[p.id]||0);
+      if(p.created_at>a.last)a.last=p.created_at;
+      if(!a.region&&p.region)a.region=p.region;
+    });
+
+    let list=Object.values(agg);
+    if(!list.length){
+      el.innerHTML='<div class="empty" style="padding:26px"><span class="big">📷</span>ما فيه مصوّرون بعد</div>';
+      return;
+    }
+
+    list.forEach(a=>{a.avg=a.rated?(a.stars/a.rated):0});
+
+    // الفرز
+    if(S==='stars')list.sort((x,y)=>(y.avg-x.avg)||(y.n-x.n));
+    else if(S==='visits')list.sort((x,y)=>(y.visits-x.visits)||(y.n-x.n));
+    else if(S==='new')list.sort((x,y)=>new Date(y.last)-new Date(x.last));
+    else list.sort((x,y)=>(y.n-x.n)||(y.avg-x.avg));
+
+    // الصور الشخصية
+    const avatars={};
+    try{
+      const ids=list.slice(0,60).map(a=>a.uid);
+      const pr=await sb.from('profiles').select('id,avatar_path,region').in('id',ids);
+      (pr.data||[]).forEach(u=>{avatars[u.id]={av:u.avatar_path,rg:u.region}});
+    }catch(e){}
+
+    el.innerHTML=list.slice(0,60).map((a,i)=>{
+      const inf=avatars[a.uid]||{};
+      const rg=inf.rg||a.region;
+      const medal=(i<3&&S!=='new')?['🥇','🥈','🥉'][i]:'';
+      const rk=(typeof rankOf==='function')?rankOf({photographer_photos:a.n}):{ic:'🌱'};
+      return `<div class="sh-card" onclick="openProfile('${a.uid}')">
+        ${medal?`<div class="sh-medal">${medal}</div>`:''}
+        ${inf.av?`<img class="sh-av" src="${avatarUrl(inf.av)}" alt="">`:'<div class="sh-av sh-ph">📷</div>'}
+        <div class="sh-info">
+          <div class="sh-name">${rk.ic} ${esc(a.name)}</div>
+          ${rg?`<div class="sh-reg">📍 ${esc(rg)}</div>`:''}
+          <div class="sh-stats">
+            <span>📷 ${a.n}</span>
+            ${a.avg>0?`<span>⭐ ${a.avg.toFixed(1)}</span>`:''}
+            ${a.visits>0?`<span>👣 ${a.visits}</span>`:''}
+          </div>
+        </div>
+        <span class="sh-go">←</span>
+      </div>`;
+    }).join('');
+  }catch(e){
+    el.innerHTML='<div class="empty" style="padding:20px">تعذر التحميل</div>';
+  }
 }
