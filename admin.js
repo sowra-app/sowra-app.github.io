@@ -1212,13 +1212,51 @@ function _dmUid(note){
 async function admDmBan(uid,ban){
   if(!needEditor('منع المراسلة'))return;
   if(typeof ban==='undefined')ban=true;
-  const msg=ban
-    ? 'منع هذا العضو من إرسال الرسائل؟\n\nيستخدم المنصة عادي — لكن ما يرسل رسائل خاصة.'
-    : 'رفع المنع عن هذا العضو؟';
-  if(!confirm(msg))return;
+
+  let reason='';
+  if(ban){
+    reason=prompt('سبب المنع (يصل العضو):','إساءة استخدام الرسائل الخاصة');
+    if(reason===null)return;
+    reason=(reason||'').trim()||'إساءة استخدام الرسائل الخاصة';
+  }else{
+    if(!confirm('رفع المنع عن هذا العضو؟'))return;
+  }
+
   const {error}=await sb.from('profiles').update({dm_banned:ban}).eq('id',uid);
   if(error){toast('تعذرت العملية: '+error.message,true);return}
   if(window.__dmBanMap)window.__dmBanMap[uid]=ban;
-  toast(ban?'🚫 انمنع من المراسلة':'✅ انرفع المنع');
+
+  await notifyDmBan(uid,ban,reason);
+  toast(ban?'🚫 انمنع — وانبلّغ بالسبب':'✅ انرفع المنع — وانبلّغ');
   loadFb();
+}
+
+/* إبلاغ العضو بقرار المنع أو رفعه */
+async function notifyDmBan(uid,ban,reason){
+  try{
+    const body=ban
+      ? '🚫 تم إيقاف إرسالك للرسائل الخاصة\n\n'
+        +'السبب: '+reason+'\n\n'
+        +'حسابك يعمل طبيعياً — تنشر وتعلّق وتقيّم كالعادة، لكن إرسال الرسائل الخاصة موقوف.\n\n'
+        +'لو ترى أن القرار غير صحيح، رد على هذي الرسالة وراح نراجعه.'
+      : '✅ تم رفع إيقاف الرسائل عن حسابك\n\n'
+        +'تقدر ترسل رسائل خاصة من جديد — نرجو الالتزام بآداب التواصل.';
+
+    await sb.from('feedback').insert({
+      user_id:uid,
+      kind:'other',
+      body:body,
+      reply:'',
+      status:'new'
+    });
+
+    if(typeof pushNotify==='function'){
+      pushNotify({
+        title: ban?'🚫 إيقاف الرسائل الخاصة':'✅ رُفع إيقاف الرسائل',
+        body: ban?('السبب: '+reason):'تقدر ترسل رسائل من جديد',
+        url:'/',
+        user_ids:[uid]
+      });
+    }
+  }catch(e){}
 }

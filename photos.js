@@ -2951,7 +2951,7 @@ async function sendDm(){
     }
     const me=(await sb.from('profiles').select('dm_banned').eq('id',USER.id).maybeSingle()).data;
     if(me&&me.dm_banned){
-      toast('🚫 حسابك ممنوع من إرسال الرسائل',true);
+      toast('🚫 إرسال الرسائل موقوف بحسابك — شوف التفاصيل بـ«رسائلي»',true);
       if(btn){btn.disabled=false;btn.textContent=old}
       closeDmBox();
       return;
@@ -3376,13 +3376,19 @@ async function admProfDmBan(uid,ban,name){
   if(typeof IS_ADMIN==='undefined'||!IS_ADMIN){toast('للمشرفين فقط',true);return}
   if(typeof isEditor==='function'&&!isEditor()){toast('🔒 يحتاج صلاحية أعلى',true);return}
 
-  const msg=ban
-    ? 'منع '+(name||'هذا العضو')+' من إرسال الرسائل؟\n\nيستخدم المنصة عادي — لكن ما يرسل رسائل خاصة.'
-    : 'رفع المنع عن '+(name||'هذا العضو')+'؟';
-  if(!confirm(msg))return;
+  if(!ban&&!confirm('رفع المنع عن '+(name||'هذا العضو')+'؟'))return;
+
+  let reason='';
+  if(ban){
+    reason=prompt('سبب المنع (يصل العضو):','إساءة استخدام الرسائل الخاصة');
+    if(reason===null)return;
+    reason=(reason||'').trim()||'إساءة استخدام الرسائل الخاصة';
+  }
 
   const {error}=await sb.from('profiles').update({dm_banned:ban}).eq('id',uid);
   if(error){toast('تعذرت العملية: '+error.message,true);return}
-  toast(ban?'🚫 انمنع من المراسلة':'✅ انرفع المنع');
+
+  if(typeof notifyDmBan==='function')await notifyDmBan(uid,ban,reason);
+  toast(ban?'🚫 انمنع — وانبلّغ بالسبب':'✅ انرفع المنع — وانبلّغ');
   if(typeof openProfile==='function')openProfile(uid);
 }
