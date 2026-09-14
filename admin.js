@@ -1247,7 +1247,7 @@ async function notifyDmBan(uid,ban,reason){
       kind:'other',
       body:body,
       reply:'',
-      status:'new'
+      status:'done'
     });
 
     if(typeof pushNotify==='function'){

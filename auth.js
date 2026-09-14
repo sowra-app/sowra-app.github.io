@@ -174,7 +174,10 @@ async function loadMyMsgs(){
       <div class="msg-card">
         <div class="mk">
           <span>${(typeof FB_AR!=='undefined'&&FB_AR[m.kind])||m.kind} · ${new Date(m.created_at).toLocaleDateString('ar-SA')}</span>
-          <span class="msg-st ${m.status==='new'?'new':'done'}">${m.status==='new'?'⏳ قيد المراجعة':'✅ تمت المعالجة'}</span>
+          <span class="msg-st ${m.status==='new'?'new':'done'}">${
+            /^(🚫|✅ تم رفع)/.test(m.body||'') ? '📢 قرار إداري'
+            : (m.status==='new'?'⏳ قيد المراجعة':'✅ تمت المعالجة')
+          }</span>
         </div>
         <div class="mb">${esc(m.body)}</div>
         ${m.reply?`<div class="msg-reply"><b>رد الإدارة:</b><br>${esc(m.reply)}</div>`:''}
