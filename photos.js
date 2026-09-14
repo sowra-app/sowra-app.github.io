@@ -3007,7 +3007,7 @@ async function renderInbox(){
       return `<div class="dm-card${unread?' unread':''}">
         <div class="dm-top">
           <span class="dm-from" onclick="openProfile('${other}')">${isOut?'إلى: ':''}${esc(nm)}</span>
-          <span class="dm-time">${timeAgo(m.created_at)}${isOut?(m.read_at?' · ✓✓ قرأها':' · ✓ أُرسلت'):''}</span>
+          <span class="dm-time">${(timeAgo(m.created_at)||{}).txt||''}${isOut?(m.read_at?' · ✓✓ قرأها':' · ✓ أُرسلت'):''}</span>
         </div>
         <div class="dm-body">${esc(m.body)}</div>
         <div class="dm-acts">
