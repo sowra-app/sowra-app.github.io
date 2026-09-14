@@ -250,7 +250,11 @@ function buildCard(p,i){
     ${p.media_type==='video'?'<div class="mc-vid">▶</div>':''}
     <div class="mc-overlay">
       <div class="mc-title">${esc(p.title)}</div>
-      <div class="mc-sub">${rankOf(p).ic} ${esc(p.photographer)} · ${p.abroad?esc(p.country||p.city):esc(p.village||p.city)} · 👁️ ${p.views||0}</div>
+      <div class="mc-sub">
+        <span class="mc-who" onclick="event.stopPropagation();openProfile('${p.user_id}')">${rankOf(p).ic} ${esc(p.photographer)}</span>
+        <span class="mc-dot">·</span>
+        <span>${p.abroad?esc(p.country||p.city):esc(p.village||p.city)}</span>
+      </div>
     </div>
   </div>`;
  }catch(e){return ''}
@@ -312,7 +316,8 @@ async function openSheet(id){
   if(!seenViews.has(p.id)){seenViews.add(p.id);try{sb.rpc('bump_view',{pid:p.id}).then(()=>{},()=>{})}catch(_){}}
   $('sPh').classList.remove('full');
   $('sTitle').textContent=p.title;
-  $('sLoc').innerHTML=(p.abroad?`🌍 عدسة مسافر · ${esc(p.country||p.city)} — عدسة ${esc(p.photographer)}`:`📍 ${esc(p.region)} · ${esc(p.city)}${p.village?' · '+esc(p.village):''} — عدسة ${esc(p.photographer)}`)
+  const _who=`<span class="s-who" onclick="closeSheet();openProfile('${p.user_id}')">${rankOf(p).ic} ${esc(p.photographer)}</span>`;
+  $('sLoc').innerHTML=(p.abroad?`🌍 عدسة مسافر · ${esc(p.country||p.city)} — عدسة ${_who}`:`📍 ${esc(p.region)} · ${esc(p.city)}${p.village?' · '+esc(p.village):''} — عدسة ${_who}`)
     +`<br><a class="mapbtn" href="${p.lat?`https://maps.google.com/?q=${p.lat},${p.lng}`:`https://maps.google.com/?q=${encodeURIComponent(p.abroad?(p.country||p.city):((p.village?p.village+' ':'')+p.city+' '+p.region))}`}" target="_blank" rel="noopener">🗺️ افتح الموقع على قوقل ماب${p.lat?'':' (بحث بالاسم)'}</a>`;
  
   renderFollow(p);

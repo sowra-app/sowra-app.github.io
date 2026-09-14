@@ -1117,3 +1117,15 @@ body.dark .tm-picked{background:#1B2A21}
 .sh-stats{display:flex;gap:10px;margin-top:5px}
 .sh-stats span{font-size:11.5px;color:var(--txt-dim);font-weight:700}
 .sh-go{color:var(--txt-dim);font-size:17px}
+
+/* ====== اسم المصور على البطاقة ====== */
+.mc-who{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;margin:-2px -3px;border-radius:8px;background:rgba(255,255,255,.16);transition:.15s;cursor:pointer}
+.mc-who:active{background:rgba(255,255,255,.34);transform:scale(.96)}
+.mc-dot{opacity:.5;margin:0 2px}
+.mc-sub{display:flex;align-items:center;flex-wrap:wrap;gap:2px}
+@media(hover:hover){
+  .mc-who:hover{background:rgba(255,255,255,.3)}
+}
+.s-who{display:inline-flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:3px 10px;font-weight:700;color:var(--sadu);cursor:pointer;transition:.15s}
+.s-who:active{transform:scale(.96);background:var(--sadu);color:#fff;border-color:var(--sadu)}
+@media(hover:hover){.s-who:hover{background:var(--sadu);color:#fff;border-color:var(--sadu)}}
