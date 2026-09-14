@@ -51,6 +51,8 @@ function applyFilter(){
 function clearFilter(){
   window.__fdTags=[];
   window.__onlyClaims=false;
+  window.__onlyEc=false;
+  const _eb=document.getElementById('fdEcBtn');if(_eb)_eb.classList.remove('on');
   const _cb=document.getElementById("fdClaimBtn");if(_cb)_cb.classList.remove("on");
   if(typeof renderFdTags==="function")renderFdTags();
   _cat='all';_sort='top';_scope='home';
@@ -198,6 +200,7 @@ function render(){
   $('feed').style.display='';
   const abroadView=(window.__scope==='abroad');
   let list=photos.filter(p=>!!p.abroad===abroadView&&p.media_type!=='video');
+  if(window.__onlyEc)list=list.filter(p=>p.editors_choice);
   if(window.__onlyClaims)list=list.filter(p=>CLAIM_MAP[p.id]);
   if(window.__fdTags&&window.__fdTags.length){
     list=list.filter(p=>{
@@ -245,6 +248,7 @@ function buildCard(p,i){
       : `<img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" decoding="async" alt="${esc(p.title)}">`}
     ${medal?`<div class="mc-medal">${medal}</div>`:''}
     ${VISIT_COUNTS[p.id]?`<div class="mc-visits">👣 ${VISIT_COUNTS[p.id]}</div>`:''}
+    ${p.editors_choice?'<div class="mc-ec">🏵️ اختيار المحررين</div>':''}
     ${claimBadge(p.id)}
     ${p.visibility==='private'?'<div class="mc-lock">🔒 خاصة</div>':''}
     ${p.media_type==='video'?'<div class="mc-vid">▶</div>':''}
@@ -332,6 +336,8 @@ async function openSheet(id){
         +(p.description_en?esc(p.description_en):'');
     }else en.style.display='none';
   }
+  const _ec=$('sEC');
+  if(_ec)_ec.style.display=p.editors_choice?'block':'none';
   try{renderPhotoTags(p)}catch(e){}
   try{renderPhotoTech(p)}catch(e){}
   try{renderTimeline(p)}catch(e){}
@@ -3623,4 +3629,11 @@ async function renderShooters(){
   }catch(e){
     el.innerHTML='<div class="empty" style="padding:20px">تعذر التحميل</div>';
   }
+}
+
+/* ====== فلتر اختيار المحررين ====== */
+window.__onlyEc=false;
+function toggleEcFilter(btn){
+  window.__onlyEc=!window.__onlyEc;
+  if(btn)btn.classList.toggle('on',window.__onlyEc);
 }

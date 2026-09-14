@@ -1129,3 +1129,41 @@ body.dark .tm-picked{background:#1B2A21}
 .s-who{display:inline-flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:3px 10px;font-weight:700;color:var(--sadu);cursor:pointer;transition:.15s}
 .s-who:active{transform:scale(.96);background:var(--sadu);color:#fff;border-color:var(--sadu)}
 @media(hover:hover){.s-who:hover{background:var(--sadu);color:#fff;border-color:var(--sadu)}}
+
+/* ====== وسام اختيار المحررين ====== */
+.mc-ec{position:absolute;top:8px;left:8px;background:linear-gradient(135deg,#1E7B7B,#2E9B9B);color:#fff;border-radius:11px;padding:4px 10px;font-size:10.5px;font-weight:700;font-family:'Tajawal';box-shadow:0 2px 8px rgba(0,0,0,.35);z-index:3;white-space:nowrap}
+.s-ec{background:linear-gradient(135deg,#EAF6F6,var(--card));border:2px solid #1E7B7B;border-radius:14px;padding:12px 15px;margin-bottom:12px;text-align:center}
+.s-ec b{display:block;font-family:'Reem Kufi',sans-serif;font-size:16px;color:#1E7B7B;margin:3px 0}
+.s-ec span{display:block;font-size:11.5px;color:var(--txt-dim);line-height:1.8}
+body.dark .s-ec{background:linear-gradient(135deg,#12292C,var(--card))}
+
+/* لوحة الترشيحات */
+.ec-head{background:var(--card);border:1.5px solid var(--qteal);border-radius:14px;padding:13px 15px;margin-bottom:12px}
+.ec-h1{font-family:'Reem Kufi',sans-serif;font-size:17px;color:var(--qteal)}
+.ec-h2{font-size:11.5px;color:var(--txt-dim);margin-top:4px}
+.ec-card{background:var(--card);border:1.5px solid var(--line);border-radius:15px;padding:13px;margin-bottom:11px}
+.ec-card.ready{border-color:var(--qteal);border-width:2px;background:linear-gradient(160deg,var(--card),rgba(30,123,123,.06))}
+.ec-top{display:flex;gap:12px;margin-bottom:11px}
+.ec-top img,.ec-noimg{width:82px;height:82px;border-radius:12px;object-fit:cover;flex-shrink:0;cursor:pointer;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:26px}
+.ec-info{flex:1;min-width:0}
+.ec-title{font-weight:700;font-size:14px;margin-bottom:3px}
+.ec-meta{font-size:11.5px;color:var(--txt-dim)}
+.ec-by{font-size:11px;color:var(--qteal);font-weight:700;margin-top:5px}
+.ec-reason{font-size:11.5px;color:var(--txt-dim);margin-top:5px;line-height:1.8;font-style:italic}
+.ec-votes{border-top:1px solid var(--line);padding-top:10px}
+.ec-bar{display:flex;align-items:center;gap:10px;margin-bottom:9px;flex-wrap:wrap}
+.ec-yes{color:var(--palm);font-weight:700;font-size:13px}
+.ec-no{color:var(--sadu);font-weight:700;font-size:13px}
+.ec-ready{background:var(--qteal);color:#fff;border-radius:9px;padding:2px 10px;font-size:10.5px;font-weight:700}
+.ec-need{font-size:11px;color:var(--txt-dim)}
+.ec-btns{display:flex;gap:7px;flex-wrap:wrap}
+.ec-v{flex:1;min-width:90px;background:var(--card2);border:1.5px solid var(--line);border-radius:10px;padding:8px;font-family:'Tajawal';font-size:12px;font-weight:700;color:var(--txt-dim);cursor:pointer}
+.ec-v.yes.on{background:var(--palm);border-color:var(--palm);color:#fff}
+.ec-v.no.on{background:var(--sadu);border-color:var(--sadu);color:#fff}
+.ec-approve{flex:1;min-width:110px;background:var(--qteal);border:none;border-radius:10px;padding:8px;font-family:'Tajawal';font-size:12px;font-weight:700;color:#fff;cursor:pointer}
+.ec-rej{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer}
+.cu-row{display:flex;align-items:center;justify-content:space-between;gap:9px;background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:9px 12px;margin-bottom:7px}
+.cu-name{font-size:13px;font-weight:700}
+.cu-auto{font-size:10.5px;color:var(--qteal);font-weight:700}
+.cu-tg{background:var(--card);border:1.5px solid var(--line);border-radius:9px;padding:6px 12px;font-family:'Tajawal';font-size:11px;font-weight:700;color:var(--txt-dim);cursor:pointer}
+.cu-tg.on{background:var(--qteal);border-color:var(--qteal);color:#fff}

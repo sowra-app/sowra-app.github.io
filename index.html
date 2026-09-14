@@ -43,7 +43,7 @@
 <meta property="og:description" content="عدسات أهل الديار — شارك أجمل صور منطقتك وخلّ الناس تقيّم">
 <meta property="og:type" content="website">
 <meta property="og:image" content="icon-512.png">
-<link rel="manifest" href="manifest.json?x=v2.6">
+<link rel="manifest" href="manifest.json?x=v2.7">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><!-- Google Analytics -->
@@ -56,9 +56,9 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="leaflet.js?x=v2.6"></script>
-<link rel="stylesheet" href="style.css?x=v2.6">
-<link rel="stylesheet" href="leaflet.css?x=v2.6">
+<script src="leaflet.js?x=v2.7"></script>
+<link rel="stylesheet" href="style.css?x=v2.7">
+<link rel="stylesheet" href="leaflet.css?x=v2.7">
 </head>
 <body>
 
@@ -160,6 +160,7 @@
           <div class="fd-label">السمات</div>
           <div class="fd-chips" id="fdTags"></div>
           <div class="fd-chips" style="margin-top:8px">
+            <button class="fd-chip" id="fdEcBtn" onclick="toggleEcFilter(this)">🏵️ اختيار المحررين</button>
             <button class="fd-chip" id="fdClaimBtn" onclick="toggleClaimFilter(this)">🏅 لها سبق موثّق</button>
           </div>
         </div>
@@ -337,6 +338,7 @@
       <div class="sheet-title" id="sTitle"></div>
       <div class="sheet-loc" id="sLoc"></div>
       <div id="sDate" class="s-date" style="display:none"></div>
+      <div id="sEC" class="s-ec" style="display:none">🏵️ <b>اختيار المحررين</b><span>اختارتها هيئة المحررين لتميّزها</span></div>
       <div id="sTags" class="s-tags" style="display:none"></div>
       <div id="sTech" class="s-tech" style="display:none"></div>
       <div id="sTimeline" class="s-timeline" style="display:none"></div>
@@ -593,12 +595,14 @@
 <div class="sort-tab" id="admTabSt" onclick="admSetTab('st')" title="الإحصائيات">📊</div>
 <div class="sort-tab" id="admTabWk" onclick="admSetTab('wk')" title="المسابقة والرعاة">🏆</div>
       <div class="sort-tab" id="admTabQs" onclick="admSetTab('qs')" title="كنوز الديرة">🗝️</div>
+      <div class="sort-tab" id="admTabEc" onclick="admSetTab('ec')" title="اختيار المحررين">🏵️</div>
       <div class="sort-tab" id="admTabMu" onclick="admSetTab('mu')" title="مكتبة الموسيقى">🎵</div>
     </div>
     <div id="admSt" style="display:none"></div>
     <div id="admWk" style="display:none"></div>
     <div id="admQs" style="display:none"></div>
-    <div id="admMu" style="display:none"></div>
+    <div id="admEC" style="display:none"></div>
+      <div id="admMu" style="display:none"></div>
     <div id="admFb" style="display:none"></div>
     <div id="admPlaces" style="display:none">
       <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px">
@@ -795,15 +799,15 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="app.js?x=v2.6"></script>
-<script src="places.js?x=v2.6"></script>
-<script src="capture.js?x=v2.6"></script>
-<script src="photos.js?x=v2.6"></script>
-<script src="week.js?x=v2.6"></script>
-<script src="upload.js?x=v2.6"></script>
-<script src="auth.js?x=v2.6"></script>
-<script src="admin.js?x=v2.6"></script>
-<script src="main.js?x=v2.6"></script>
+<script src="app.js?x=v2.7"></script>
+<script src="places.js?x=v2.7"></script>
+<script src="capture.js?x=v2.7"></script>
+<script src="photos.js?x=v2.7"></script>
+<script src="week.js?x=v2.7"></script>
+<script src="upload.js?x=v2.7"></script>
+<script src="auth.js?x=v2.7"></script>
+<script src="admin.js?x=v2.7"></script>
+<script src="main.js?x=v2.7"></script>
 
 <script>
 if('serviceWorker' in navigator){
