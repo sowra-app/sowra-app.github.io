@@ -178,7 +178,9 @@ async function loadMyMsgs(){
         </div>
         <div class="mb">${esc(m.body)}</div>
         ${m.reply?`<div class="msg-reply"><b>رد الإدارة:</b><br>${esc(m.reply)}</div>`:''}
-        <button class="msg-del" onclick="delMyMsg(${m.id})">🗑️ حذف</button>
+        ${m.status==='new'
+          ?'<span class="msg-lock">🔒 قيد المراجعة — ما تنحذف الآن</span>'
+          :`<button class="msg-del" onclick="delMyMsg(${m.id})">🗑️ حذف</button>`}
       </div>`).join('')||'<div class="empty" style="padding:18px">ما أرسلت رسائل بعد</div>');
   }catch(e){
     el.innerHTML='<div class="empty" style="padding:14px">تعذر تحميل السجل</div>';
@@ -204,8 +206,9 @@ function initGoogleBtn(){
 /* ====== حذف رسائلي ====== */
 async function delMyMsg(id){
   if(!confirm('حذف هذي الرسالة من سجلك؟'))return;
-  const {error}=await sb.from('feedback').delete().eq('id',id).eq('user_id',USER.id);
+  const {data,error}=await sb.from('feedback').delete().eq('id',id).eq('user_id',USER.id).select('id');
   if(error){toast('تعذر الحذف: '+error.message,true);return}
+  if(!data||!data.length){toast('ما تنحذف وهي قيد المراجعة 🔒',true);return}
   toast('انحذفت');
   loadMyMsgs();
 }

@@ -1045,3 +1045,4 @@ body.dark .tm-picked{background:#1B2A21}
 .fb-bar b{color:var(--sadu)}
 .fb-bar button{background:var(--card2);border:1.5px solid var(--sadu);border-radius:10px;padding:7px 13px;font-family:'Tajawal';font-size:11.5px;font-weight:700;color:var(--sadu);cursor:pointer}
 .fb-bar button:active{transform:scale(.96);background:var(--sadu);color:#fff}
+.msg-lock{display:inline-block;font-size:10.5px;color:var(--txt-dim);padding:5px 0 0;opacity:.8}
