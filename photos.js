@@ -2971,6 +2971,7 @@ async function renderInbox(){
     const r=await sb.from('dm')
       .select('*')
       .eq(isOut?'from_id':'to_id',USER.id)
+      .eq(isOut?'del_from':'del_to',false)
       .order('created_at',{ascending:false}).limit(60);
     if(r.error)throw r.error;
     let list=r.data||[];
@@ -3012,7 +3013,7 @@ async function renderInbox(){
         <div class="dm-body">${esc(m.body)}</div>
         <div class="dm-acts">
           ${isOut?'':`<button onclick="openDmBox('${other}','${esc(nm)}')">↩️ رد</button>`}
-          <button onclick="delDm(${m.id})">🗑️ حذف</button>
+          <button onclick="delDm(${m.id})">${(isOut&&!m.read_at)?'↩️ اسحبها':'🗑️ حذف'}</button>
           ${isOut?'':`<button onclick="reportDm(${m.id})">🚩 إبلاغ</button>`}
         </div>
       </div>`;
@@ -3029,11 +3030,32 @@ async function renderInbox(){
 }
 
 async function delDm(id){
-  if(!confirm('حذف الرسالة؟'))return;
-  const {error}=await sb.from('dm').delete().eq('id',id);
-  if(error){toast('تعذر الحذف',true);return}
-  toast('انحذفت');
-  renderInbox();
+  const isOut=(window.__dmTab==='out');
+  try{
+    const m=(await sb.from('dm').select('read_at,from_id,to_id').eq('id',id).maybeSingle()).data;
+    if(!m){toast('الرسالة غير موجودة',true);return}
+
+    // المرسل قبل القراءة → حذف كامل من الطرفين
+    if(isOut&&!m.read_at){
+      if(!confirm('سحب الرسالة؟\nما قرأها بعد — راح تختفي من عنده أيضاً.'))return;
+      const {data,error}=await sb.from('dm').delete().eq('id',id).select('id');
+      if(error){toast('تعذر السحب: '+error.message,true);return}
+      if(!data||!data.length){toast('تعذر السحب — ربما قرأها الآن',true);renderInbox();return}
+      toast('انسحبت الرسالة ✅');
+    }else{
+      // إخفاء من عندي فقط
+      const msg=isOut
+        ? 'حذف من سجلك؟\nقرأها الطرف الآخر — تبقى عنده.'
+        : 'حذف الرسالة من صندوقك؟';
+      if(!confirm(msg))return;
+      const field=isOut?{del_from:true}:{del_to:true};
+      const {error}=await sb.from('dm').update(field).eq('id',id);
+      if(error){toast('تعذر الحذف: '+error.message,true);return}
+      toast('انحذفت من عندك');
+    }
+    renderInbox();
+    if(typeof dmUnreadCount==='function')dmUnreadCount();
+  }catch(e){toast('تعذر الحذف',true)}
 }
 
 async function reportDm(id){
@@ -3091,7 +3113,7 @@ async function dmUnreadCount(){
   try{
     if(!USER||USER.is_anonymous)return 0;
     const r=await sb.from('dm').select('id',{count:'exact',head:true})
-      .eq('to_id',USER.id).is('read_at',null);
+      .eq('to_id',USER.id).eq('del_to',false).is('read_at',null);
     const n=r.count||0;
     const b=$('dmBadge');
     if(b){
@@ -3203,10 +3225,13 @@ function fdNav(where){
 /* مسح الوارد كاملاً */
 async function clearInbox(){
   const isOut=(window.__dmTab==='out');
-  if(!confirm('مسح كل الرسائل '+(isOut?'المرسلة':'الواردة')+'؟\nلا يمكن التراجع.'))return;
-  const {error}=await sb.from('dm').delete().eq(isOut?'from_id':'to_id',USER.id);
+  if(!confirm('مسح كل الرسائل '+(isOut?'المرسلة':'الواردة')+' من سجلك؟'))return;
+  const field=isOut?{del_from:true}:{del_to:true};
+  const {error}=await sb.from('dm').update(field)
+    .eq(isOut?'from_id':'to_id',USER.id)
+    .eq(isOut?'del_from':'del_to',false);
   if(error){toast('تعذر المسح: '+error.message,true);return}
-  toast('انمسح الوارد ✅');
+  toast('انمسح السجل ✅');
   renderInbox();
   if(typeof dmUnreadCount==='function')dmUnreadCount();
 }
