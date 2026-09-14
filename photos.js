@@ -4,6 +4,7 @@ let _viewMode='grid';
 let _cat='all', _sort='top', _scope='home';
 window.__scope='home';
 function toggleFilter(){
+  if(typeof closeUni==='function')closeUni();
   const d=$('filterDrawer');
   const open=d.style.display==='none';
   d.style.display=open?'block':'none';
@@ -3391,4 +3392,137 @@ async function admProfDmBan(uid,ban,name){
   if(typeof notifyDmBan==='function')await notifyDmBan(uid,ban,reason);
   toast(ban?'🚫 انمنع — وانبلّغ بالسبب':'✅ انرفع المنع — وانبلّغ');
   if(typeof openProfile==='function')openProfile(uid);
+}
+
+/* ====== البحث الموحّد ====== */
+window.__uniTab='photos';
+let _uniT=null;
+
+function onUniSearch(){
+  clearTimeout(_uniT);
+  _uniT=setTimeout(runUniSearch,350);
+}
+
+function setUniTab(t){
+  window.__uniTab=t;
+  ['P','U','L'].forEach(x=>{
+    const e=document.getElementById('urTab'+x);
+    if(e)e.classList.remove('on');
+  });
+  const map={photos:'P',users:'U',places:'L'};
+  const b=document.getElementById('urTab'+map[t]);
+  if(b)b.classList.add('on');
+  renderUniBody();
+}
+
+async function runUniSearch(){
+  const q=($('q').value||'').trim();
+  const box=$('uniResults');
+  if(!box)return;
+
+  if(q.length<2){
+    box.style.display='none';
+    render();
+    return;
+  }
+
+  // ═══ الصور ═══
+  const ph=photos.filter(p=>
+    p.media_type!=='video'&&p.visibility!=='private'&&(
+      (p.title||'').includes(q)||
+      (p.village||'').includes(q)||
+      (p.city||'').includes(q)||
+      (p.region||'').includes(q)||
+      (p.country||'').includes(q)||
+      (p.photographer||'').includes(q)
+    )
+  ).slice(0,30);
+
+  // ═══ الأماكن ═══
+  const pl={};
+  photos.forEach(p=>{
+    [p.village,p.city].forEach(nm=>{
+      if(nm&&nm.includes(q)){
+        const k=nm+'|'+(p.region||p.country||'');
+        pl[k]=pl[k]||{name:nm,area:p.region||p.country||'',n:0,lat:p.lat,lng:p.lng};
+        pl[k].n++;
+      }
+    });
+  });
+  const places=Object.values(pl).sort((a,b)=>b.n-a.n).slice(0,20);
+
+  // ═══ المصورون ═══
+  let users=[];
+  try{
+    const r=await sb.from('profiles').select('id,display_name,region,avatar_path')
+      .ilike('display_name','%'+q+'%').limit(20);
+    users=(r.data||[]);
+    if(USER)users=users.filter(u=>u.id!==USER.id);
+  }catch(e){}
+
+  window.__uniData={photos:ph,users,places};
+  $('urNP').textContent=ph.length;
+  $('urNU').textContent=users.length;
+  $('urNL').textContent=places.length;
+
+  // نفتح التبويب الذي فيه نتائج
+  if(!ph.length&&users.length)window.__uniTab='users';
+  else if(!ph.length&&!users.length&&places.length)window.__uniTab='places';
+  setUniTab(window.__uniTab);
+  box.style.display='block';
+}
+
+function renderUniBody(){
+  const el=$('urBody');if(!el)return;
+  const d=window.__uniData||{photos:[],users:[],places:[]};
+  const t=window.__uniTab;
+
+  if(t==='photos'){
+    if(!d.photos.length){el.innerHTML='<div class="ur-empty">ما لقينا صوراً</div>';return}
+    el.innerHTML='<div class="ur-grid">'+d.photos.map(p=>`
+      <div class="ur-ph" onclick="closeUni();openSheet(${p.id})">
+        <img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="">
+        <div class="ur-ph-t">${esc(p.title)}</div>
+      </div>`).join('')+'</div>';
+
+  }else if(t==='users'){
+    if(!d.users.length){el.innerHTML='<div class="ur-empty">ما لقينا مصوّرين</div>';return}
+    const counts={};
+    photos.forEach(p=>{counts[p.user_id]=(counts[p.user_id]||0)+1});
+    el.innerHTML=d.users.map(u=>{
+      const n=counts[u.id]||0;
+      return `<div class="ur-row" onclick="closeUni();openProfile('${u.id}')">
+        ${u.avatar_path?`<img src="${avatarUrl(u.avatar_path)}" alt="">`:'<div class="ur-ph-ic">📷</div>'}
+        <div class="ur-info">
+          <div class="ur-name">${esc(u.display_name||'مصوّر')}</div>
+          <div class="ur-meta">${u.region?'📍 '+esc(u.region)+' · ':''}${n} ${n===1?'صورة':n<11?'صور':'صورة'}</div>
+        </div>
+        <span class="ur-go">←</span>
+      </div>`;
+    }).join('');
+
+  }else{
+    if(!d.places.length){el.innerHTML='<div class="ur-empty">ما لقينا أماكن</div>';return}
+    el.innerHTML=d.places.map(p=>`
+      <div class="ur-row" onclick="closeUni();jumpToPlace('${esc(p.name).replace(/'/g,"&#39;")}')">
+        <div class="ur-ph-ic">📍</div>
+        <div class="ur-info">
+          <div class="ur-name">${esc(p.name)}</div>
+          <div class="ur-meta">${esc(p.area)} · ${p.n} ${p.n===1?'صورة':p.n<11?'صور':'صورة'}</div>
+        </div>
+        <span class="ur-go">←</span>
+      </div>`).join('');
+  }
+}
+
+function closeUni(){
+  const b=$('uniResults');
+  if(b)b.style.display='none';
+}
+
+function jumpToPlace(name){
+  const inp=$('q');
+  if(inp)inp.value=name;
+  closeUni();
+  render();
 }

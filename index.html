@@ -43,7 +43,7 @@
 <meta property="og:description" content="عدسات أهل الديار — شارك أجمل صور منطقتك وخلّ الناس تقيّم">
 <meta property="og:type" content="website">
 <meta property="og:image" content="icon-512.png">
-<link rel="manifest" href="manifest.json?x=v2.4">
+<link rel="manifest" href="manifest.json?x=v2.5">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><!-- Google Analytics -->
@@ -56,9 +56,9 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="leaflet.js?x=v2.4"></script>
-<link rel="stylesheet" href="style.css?x=v2.4">
-<link rel="stylesheet" href="leaflet.css?x=v2.4">
+<script src="leaflet.js?x=v2.5"></script>
+<link rel="stylesheet" href="style.css?x=v2.5">
+<link rel="stylesheet" href="leaflet.css?x=v2.5">
 </head>
 <body>
 
@@ -91,7 +91,7 @@
         فلتر<span id="filterBadge" class="f-badge" style="display:none">●</span>
       </button>
       <div class="su-sep"></div>
-      <input class="su-input" id="q" placeholder="ابحث باسم القرية أو المكان..." oninput="render()">
+      <input class="su-input" id="q" placeholder="ابحث عن مكان أو مصوّر..." oninput="onUniSearch()" onfocus="onUniSearch()">
       <div class="su-sep"></div>
       <button class="su-view" id="vtMap" onclick="setView('map')" title="خريطة">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
@@ -99,6 +99,14 @@
       <button class="su-view on" id="vtGrid" onclick="setView('grid')" title="شبكة">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       </button>
+    </div>
+    <div id="uniResults" class="uni-results" style="display:none">
+      <div class="ur-tabs">
+        <button class="on" id="urTabP" onclick="setUniTab('photos')">📷 الصور <span id="urNP">0</span></button>
+        <button id="urTabU" onclick="setUniTab('users')">👤 المصورون <span id="urNU">0</span></button>
+        <button id="urTabL" onclick="setUniTab('places')">📍 الأماكن <span id="urNL">0</span></button>
+      </div>
+      <div id="urBody" class="ur-body"></div>
     </div>
     <div class="filter-drawer" id="filterDrawer" style="display:none">
       <div class="fd-scroll">
@@ -174,7 +182,6 @@
             <button onclick="fdNav('race')"><span>🏁</span>سباق الديار</button>
             <button onclick="fdNav('waiting')"><span>🗺️</span>تنتظر عدستك</button>
             <button onclick="fdNav('quests')"><span>🏆</span>كنوز الديرة</button>
-            <button onclick="fdNav('search')"><span>🔍</span>ابحث عن مصوّر</button>
             <button id="fdSponsorsBtn" style="display:none" onclick="fdNav('sponsors')"><span>🤝</span>الرعاة</button>
           </div>
         </div>
@@ -778,15 +785,15 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="app.js?x=v2.4"></script>
-<script src="places.js?x=v2.4"></script>
-<script src="capture.js?x=v2.4"></script>
-<script src="photos.js?x=v2.4"></script>
-<script src="week.js?x=v2.4"></script>
-<script src="upload.js?x=v2.4"></script>
-<script src="auth.js?x=v2.4"></script>
-<script src="admin.js?x=v2.4"></script>
-<script src="main.js?x=v2.4"></script>
+<script src="app.js?x=v2.5"></script>
+<script src="places.js?x=v2.5"></script>
+<script src="capture.js?x=v2.5"></script>
+<script src="photos.js?x=v2.5"></script>
+<script src="week.js?x=v2.5"></script>
+<script src="upload.js?x=v2.5"></script>
+<script src="auth.js?x=v2.5"></script>
+<script src="admin.js?x=v2.5"></script>
+<script src="main.js?x=v2.5"></script>
 
 <script>
 if('serviceWorker' in navigator){

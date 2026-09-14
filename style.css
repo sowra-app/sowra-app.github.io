@@ -1077,3 +1077,26 @@ body.dark .tm-picked{background:#1B2A21}
 .msg-acts{display:flex;align-items:center;gap:10px;margin-top:9px;flex-wrap:wrap}
 .msg-reply-btn{background:var(--card2);border:1.5px solid var(--qblue);border-radius:10px;padding:6px 13px;font-family:'Tajawal';font-size:11.5px;font-weight:700;color:var(--qblue);cursor:pointer}
 .msg-reply-btn:active{transform:scale(.96);background:var(--qblue);color:#fff}
+
+/* ====== البحث الموحّد ====== */
+.uni-results{background:var(--card);border:1.5px solid var(--line);border-radius:16px;margin-bottom:10px;overflow:hidden;animation:urIn .22s ease}
+@keyframes urIn{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}
+.ur-tabs{display:flex;border-bottom:1px solid var(--line)}
+.ur-tabs button{flex:1;background:none;border:none;padding:12px 6px;font-family:'Tajawal';font-size:12.5px;font-weight:700;color:var(--txt-dim);cursor:pointer;border-bottom:2.5px solid transparent}
+.ur-tabs button.on{color:var(--sadu);border-bottom-color:var(--sadu)}
+.ur-tabs span{background:var(--card2);border-radius:8px;padding:1px 6px;font-size:10.5px;margin-right:3px}
+.ur-tabs button.on span{background:var(--sadu);color:#fff}
+.ur-body{max-height:58vh;overflow-y:auto;overscroll-behavior:contain;padding:12px}
+.ur-empty{text-align:center;padding:26px;font-size:13px;color:var(--txt-dim)}
+.ur-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ur-ph{cursor:pointer}
+.ur-ph img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:11px;display:block;border:1px solid var(--line)}
+.ur-ph-t{font-size:10.5px;margin-top:4px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt-dim)}
+.ur-row{display:flex;align-items:center;gap:11px;background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:10px 13px;margin-bottom:7px;cursor:pointer}
+.ur-row:active{transform:scale(.985);border-color:var(--sadu)}
+.ur-row img,.ur-ph-ic{width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:18px}
+.ur-info{flex:1;min-width:0}
+.ur-name{font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ur-meta{font-size:11.5px;color:var(--txt-dim);margin-top:2px}
+.ur-go{color:var(--txt-dim);font-size:16px}
+@media(min-width:600px){.ur-grid{grid-template-columns:repeat(4,1fr)}}
