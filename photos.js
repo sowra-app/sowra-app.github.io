@@ -2922,10 +2922,24 @@ async function sendDm(){
   const old=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='⏳'}
 
-  // فحص الحظر
+  // فحص مسبق: حظر · إغلاق الرسائل · منع إداري
   try{
     if(await isBlockedWith(to.id)){
       toast('🚫 ما تقدر تراسله — فيه حظر بينكما',true);
+      if(btn){btn.disabled=false;btn.textContent=old}
+      closeDmBox();
+      return;
+    }
+    const pr=(await sb.from('profiles').select('dm_open').eq('id',to.id).maybeSingle()).data;
+    if(pr&&pr.dm_open===false){
+      toast('🔕 هذا العضو أقفل استقبال الرسائل',true);
+      if(btn){btn.disabled=false;btn.textContent=old}
+      closeDmBox();
+      return;
+    }
+    const me=(await sb.from('profiles').select('dm_banned').eq('id',USER.id).maybeSingle()).data;
+    if(me&&me.dm_banned){
+      toast('🚫 حسابك ممنوع من إرسال الرسائل',true);
       if(btn){btn.disabled=false;btn.textContent=old}
       closeDmBox();
       return;
@@ -2962,7 +2976,14 @@ async function sendDm(){
     toast('انرسلت رسالتك ✅');
     closeDmBox();
   }catch(e){
-    toast('تعذر الإرسال: '+((e&&e.message)||''),true);
+    const msg=String((e&&e.message)||'');
+    // خطأ سياسة = حظر أو إغلاق الرسائل
+    if(/row-level|policy|violates|42501/i.test(msg)){
+      toast('🚫 ما تقدر تراسله — إما حاظرك أو أقفل الرسائل',true);
+      closeDmBox();
+    }else{
+      toast('تعذر الإرسال: '+msg,true);
+    }
   }finally{
     if(btn){btn.disabled=false;btn.textContent=old}
   }
