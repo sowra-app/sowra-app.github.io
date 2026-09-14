@@ -750,7 +750,7 @@ async function openProfile(uid){
   go('profile');
   PROF_UID=uid;PROF_TAB='public';
   $('profHead').innerHTML='<div class="loader">⏳</div>';
-  const r=await sb.from('profiles').select('display_name,bio,region,avatar_path,cover_path,dm_open').eq('id',uid).maybeSingle();
+  const r=await sb.from('profiles').select('display_name,bio,region,avatar_path,cover_path,dm_open,dm_banned').eq('id',uid).maybeSingle();
   const pr=r.data||{};
   const mine=photos.filter(x=>x.user_id===uid);
   const pub=mine.filter(x=>x.visibility!=='private');
@@ -804,6 +804,18 @@ async function openProfile(uid){
             ? `<button class="pf-act" style="border-color:var(--palm);color:var(--palm)" onclick="unblockUser('${uid}','${esc(pr.display_name||'مصوّر')}')">✅ فك الحظر</button>`
             : `<button class="pf-act" style="border-color:var(--sadu);color:var(--sadu)" onclick="blockUser('${uid}','${esc(pr.display_name||'مصوّر')}')">🚫 احظره</button>`
         ):''}
+      </div>
+      ${(!isMe&&typeof IS_ADMIN!=='undefined'&&IS_ADMIN)?`
+      <div class="pf-admin">
+        <div class="pa-lbl">🛡️ أدوات الإشراف</div>
+        <div class="pa-row">
+          ${pr.dm_banned
+            ? `<button class="pa-btn ok" onclick="admProfDmBan('${uid}',false,'${esc(pr.display_name||'مصوّر').replace(/'/g,"&#39;")}')">✅ ارفع منع المراسلة</button>`
+            : `<button class="pa-btn bad" onclick="admProfDmBan('${uid}',true,'${esc(pr.display_name||'مصوّر').replace(/'/g,"&#39;")}')">🚫 امنعه من المراسلة</button>`}
+        </div>
+        ${pr.dm_banned?'<div class="pa-note">🚫 ممنوع من إرسال الرسائل حالياً</div>':''}
+      </div>`:''}
+      <div style="display:none">
         ${isMe?`<button class="pf-act primary" onclick="go('acc')">⚙️ عدّل بياناتي</button>`:''}
       </div>
       <div class="pf-badges" id="profBadges"></div>
@@ -3357,4 +3369,20 @@ async function renderBlockList(){
         </div>`;
       }).join('');
   }catch(e){el.innerHTML='<div class="bl-empty">تعذر التحميل</div>'}
+}
+
+/* ====== منع المراسلة من البروفايل (للإشراف) ====== */
+async function admProfDmBan(uid,ban,name){
+  if(typeof IS_ADMIN==='undefined'||!IS_ADMIN){toast('للمشرفين فقط',true);return}
+  if(typeof isEditor==='function'&&!isEditor()){toast('🔒 يحتاج صلاحية أعلى',true);return}
+
+  const msg=ban
+    ? 'منع '+(name||'هذا العضو')+' من إرسال الرسائل؟\n\nيستخدم المنصة عادي — لكن ما يرسل رسائل خاصة.'
+    : 'رفع المنع عن '+(name||'هذا العضو')+'؟';
+  if(!confirm(msg))return;
+
+  const {error}=await sb.from('profiles').update({dm_banned:ban}).eq('id',uid);
+  if(error){toast('تعذرت العملية: '+error.message,true);return}
+  toast(ban?'🚫 انمنع من المراسلة':'✅ انرفع المنع');
+  if(typeof openProfile==='function')openProfile(uid);
 }
