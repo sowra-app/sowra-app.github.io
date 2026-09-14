@@ -1072,3 +1072,5 @@ body.dark .tm-picked{background:#1B2A21}
 .pa-btn.ok{border:1.5px solid var(--palm);color:var(--palm)}
 .pa-btn:active{transform:scale(.97)}
 .pa-note{font-size:11px;color:var(--sadu);margin-top:8px;text-align:center;font-weight:700}
+.fb-ban.ok{border-color:var(--palm);color:var(--palm)}
+.fb-ban.ok:active{background:var(--palm);color:#fff}

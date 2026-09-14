@@ -119,6 +119,15 @@ async function sendFeedback(){
 async function loadFb(){
   $('admFb').innerHTML='<div class="empty">⏳</div>';
   const { data, error } = await sb.from('feedback').select('*, profiles!user_id(display_name)').order('created_at',{ascending:false});
+  // حالة المنع لكل معرّف مذكور بالبلاغات
+  window.__dmBanMap={};
+  try{
+    const uids=[...new Set((data||[]).map(f=>_dmUid(f.admin_note)).filter(Boolean))];
+    if(uids.length){
+      const pr=await sb.from('profiles').select('id,dm_banned').in('id',uids);
+      (pr.data||[]).forEach(u=>{window.__dmBanMap[u.id]=!!u.dm_banned});
+    }
+  }catch(e){}
   if(error){$('admFb').innerHTML=`<div class="empty">⚠️ ${error.message}</div>`;return}
   if(!data.length){$('admFb').innerHTML='<div class="empty">📭 ما فيه رسائل بعد</div>';return}
   const newN=data.filter(f=>f.status==='new').length;
@@ -133,7 +142,11 @@ async function loadFb(){
         <span style="font-size:11px;color:var(--txt-dim)">${esc(f.profiles?.display_name||'زائر')} · ${new Date(f.created_at).toLocaleDateString('ar-SA')}</span>
       </div>
       <div style="font-size:14px;line-height:1.8;margin-bottom:${f.admin_note?'8px':'10px'}">${esc(f.body)}</div>
-      ${f.admin_note?`<div style="background:var(--card2);border:1px solid var(--star);border-radius:11px;padding:10px 12px;margin-bottom:10px;font-size:12.5px;line-height:1.9;white-space:pre-wrap;color:var(--txt-dim)"><b style="color:var(--star);display:block;margin-bottom:5px">🔒 تفاصيل للإدارة</b>${esc(f.admin_note)}${_dmUid(f.admin_note)?`<button class="fb-ban" onclick="admDmBan('${_dmUid(f.admin_note)}')">🚫 امنعه من المراسلة</button>`:''}</div>`:''}
+      ${f.admin_note?`<div style="background:var(--card2);border:1px solid var(--star);border-radius:11px;padding:10px 12px;margin-bottom:10px;font-size:12.5px;line-height:1.9;white-space:pre-wrap;color:var(--txt-dim)"><b style="color:var(--star);display:block;margin-bottom:5px">🔒 تفاصيل للإدارة</b>${esc(f.admin_note)}${_dmUid(f.admin_note)?(
+            (window.__dmBanMap&&window.__dmBanMap[_dmUid(f.admin_note)])
+              ? `<button class="fb-ban ok" onclick="admDmBan('${_dmUid(f.admin_note)}',false)">✅ ارفع منع المراسلة</button>`
+              : `<button class="fb-ban" onclick="admDmBan('${_dmUid(f.admin_note)}',true)">🚫 امنعه من المراسلة</button>`
+          ):''}</div>`:''}
       <div style="display:flex;gap:8px">
         ${f.status==='new'
           ?`<button class="btn" style="font-size:12px;padding:7px 14px;background:var(--qblue)" onclick="fbReply(${f.id})">💬 رد</button>
@@ -1196,19 +1209,16 @@ function _dmUid(note){
   return m?m[1]:'';
 }
 
-async function admDmBan(uid){
+async function admDmBan(uid,ban){
   if(!needEditor('منع المراسلة'))return;
-  if(!confirm('منع هذا العضو من إرسال الرسائل نهائياً؟\n\nيقدر يستخدم المنصة عادي — لكن ما يرسل رسائل خاصة.'))return;
-  const {error}=await sb.from('profiles').update({dm_banned:true}).eq('id',uid);
-  if(error){toast('تعذر المنع: '+error.message,true);return}
-  toast('🚫 انمنع من المراسلة');
-  loadFb();
-}
-
-async function admDmUnban(uid){
-  if(!needEditor('رفع المنع'))return;
-  const {error}=await sb.from('profiles').update({dm_banned:false}).eq('id',uid);
-  if(error){toast('تعذر الرفع: '+error.message,true);return}
-  toast('✅ انرفع المنع');
+  if(typeof ban==='undefined')ban=true;
+  const msg=ban
+    ? 'منع هذا العضو من إرسال الرسائل؟\n\nيستخدم المنصة عادي — لكن ما يرسل رسائل خاصة.'
+    : 'رفع المنع عن هذا العضو؟';
+  if(!confirm(msg))return;
+  const {error}=await sb.from('profiles').update({dm_banned:ban}).eq('id',uid);
+  if(error){toast('تعذرت العملية: '+error.message,true);return}
+  if(window.__dmBanMap)window.__dmBanMap[uid]=ban;
+  toast(ban?'🚫 انمنع من المراسلة':'✅ انرفع المنع');
   loadFb();
 }
