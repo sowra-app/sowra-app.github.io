@@ -3016,13 +3016,37 @@ async function delDm(id){
 async function reportDm(id){
   if(!confirm('إبلاغ الإدارة عن هذي الرسالة؟'))return;
   try{
-    const m=(await sb.from('dm').select('body,from_id').eq('id',id).maybeSingle()).data;
+    // معلومات كاملة عبر الدالة الآمنة
+    let inf=null;
+    try{
+      const rr=await sb.rpc('dm_report_info',{mid:id});
+      inf=rr.data;
+    }catch(e){}
+
+    // احتياطي لو أخفقت الدالة
+    if(!inf){
+      const m=(await sb.from('dm').select('body,from_id,created_at').eq('id',id).maybeSingle()).data;
+      if(!m){toast('الرسالة غير موجودة',true);return}
+      let nm='مصوّر';
+      try{
+        const pr=(await sb.from('profiles').select('display_name').eq('id',m.from_id).maybeSingle()).data;
+        if(pr&&pr.display_name)nm=pr.display_name;
+      }catch(e){}
+      inf={uid:m.from_id,name:nm,email:'',body:m.body,created_at:m.created_at};
+    }
+
+    const when=new Date(inf.created_at).toLocaleDateString('ar-SA');
     await sb.from('feedback').insert({
       user_id:USER.id, kind:'other',
-      body:'🚩 إبلاغ عن رسالة خاصة\nمن: '+(m?m.from_id:'')+'\nالنص: '+(m?m.body:'')
+      body:'🚩 بلاغ عن رسالة خاصة\n\n'
+        +'المرسِل: '+(inf.name||'مصوّر')+'\n'
+        +(inf.email?('البريد: '+inf.email+'\n'):'')
+        +'التاريخ: '+when+'\n'
+        +'المعرّف: '+inf.uid+'\n\n'
+        +'نص الرسالة:\n«'+(inf.body||'')+'»'
     });
     toast('وصل بلاغك للإدارة ✅');
-  }catch(e){toast('تعذر الإبلاغ',true)}
+  }catch(e){toast('تعذر الإبلاغ: '+((e&&e.message)||''),true)}
 }
 
 /* عدّاد الرسائل غير المقروءة */
