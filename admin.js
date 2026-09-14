@@ -133,7 +133,7 @@ async function loadFb(){
         <span style="font-size:11px;color:var(--txt-dim)">${esc(f.profiles?.display_name||'زائر')} · ${new Date(f.created_at).toLocaleDateString('ar-SA')}</span>
       </div>
       <div style="font-size:14px;line-height:1.8;margin-bottom:${f.admin_note?'8px':'10px'}">${esc(f.body)}</div>
-      ${f.admin_note?`<div style="background:var(--card2);border:1px solid var(--star);border-radius:11px;padding:10px 12px;margin-bottom:10px;font-size:12.5px;line-height:1.9;white-space:pre-wrap;color:var(--txt-dim)"><b style="color:var(--star);display:block;margin-bottom:5px">🔒 تفاصيل للإدارة</b>${esc(f.admin_note)}</div>`:''}
+      ${f.admin_note?`<div style="background:var(--card2);border:1px solid var(--star);border-radius:11px;padding:10px 12px;margin-bottom:10px;font-size:12.5px;line-height:1.9;white-space:pre-wrap;color:var(--txt-dim)"><b style="color:var(--star);display:block;margin-bottom:5px">🔒 تفاصيل للإدارة</b>${esc(f.admin_note)}${_dmUid(f.admin_note)?`<button class="fb-ban" onclick="admDmBan('${_dmUid(f.admin_note)}')">🚫 امنعه من المراسلة</button>`:''}</div>`:''}
       <div style="display:flex;gap:8px">
         ${f.status==='new'
           ?`<button class="btn" style="font-size:12px;padding:7px 14px;background:var(--qblue)" onclick="fbReply(${f.id})">💬 رد</button>
@@ -1187,5 +1187,28 @@ async function fbClearDone(n){
   const n2=(data||[]).length;
   if(!n2){toast('ما انمسح شيء — تحقق من صلاحيات الحذف',true);return}
   toast('انمسحت '+n2+' رسالة ✅');
+  loadFb();
+}
+
+/* ====== منع من المراسلة (إداري) ====== */
+function _dmUid(note){
+  const m=String(note||'').match(/المعرّف:\s*([0-9a-f-]{36})/i);
+  return m?m[1]:'';
+}
+
+async function admDmBan(uid){
+  if(!needEditor('منع المراسلة'))return;
+  if(!confirm('منع هذا العضو من إرسال الرسائل نهائياً؟\n\nيقدر يستخدم المنصة عادي — لكن ما يرسل رسائل خاصة.'))return;
+  const {error}=await sb.from('profiles').update({dm_banned:true}).eq('id',uid);
+  if(error){toast('تعذر المنع: '+error.message,true);return}
+  toast('🚫 انمنع من المراسلة');
+  loadFb();
+}
+
+async function admDmUnban(uid){
+  if(!needEditor('رفع المنع'))return;
+  const {error}=await sb.from('profiles').update({dm_banned:false}).eq('id',uid);
+  if(error){toast('تعذر الرفع: '+error.message,true);return}
+  toast('✅ انرفع المنع');
   loadFb();
 }

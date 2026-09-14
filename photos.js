@@ -798,7 +798,12 @@ async function openProfile(uid){
       </div>
       <div class="pf-acts">
         <button class="pf-act" onclick="shareProfile('${uid}')">📤 شارك</button>
-        ${(!isMe&&USER&&!USER.is_anonymous&&pr.dm_open!==false)?`<button class="pf-act" onclick="openDmBox('${uid}','${esc(pr.display_name||'مصوّر')}')">✉️ راسله</button>`:''}
+        ${(!isMe&&USER&&!USER.is_anonymous&&pr.dm_open!==false&&!(window.__myBlocks&&window.__myBlocks.has(uid)))?`<button class="pf-act" onclick="openDmBox('${uid}','${esc(pr.display_name||'مصوّر')}')">✉️ راسله</button>`:''}
+        ${(!isMe&&USER&&!USER.is_anonymous)?(
+          (window.__myBlocks&&window.__myBlocks.has(uid))
+            ? `<button class="pf-act" style="border-color:var(--palm);color:var(--palm)" onclick="unblockUser('${uid}','${esc(pr.display_name||'مصوّر')}')">✅ فك الحظر</button>`
+            : `<button class="pf-act" style="border-color:var(--sadu);color:var(--sadu)" onclick="blockUser('${uid}','${esc(pr.display_name||'مصوّر')}')">🚫 احظره</button>`
+        ):''}
         ${isMe?`<button class="pf-act primary" onclick="go('acc')">⚙️ عدّل بياناتي</button>`:''}
       </div>
       <div class="pf-badges" id="profBadges"></div>
@@ -2917,6 +2922,16 @@ async function sendDm(){
   const old=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='⏳'}
 
+  // فحص الحظر
+  try{
+    if(await isBlockedWith(to.id)){
+      toast('🚫 ما تقدر تراسله — فيه حظر بينكما',true);
+      if(btn){btn.disabled=false;btn.textContent=old}
+      closeDmBox();
+      return;
+    }
+  }catch(e){}
+
   try{
     // حد: رسالتان يومياً لنفس الشخص
     const since=new Date(Date.now()-86400000).toISOString();
@@ -2963,6 +2978,7 @@ function setDmTab(t){
 
 async function renderInbox(){
   const el=$('inboxList');if(!el)return;
+  if(!window.__myBlocks||!window.__myBlocks.size)await loadMyBlocks();
   if(!USER||USER.is_anonymous){el.innerHTML='';return}
   const tab=window.__dmTab||'in';
   const isOut=(tab==='out');
@@ -2975,6 +2991,11 @@ async function renderInbox(){
       .order('created_at',{ascending:false}).limit(60);
     if(r.error)throw r.error;
     let list=r.data||[];
+    // استبعاد المحظورين
+    if(window.__myBlocks&&window.__myBlocks.size){
+      const k=isOut?'to_id':'from_id';
+      list=list.filter(m=>!window.__myBlocks.has(m[k]));
+    }
 
     // أسماء الطرف الآخر
     const names={};
@@ -3014,7 +3035,8 @@ async function renderInbox(){
         <div class="dm-acts">
           ${isOut?'':`<button onclick="openDmBox('${other}','${esc(nm)}')">↩️ رد</button>`}
           <button onclick="delDm(${m.id})">${(isOut&&!m.read_at)?'↩️ اسحبها':'🗑️ حذف'}</button>
-          ${isOut?'':`<button onclick="reportDm(${m.id})">🚩 إبلاغ</button>`}
+          ${isOut?'':`<button onclick="reportDm(${m.id})">🚩 إبلاغ</button>
+          <button onclick="blockUser('${other}','${esc(nm).replace(/'/g,"&#39;")}')">🚫 احظره</button>`}
         </div>
       </div>`;
     }).join('');
@@ -3234,4 +3256,78 @@ async function clearInbox(){
   toast('انمسح السجل ✅');
   renderInbox();
   if(typeof dmUnreadCount==='function')dmUnreadCount();
+}
+
+/* ====== نظام الحظر ====== */
+window.__myBlocks=new Set();
+
+async function loadMyBlocks(){
+  try{
+    if(!USER||USER.is_anonymous){window.__myBlocks=new Set();return}
+    const r=await sb.from('dm_blocks').select('blocked').eq('blocker',USER.id);
+    window.__myBlocks=new Set((r.data||[]).map(x=>x.blocked));
+  }catch(e){}
+}
+
+/* هل أحدنا حاظر الآخر؟ */
+async function isBlockedWith(uid){
+  try{
+    if(!USER||USER.is_anonymous)return false;
+    const r=await sb.from('dm_blocks').select('blocker,blocked')
+      .or('and(blocker.eq.'+USER.id+',blocked.eq.'+uid+'),and(blocker.eq.'+uid+',blocked.eq.'+USER.id+')');
+    return !!(r.data&&r.data.length);
+  }catch(e){return false}
+}
+
+async function blockUser(uid,name){
+  if(!USER||USER.is_anonymous){toast('سجّل أول',true);return}
+  if(!confirm('حظر '+(name||'هذا العضو')+'؟\n\n· ما يقدر يراسلك\n· ما تقدر تراسله\n· رسائله تختفي من صندوقك'))return;
+  const {error}=await sb.from('dm_blocks').insert({blocker:USER.id,blocked:uid});
+  if(error&&error.code!=='23505'){toast('تعذر الحظر: '+error.message,true);return}
+  window.__myBlocks.add(uid);
+  toast('🚫 انحظر — ما راح يوصلك منه شيء');
+  if(typeof renderInbox==='function')renderInbox();
+  if(typeof dmUnreadCount==='function')dmUnreadCount();
+  if(typeof closeDmBox==='function')closeDmBox();
+}
+
+async function unblockUser(uid,name){
+  if(!confirm('فك الحظر عن '+(name||'هذا العضو')+'؟'))return;
+  const {error}=await sb.from('dm_blocks').delete()
+    .eq('blocker',USER.id).eq('blocked',uid);
+  if(error){toast('تعذر الفك: '+error.message,true);return}
+  window.__myBlocks.delete(uid);
+  toast('✅ انفك الحظر');
+  renderBlockList();
+}
+
+/* قائمة المحظورين */
+async function renderBlockList(){
+  const el=$('blockList');if(!el)return;
+  if(!USER||USER.is_anonymous){el.innerHTML='';return}
+  el.innerHTML='<div class="loader" style="padding:14px">⏳</div>';
+  try{
+    const r=await sb.from('dm_blocks').select('blocked,created_at')
+      .eq('blocker',USER.id).order('created_at',{ascending:false});
+    const list=r.data||[];
+    if(!list.length){
+      el.innerHTML='<div class="bl-empty">ما حظرت أحداً</div>';
+      return;
+    }
+    const names={};
+    try{
+      const ids=list.map(x=>x.blocked);
+      const pr=await sb.from('profiles').select('id,display_name').in('id',ids);
+      (pr.data||[]).forEach(u=>{names[u.id]=u.display_name||'مصوّر'});
+    }catch(e){}
+
+    el.innerHTML='<div class="bl-lbl">🚫 المحظورون ('+list.length+')</div>'
+      +list.map(b=>{
+        const nm=names[b.blocked]||'مصوّر';
+        return `<div class="bl-row">
+          <span>${esc(nm)}</span>
+          <button onclick="unblockUser('${b.blocked}','${esc(nm).replace(/'/g,"&#39;")}')">فك الحظر</button>
+        </div>`;
+      }).join('');
+  }catch(e){el.innerHTML='<div class="bl-empty">تعذر التحميل</div>'}
 }

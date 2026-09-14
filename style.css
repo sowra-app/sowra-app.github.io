@@ -1051,3 +1051,14 @@ body.dark .tm-picked{background:#1B2A21}
 .dm-tabs{display:flex;gap:7px;margin-bottom:12px}
 .dm-tabs button{flex:1;background:var(--card2);border:1.5px solid var(--line);border-radius:12px;padding:10px;font-family:'Tajawal';font-size:13px;font-weight:700;color:var(--txt-dim);cursor:pointer}
 .dm-tabs button.on{background:var(--sadu);border-color:var(--sadu);color:#fff}
+
+/* ====== قائمة المحظورين ====== */
+.block-list{margin-top:20px;padding-top:16px;border-top:1.5px dashed var(--line)}
+.bl-lbl{font-size:12.5px;font-weight:700;color:var(--txt-dim);margin-bottom:9px}
+.bl-empty{font-size:12px;color:var(--txt-dim);text-align:center;padding:12px;opacity:.75}
+.bl-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:9px 13px;margin-bottom:7px}
+.bl-row span{font-size:13px;font-weight:700}
+.bl-row button{background:var(--card);border:1px solid var(--palm);border-radius:9px;padding:5px 12px;font-family:'Tajawal';font-size:11px;font-weight:700;color:var(--palm);cursor:pointer}
+.bl-row button:active{transform:scale(.96);background:var(--palm);color:#fff}
+.fb-ban{display:block;width:100%;background:var(--card);border:1.5px solid var(--sadu);border-radius:10px;padding:8px;margin-top:10px;font-family:'Tajawal';font-size:11.5px;font-weight:700;color:var(--sadu);cursor:pointer}
+.fb-ban:active{transform:scale(.97);background:var(--sadu);color:#fff}

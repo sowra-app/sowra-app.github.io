@@ -411,6 +411,7 @@ function accPanel(name){
   if(window.__accOpen==='stats'&&typeof renderMyStats==='function')renderMyStats();
   if(window.__accOpen==='notif'&&typeof renderNotifBox==='function')renderNotifBox();
   if(window.__accOpen==='inbox'&&typeof renderInbox==='function')renderInbox();
+  if(window.__accOpen==='inbox'&&typeof renderBlockList==='function')setTimeout(renderBlockList,400);
   if(window.__accOpen){
     setTimeout(()=>{
       const el=document.getElementById(map[window.__accOpen]);
