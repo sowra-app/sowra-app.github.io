@@ -178,9 +178,12 @@ async function loadMyMsgs(){
         </div>
         <div class="mb">${esc(m.body)}</div>
         ${m.reply?`<div class="msg-reply"><b>رد الإدارة:</b><br>${esc(m.reply)}</div>`:''}
-        ${m.status==='new'
-          ?'<span class="msg-lock">🔒 قيد المراجعة — ما تنحذف الآن</span>'
-          :`<button class="msg-del" onclick="delMyMsg(${m.id})">🗑️ حذف</button>`}
+        <div class="msg-acts">
+          <button class="msg-reply-btn" onclick="replyToAdmin(${m.id})">↩️ رد على الإدارة</button>
+          ${m.status==='new'
+            ?'<span class="msg-lock">🔒 قيد المراجعة</span>'
+            :`<button class="msg-del" onclick="delMyMsg(${m.id})">🗑️ حذف</button>`}
+        </div>
       </div>`).join('')||'<div class="empty" style="padding:18px">ما أرسلت رسائل بعد</div>');
   }catch(e){
     el.innerHTML='<div class="empty" style="padding:14px">تعذر تحميل السجل</div>';
@@ -220,4 +223,47 @@ async function clearMyMsgs(){
   if(error){toast('تعذر المسح: '+error.message,true);return}
   toast('انمسح السجل ✅');
   loadMyMsgs();
+}
+
+/* ====== الرد على الإدارة ====== */
+async function replyToAdmin(refId){
+  const t=prompt('اكتب ردك للإدارة:');
+  if(t===null)return;
+  const body=(t||'').trim();
+  if(body.length<5){toast('اكتب رسالة أوضح',true);return}
+  if(body.length>600){toast('الحد ٦٠٠ حرف',true);return}
+
+  if(typeof checkText==='function'){
+    const bad=checkText(body);
+    if(bad){toast(bad,true);return}
+  }
+
+  try{
+    const {error}=await sb.from('feedback').insert({
+      user_id:USER.id,
+      kind:'other',
+      body:'↩️ رد على رسالة سابقة (#'+refId+')\n\n'+body,
+      status:'new'
+    });
+    if(error)throw error;
+
+    // إشعار للإدارة
+    try{
+      const adm=await sb.from('admins').select('id');
+      const ids=(adm.data||[]).map(x=>x.id);
+      if(ids.length&&typeof pushNotify==='function'){
+        pushNotify({
+          title:'💬 رد من عضو',
+          body:body.slice(0,80),
+          url:'/',
+          user_ids:ids
+        });
+      }
+    }catch(e){}
+
+    toast('✅ وصل ردك — الإدارة تراجعه');
+    loadMyMsgs();
+  }catch(e){
+    toast('تعذر الإرسال: '+((e&&e.message)||''),true);
+  }
 }
