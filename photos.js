@@ -2954,53 +2954,72 @@ async function sendDm(){
 }
 
 /* ====== صندوق الوارد ====== */
+window.__dmTab='in';
+
+function setDmTab(t){
+  window.__dmTab=t;
+  renderInbox();
+}
+
 async function renderInbox(){
   const el=$('inboxList');if(!el)return;
   if(!USER||USER.is_anonymous){el.innerHTML='';return}
+  const tab=window.__dmTab||'in';
+  const isOut=(tab==='out');
   el.innerHTML='<div class="loader" style="padding:16px">⏳</div>';
   try{
     const r=await sb.from('dm')
       .select('*')
-      .eq('to_id',USER.id).order('created_at',{ascending:false}).limit(60);
+      .eq(isOut?'from_id':'to_id',USER.id)
+      .order('created_at',{ascending:false}).limit(60);
     if(r.error)throw r.error;
     let list=r.data||[];
 
-    // أسماء المرسلين — استعلام منفصل (أوثق من الربط)
+    // أسماء الطرف الآخر
     const names={};
     if(list.length){
       try{
-        const ids=[...new Set(list.map(m=>m.from_id))];
+        const key=isOut?'to_id':'from_id';
+        const ids=[...new Set(list.map(m=>m[key]))];
         const pr=await sb.from('profiles').select('id,display_name').in('id',ids);
         (pr.data||[]).forEach(u=>{names[u.id]=u.display_name||'مصوّر'});
       }catch(e){}
     }
+
+    const tabs=`<div class="dm-tabs">
+        <button class="${!isOut?'on':''}" onclick="setDmTab('in')">📥 الوارد</button>
+        <button class="${isOut?'on':''}" onclick="setDmTab('out')">📤 المرسلة</button>
+      </div>`;
+
     if(!list.length){
-      el.innerHTML='<div class="empty" style="padding:22px"><span class="big">📭</span>ما وصلك رسائل</div>';
+      el.innerHTML=tabs+'<div class="empty" style="padding:22px"><span class="big">📭</span>'
+        +(isOut?'ما أرسلت رسائل بعد':'ما وصلك رسائل')+'</div>';
       return;
     }
     const unreadN=list.filter(m=>!m.read_at).length;
-    el.innerHTML=`<div class="msgs-bar">
-        <span>الوارد (${list.length})${unreadN?' · '+unreadN+' جديدة':''}</span>
+    el.innerHTML=tabs+`<div class="msgs-bar">
+        <span>${isOut?'المرسلة':'الوارد'} (${list.length})${(!isOut&&unreadN)?' · '+unreadN+' جديدة':''}</span>
         <button onclick="clearInbox()">🗑️ امسح الكل</button>
       </div>`+list.map(m=>{
-      const nm=names[m.from_id]||'مصوّر';
-      const unread=!m.read_at;
+      const other=isOut?m.to_id:m.from_id;
+      const nm=names[other]||'مصوّر';
+      const unread=!isOut&&!m.read_at;
       return `<div class="dm-card${unread?' unread':''}">
         <div class="dm-top">
-          <span class="dm-from" onclick="openProfile('${m.from_id}')">${esc(nm)}</span>
-          <span class="dm-time">${timeAgo(m.created_at)}</span>
+          <span class="dm-from" onclick="openProfile('${other}')">${isOut?'إلى: ':''}${esc(nm)}</span>
+          <span class="dm-time">${timeAgo(m.created_at)}${isOut?(m.read_at?' · ✓✓ قرأها':' · ✓ أُرسلت'):''}</span>
         </div>
         <div class="dm-body">${esc(m.body)}</div>
         <div class="dm-acts">
-          <button onclick="openDmBox('${m.from_id}','${esc(nm)}')">↩️ رد</button>
+          ${isOut?'':`<button onclick="openDmBox('${other}','${esc(nm)}')">↩️ رد</button>`}
           <button onclick="delDm(${m.id})">🗑️ حذف</button>
-          <button onclick="reportDm(${m.id})">🚩 إبلاغ</button>
+          ${isOut?'':`<button onclick="reportDm(${m.id})">🚩 إبلاغ</button>`}
         </div>
       </div>`;
     }).join('');
 
-    // تعليم المقروء
-    const un=list.filter(m=>!m.read_at).map(m=>m.id);
+    // تعليم المقروء — الوارد فقط
+    const un=isOut?[]:list.filter(m=>!m.read_at).map(m=>m.id);
     if(un.length){
       try{await sb.from('dm').update({read_at:new Date().toISOString()}).in('id',un)}catch(e){}
     }
@@ -3183,8 +3202,9 @@ function fdNav(where){
 
 /* مسح الوارد كاملاً */
 async function clearInbox(){
-  if(!confirm('مسح كل الرسائل الواردة؟\nلا يمكن التراجع.'))return;
-  const {error}=await sb.from('dm').delete().eq('to_id',USER.id);
+  const isOut=(window.__dmTab==='out');
+  if(!confirm('مسح كل الرسائل '+(isOut?'المرسلة':'الواردة')+'؟\nلا يمكن التراجع.'))return;
+  const {error}=await sb.from('dm').delete().eq(isOut?'from_id':'to_id',USER.id);
   if(error){toast('تعذر المسح: '+error.message,true);return}
   toast('انمسح الوارد ✅');
   renderInbox();
