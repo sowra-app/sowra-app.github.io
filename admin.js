@@ -1,7 +1,26 @@
 async function openAdmin(){
+  // محرّر غير مشرف → قسم الترشيحات فقط
+  if(typeof IS_ADMIN!=='undefined'&&!IS_ADMIN&&window.__IS_CURATOR){
+    go('adm');
+    ['Rep','All','Plc','Fb','St','Wk','Qs','Mu'].forEach(function(x){
+      const e=document.getElementById('admTab'+x);
+      if(e)e.style.display='none';
+    });
+    admTab='ec';
+    const ec=document.getElementById('admTabEc');
+    if(ec){ec.style.display='';ec.classList.add('on')}
+    ['admRep','admAll','admPlc','admFb','admSt','admWk','admQs','admMu'].forEach(function(id){
+      const e=document.getElementById(id);
+      if(e)e.style.display='none';
+    });
+    const ae=document.getElementById('admEC');
+    if(ae)ae.style.display='block';
+    loadEC();
+    return;
+  }
   try{
-    const c=(await sb.from('admins').select('is_curator').eq('id',USER.id).maybeSingle()).data;
-    window.__IS_CURATOR=!!(c&&c.is_curator);
+    const c=(await sb.from('curators').select('id').eq('id',USER.id).maybeSingle()).data;
+    window.__IS_CURATOR=!!c;
   }catch(e){}
   setTimeout(function(){if(typeof hideRestrictedTabs==='function')hideRestrictedTabs()},150);
   go('adm');
@@ -1279,39 +1298,136 @@ function isCurator(){
   return isEditor()||!!window.__IS_CURATOR;
 }
 
-/* ═══ قائمة المحررين (للمالك) ═══ */
+/* ═══ هيئة المحررين — أي عضو (للمالك) ═══ */
+let _cuT=null;
+window.__cuPick=null;
+
 async function admCuratorsBlock(){
   if(!isOwner())return '';
   let rows='';
   try{
-    const r=await sb.from('admins').select('id,role,name,is_curator').order('added_at');
-    const list=(r.data||[]);
-    rows=list.map(x=>{
-      const on=!!x.is_curator||x.role==='owner'||x.role==='editor';
-      const auto=(x.role==='owner'||x.role==='editor');
-      return `<div class="cu-row">
-        <span class="cu-name">${esc(x.name||'مشرف')}</span>
-        ${auto
-          ? '<span class="cu-auto">محرّر بحكم رتبته</span>'
-          : `<button class="cu-tg ${on?'on':''}" onclick="admToggleCurator('${x.id}',${!on})">${on?'✓ محرّر':'عيّنه محرّراً'}</button>`}
-      </div>`;
-    }).join('');
-  }catch(e){rows='<div style="font-size:12px;color:var(--txt-dim)">تعذر التحميل</div>'}
+    const r=await sb.from('curators').select('id,name,added_at').order('added_at');
+    const list=r.data||[];
+    rows=list.length
+      ? list.map(x=>`<div class="cu-row">
+          <span class="cu-name">🏵️ ${esc(x.name||'محرّر')}</span>
+          <button class="cu-del" onclick="admRemoveCurator('${x.id}','${esc(x.name||'محرّر').replace(/'/g,"&#39;")}')">✕</button>
+        </div>`).join('')
+      : '<div class="cu-empty">ما عيّنت محررين بعد</div>';
+  }catch(e){rows='<div class="cu-empty">تعذر التحميل</div>'}
 
   return `<div style="background:var(--card);border:1.5px solid var(--qteal);border-radius:14px;padding:14px;margin-top:12px">
     <div style="font-weight:700;font-size:14px;margin-bottom:4px">🏵️ هيئة المحررين <span style="font-size:11px;color:var(--qteal)">● للمالك</span></div>
     <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:11px;line-height:1.85">
-      المحررون يرشّحون الصور المميزة ويصوّتون عليها. المالك والمحرّرون محررون تلقائياً.
+      اختر <b>أي عضو</b> تراه صاحب عين بصيرة — ما يحتاج يكون مشرفاً. المحررون يرشّحون الصور المميزة ويصوّتون عليها.
+      <br><span style="opacity:.8">المالك والمحرّرون (بالرتب) محررون تلقائياً.</span>
     </div>
     ${rows}
+    <div class="cu-add">
+      <input id="cuSearch" placeholder="ابحث عن العضو بالاسم..." oninput="cuSearchUsers()" autocomplete="off">
+      <div id="cuResults" class="cu-results"></div>
+      <div id="cuPicked" class="cu-picked" style="display:none"></div>
+      <button id="cuAddBtn" onclick="admAddCurator()" disabled>🏵️ عيّنه محرّراً</button>
+    </div>
   </div>`;
 }
 
-async function admToggleCurator(uid,val){
+function cuSearchUsers(){
+  clearTimeout(_cuT);
+  _cuT=setTimeout(_cuRun,400);
+}
+
+async function _cuRun(){
+  const q=($('cuSearch').value||'').trim();
+  const box=$('cuResults');if(!box)return;
+  if(q.length<2){box.innerHTML='';return}
+  box.innerHTML='<div class="cu-empty">⏳</div>';
+  try{
+    const r=await sb.from('profiles').select('id,display_name,region')
+      .ilike('display_name','%'+q+'%').limit(12);
+    let list=r.data||[];
+    try{
+      const ex=await sb.from('curators').select('id');
+      const have=(ex.data||[]).map(x=>x.id);
+      list=list.filter(u=>!have.includes(u.id));
+    }catch(e){}
+    if(!list.length){box.innerHTML='<div class="cu-empty">ما لقينا أحداً</div>';return}
+
+    // عدد صور كل مرشّح — يساعد بالاختيار
+    const counts={};
+    try{
+      if(typeof photos!=='undefined'){
+        photos.forEach(p=>{counts[p.user_id]=(counts[p.user_id]||0)+1});
+      }
+    }catch(e){}
+
+    box.innerHTML=list.map(u=>{
+      const n=counts[u.id]||0;
+      return `<div class="cu-res" onclick="cuPick('${u.id}','${esc(u.display_name||'مصوّر').replace(/'/g,"&#39;")}')">
+        <span>${esc(u.display_name||'مصوّر')}</span>
+        <small>${u.region?esc(u.region)+' · ':''}${n} صورة</small>
+      </div>`;
+    }).join('');
+  }catch(e){box.innerHTML='<div class="cu-empty">تعذر البحث</div>'}
+}
+
+function cuPick(id,name){
+  window.__cuPick={id,name};
+  $('cuResults').innerHTML='';
+  $('cuSearch').value='';
+  const p=$('cuPicked');
+  if(p){
+    p.style.display='flex';
+    p.innerHTML='<b>'+esc(name)+'</b><button onclick="cuClearPick()">✕</button>';
+  }
+  const b=$('cuAddBtn');if(b)b.disabled=false;
+}
+
+function cuClearPick(){
+  window.__cuPick=null;
+  const p=$('cuPicked');if(p)p.style.display='none';
+  const b=$('cuAddBtn');if(b)b.disabled=true;
+}
+
+async function admAddCurator(){
   if(!needOwner('تعيين المحررين'))return;
-  const {error}=await sb.from('admins').update({is_curator:val}).eq('id',uid);
-  if(error){toast('تعذرت العملية: '+error.message,true);return}
-  toast(val?'🏵️ صار محرّراً':'انسحبت صفة المحرّر');
+  const pick=window.__cuPick;
+  if(!pick){toast('اختر العضو أول',true);return}
+
+  const {error}=await sb.from('curators').insert({id:pick.id,name:pick.name});
+  if(error){
+    if(error.code==='23505'){toast('محرّر أصلاً 🏵️',true);return}
+    toast('تعذر التعيين: '+error.message,true);return;
+  }
+
+  // إشعار ورسالة ترحيب
+  try{
+    if(typeof pushNotify==='function')pushNotify({
+      title:'🏵️ صرت من هيئة المحررين',
+      body:'تقدر ترشّح الصور المميزة وتصوّت عليها',
+      url:'/',
+      user_ids:[pick.id]
+    });
+    await sb.from('feedback').insert({
+      user_id:pick.id, kind:'other', status:'done',
+      body:'🏵️ مرحباً بك في هيئة المحررين\n\n'
+        +'اخترناك لعينك البصيرة — صرت تقدر ترشّح الصور المميزة للحصول على وسام «اختيار المحررين» وتصوّت على ترشيحات غيرك.\n\n'
+        +'الترشيح من صفحة أي صورة، والتصويت من قسم المحررين.\n\n'
+        +'شكراً لأنك تساعدنا نبرز أجمل ما توثّقه عدسات أهل الديار.'
+    });
+  }catch(e){}
+
+  toast('🏵️ '+pick.name+' صار محرّراً — وانبلّغ');
+  cuClearPick();
+  loadAdmWeek();
+}
+
+async function admRemoveCurator(uid,name){
+  if(!needOwner('إزالة المحررين'))return;
+  if(!confirm('سحب صفة المحرّر عن '+(name||'هذا العضو')+'؟'))return;
+  const {error}=await sb.from('curators').delete().eq('id',uid);
+  if(error){toast('تعذرت الإزالة: '+error.message,true);return}
+  toast('انسحبت صفة المحرّر');
   loadAdmWeek();
 }
 
@@ -1331,8 +1447,13 @@ async function loadEC(){
     // عدد المحررين
     let curators=1;
     try{
-      const c=await sb.from('admins').select('id,role,is_curator');
-      curators=(c.data||[]).filter(x=>x.is_curator||x.role==='owner'||x.role==='editor').length||1;
+      const [cu,ad]=await Promise.all([
+        sb.from('curators').select('id'),
+        sb.from('admins').select('id,role')
+      ]);
+      const s=new Set((cu.data||[]).map(x=>x.id));
+      (ad.data||[]).forEach(x=>{if(x.role==='owner'||x.role==='editor')s.add(x.id)});
+      curators=s.size||1;
     }catch(e){}
     const need=Math.max(2,Math.ceil(curators/2));
 
@@ -1430,8 +1551,14 @@ async function ecNominate(pid){
 
   // إشعار المحررين
   try{
-    const c=await sb.from('admins').select('id,role,is_curator');
-    const ids=(c.data||[]).filter(x=>(x.is_curator||x.role==='owner'||x.role==='editor')&&x.id!==USER.id).map(x=>x.id);
+    const [cu,ad]=await Promise.all([
+      sb.from('curators').select('id'),
+      sb.from('admins').select('id,role')
+    ]);
+    const s=new Set((cu.data||[]).map(x=>x.id));
+    (ad.data||[]).forEach(x=>{if(x.role==='owner'||x.role==='editor')s.add(x.id)});
+    s.delete(USER.id);
+    const ids=[...s];
     if(ids.length&&typeof pushNotify==='function'){
       const p=admPhotos.find(x=>x.id===pid)||photos.find(x=>x.id===pid);
       pushNotify({

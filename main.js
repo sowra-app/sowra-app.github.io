@@ -78,7 +78,7 @@ function go(p){
     p='acc';
     $('accOut').style.display='block';$('accIn').style.display='none';
   }
-  if(p==='adm' && !IS_ADMIN)p='feed';
+  if(p==='adm' && !IS_ADMIN && !window.__IS_CURATOR)p='feed';
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
   $('page-'+p).classList.add('on');
   const wasDark=document.body.classList.contains('dark');

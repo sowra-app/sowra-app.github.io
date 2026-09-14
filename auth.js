@@ -26,6 +26,18 @@ async function checkAdmin(){
     }
     IS_ADMIN=!!data;
     window.ADM_ROLE=(data&&data.role)||(data?'owner':'');
+
+    // صفة المحرّر — مستقلة عن الإشراف
+    try{
+      const cu=(await sb.from('curators').select('id').eq('id',USER.id).maybeSingle()).data;
+      window.__IS_CURATOR=!!cu;
+    }catch(e){window.__IS_CURATOR=false}
+
+    // المحرّر غير المشرف يدخل اللوحة لقسم الترشيحات فقط
+    if(!IS_ADMIN&&window.__IS_CURATOR){
+      const g=$('admGear');
+      if(g)g.style.display='block';
+    }
     try{IS_ADMIN?localStorage.setItem('sowra_admin','1'):localStorage.removeItem('sowra_admin')}catch(e){}
     const g=$('admGear');if(g)g.style.display=IS_ADMIN?'block':'none';
     return IS_ADMIN;
