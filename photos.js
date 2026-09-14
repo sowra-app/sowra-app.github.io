@@ -2978,7 +2978,11 @@ async function renderInbox(){
       el.innerHTML='<div class="empty" style="padding:22px"><span class="big">📭</span>ما وصلك رسائل</div>';
       return;
     }
-    el.innerHTML=list.map(m=>{
+    const unreadN=list.filter(m=>!m.read_at).length;
+    el.innerHTML=`<div class="msgs-bar">
+        <span>الوارد (${list.length})${unreadN?' · '+unreadN+' جديدة':''}</span>
+        <button onclick="clearInbox()">🗑️ امسح الكل</button>
+      </div>`+list.map(m=>{
       const nm=names[m.from_id]||'مصوّر';
       const unread=!m.read_at;
       return `<div class="dm-card${unread?' unread':''}">
@@ -3175,4 +3179,14 @@ function fdNav(where){
       else if(where==='sponsors'&&typeof openSponsorsPage==='function')openSponsorsPage();
     }catch(e){}
   },80);
+}
+
+/* مسح الوارد كاملاً */
+async function clearInbox(){
+  if(!confirm('مسح كل الرسائل الواردة؟\nلا يمكن التراجع.'))return;
+  const {error}=await sb.from('dm').delete().eq('to_id',USER.id);
+  if(error){toast('تعذر المسح: '+error.message,true);return}
+  toast('انمسح الوارد ✅');
+  renderInbox();
+  if(typeof dmUnreadCount==='function')dmUnreadCount();
 }

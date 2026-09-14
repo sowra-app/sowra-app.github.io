@@ -121,7 +121,12 @@ async function loadFb(){
   const { data, error } = await sb.from('feedback').select('*, profiles!user_id(display_name)').order('created_at',{ascending:false});
   if(error){$('admFb').innerHTML=`<div class="empty">⚠️ ${error.message}</div>`;return}
   if(!data.length){$('admFb').innerHTML='<div class="empty">📭 ما فيه رسائل بعد</div>';return}
-  $('admFb').innerHTML=data.map(f=>`
+  const newN=data.filter(f=>f.status==='new').length;
+  const doneN=data.length-newN;
+  $('admFb').innerHTML=`<div class="fb-bar">
+      <span>📨 ${data.length} رسالة${newN?' · <b>'+newN+' جديدة</b>':''}</span>
+      ${(doneN&&isOwner())?`<button onclick="fbClearDone(${doneN})">🗑️ امسح المنتهية (${doneN})</button>`:''}
+    </div>`+data.map(f=>`
     <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:10px;${f.status==='done'?'opacity:.55':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:10px;background:var(--card2);border:1px solid var(--line)">${FB_AR[f.kind]||f.kind}</span>
@@ -1164,4 +1169,16 @@ async function admAddMember(){
   toast('✅ '+pick.name+' صار '+((ADM_ROLES[role]||{}).n||role));
   tmClearPick();
   loadAdmWeek();
+}
+
+/* ====== مسح الرسائل المنتهية (للمالك) ====== */
+async function fbClearDone(n){
+  if(!needOwner('المسح الجماعي'))return;
+  if(!confirm('مسح '+n+' رسالة منتهية؟\n\nالرسائل الجديدة تبقى — والمسح نهائي.'))return;
+  if(!confirm('تأكيد أخير: هذا الإجراء لا يمكن التراجع عنه.'))return;
+
+  const {error}=await sb.from('feedback').delete().neq('status','new');
+  if(error){toast('تعذر المسح: '+error.message,true);return}
+  toast('انمسحت الرسائل المنتهية ✅');
+  loadFb();
 }

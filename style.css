@@ -1031,3 +1031,17 @@ body.dark .tm-picked{background:#1B2A21}
 .fd-nav button:active{transform:scale(.97);border-color:var(--sadu)}
 .fd-view{background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:10px 13px}
 @media(max-width:380px){.fd-nav{grid-template-columns:1fr}}
+
+/* ====== حذف رسائلي ====== */
+.msgs-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.msgs-bar>span{font-weight:700;font-size:14px}
+.msgs-bar button{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-family:'Tajawal';font-size:11.5px;font-weight:700;color:var(--txt-dim);cursor:pointer}
+.msgs-bar button:active{transform:scale(.96);border-color:var(--sadu);color:var(--sadu)}
+.msg-card{position:relative}
+.msg-del{background:none;border:none;color:var(--txt-dim);font-family:'Tajawal';font-size:11px;font-weight:700;cursor:pointer;padding:5px 0 0;opacity:.7}
+.msg-del:active{opacity:1;color:var(--sadu)}
+.fb-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1.5px solid var(--line);border-radius:13px;padding:11px 14px;margin-bottom:12px;flex-wrap:wrap}
+.fb-bar>span{font-size:13px;font-weight:700}
+.fb-bar b{color:var(--sadu)}
+.fb-bar button{background:var(--card2);border:1.5px solid var(--sadu);border-radius:10px;padding:7px 13px;font-family:'Tajawal';font-size:11.5px;font-weight:700;color:var(--sadu);cursor:pointer}
+.fb-bar button:active{transform:scale(.96);background:var(--sadu);color:#fff}

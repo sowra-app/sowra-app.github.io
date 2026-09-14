@@ -165,7 +165,11 @@ async function loadMyMsgs(){
   try{
     const r=await sb.from('feedback').select('*').eq('user_id',USER.id).order('created_at',{ascending:false});
     const list=r.data||[];
-    el.innerHTML=(list.length?'<div style="font-weight:700;font-size:14px;margin-bottom:10px">سجل رسائلك:</div>':'')
+    const done=list.filter(m=>m.status!=='new').length;
+    el.innerHTML=(list.length?`<div class="msgs-bar">
+        <span>سجل رسائلك (${list.length})</span>
+        ${done?`<button onclick="clearMyMsgs()">🗑️ امسح المنتهية (${done})</button>`:''}
+      </div>`:'')
       +(list.map(m=>`
       <div class="msg-card">
         <div class="mk">
@@ -174,6 +178,7 @@ async function loadMyMsgs(){
         </div>
         <div class="mb">${esc(m.body)}</div>
         ${m.reply?`<div class="msg-reply"><b>رد الإدارة:</b><br>${esc(m.reply)}</div>`:''}
+        <button class="msg-del" onclick="delMyMsg(${m.id})">🗑️ حذف</button>
       </div>`).join('')||'<div class="empty" style="padding:18px">ما أرسلت رسائل بعد</div>');
   }catch(e){
     el.innerHTML='<div class="empty" style="padding:14px">تعذر تحميل السجل</div>';
@@ -194,4 +199,22 @@ function initGoogleBtn(){
   const wrap=$('googleBtnWrap');if(!wrap)return;
   const sp=window.__SPDATA;
   wrap.style.display=(sp&&sp.google_login)?'block':'none';
+}
+
+/* ====== حذف رسائلي ====== */
+async function delMyMsg(id){
+  if(!confirm('حذف هذي الرسالة من سجلك؟'))return;
+  const {error}=await sb.from('feedback').delete().eq('id',id).eq('user_id',USER.id);
+  if(error){toast('تعذر الحذف: '+error.message,true);return}
+  toast('انحذفت');
+  loadMyMsgs();
+}
+
+async function clearMyMsgs(){
+  if(!confirm('مسح كل الرسائل المنتهية من سجلك؟\nالرسائل قيد المراجعة تبقى.'))return;
+  const {error}=await sb.from('feedback').delete()
+    .eq('user_id',USER.id).neq('status','new');
+  if(error){toast('تعذر المسح: '+error.message,true);return}
+  toast('انمسح السجل ✅');
+  loadMyMsgs();
 }
