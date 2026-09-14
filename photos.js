@@ -91,7 +91,7 @@ const near=photos.filter(p=>p.lat&&p.lng&&p.media_type!=='video'&&distKm(p)<=30)
     $('nearbyWrap').style.display='block';
     $('nearbyFeed').innerHTML=near.map(p=>`
       <div class="card" onclick="openSheet(${p.id})">
-        <div class="ph"><img src="${thumbUrl(p.image_path)}" loading="lazy" alt="${esc(p.title)}">
+        <div class="ph"><img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="${esc(p.title)}">
           <div class="loc-chip">📍 ${esc(p.village||p.city)}</div>
         </div>
         <div class="card-body">
@@ -870,7 +870,7 @@ function renderProfFeed(){
     const src=isV?vidUrl(p.image_path):thumbUrl(p.image_path);
     return `<div class="mcard" onclick="openSheet(${p.id})">
       ${isV?`<video src="${src}#t=0.5" muted playsinline preload="metadata"></video>`
-           :`<img src="${src}" loading="lazy" alt="${esc(p.title)}">`}
+           :`<img src="${src}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" decoding="async" alt="${esc(p.title)}">`}
       ${p.visibility==='private'?'<div class="mc-lock">🔒</div>':''}
       ${isV?'<div class="mc-vid">▶</div>':''}
       <div class="mc-overlay"><div class="mc-title">${esc(p.title)}</div></div>
@@ -1270,7 +1270,7 @@ async function openQuests(){
         if(!p)return '';
         const got=myVisits.has(id);
         return `<div class="q-stop ${got?'got':''}" onclick="openSheet(${id})">
-          <img src="${thumbUrl(p.image_path)}" loading="lazy" alt="${esc(p.title)}">
+          <img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="${esc(p.title)}">
           ${got?'<div class="q-check">✓</div>':''}
           <div class="q-stop-name">${esc(p.village||p.city)}</div>
         </div>`;
@@ -2640,7 +2640,7 @@ async function checkNearby(){
           const d=Math.round(dist(p));
           const dt=d<1000?(d+' م'):((d/1000).toFixed(1)+' كم');
           return `<div class="na-item" onclick="openSheet(${p.id})">
-            <img class="na-thumb" src="${thumbUrl(p.image_path)}" loading="lazy" alt="">
+            <img class="na-thumb" src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" alt="">
             <div class="na-name">${esc(p.village||p.city)}</div>
             <div class="na-dist">${dt}</div>
           </div>`;
@@ -2883,7 +2883,7 @@ function renderTimeline(p){
         const mon=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'][dt.getMonth()];
         const cur=x.id===p.id;
         return `<div class="tl-item${cur?' cur':''}" onclick="${cur?'':'openSheet('+x.id+')'}">
-          <img src="${thumbUrl(x.image_path)}" loading="lazy" alt="">
+          <img src="${thumbUrl(x.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(x.image_path)}'" loading="lazy" alt="">
           <div class="tl-date">${mon} ${dt.getFullYear()}</div>
           ${cur?'<div class="tl-now">الحالية</div>':''}
         </div>`;
