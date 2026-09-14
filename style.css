@@ -1182,3 +1182,14 @@ body.dark .s-ec{background:linear-gradient(135deg,#12292C,var(--card))}
 body.dark .cu-picked{background:#12292C}
 #cuAddBtn{width:100%;background:var(--qteal);border:none;border-radius:11px;padding:11px;margin-top:9px;font-family:'Tajawal';font-size:13px;font-weight:700;color:#fff;cursor:pointer}
 #cuAddBtn:disabled{opacity:.45;cursor:default}
+
+/* ====== بنر التحديثات ====== */
+.news-banner{background:linear-gradient(135deg,#1E7B7B,#2E9B9B);border-radius:16px;padding:15px 17px;margin-bottom:12px;color:#fff;box-shadow:0 3px 12px rgba(30,123,123,.28);animation:nbIn .35s ease}
+@keyframes nbIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:none}}
+.nb-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.nb-tag{background:rgba(255,255,255,.22);border-radius:11px;padding:3px 12px;font-size:11.5px;font-weight:700}
+.nb-x{background:none;border:none;color:rgba(255,255,255,.75);font-size:15px;cursor:pointer;padding:2px 5px}
+.nb-title{font-family:'Reem Kufi',sans-serif;font-size:17px;margin-bottom:6px;line-height:1.6}
+.nb-body{font-size:13px;line-height:1.95;color:rgba(255,255,255,.92);white-space:pre-wrap}
+.nb-ok{background:rgba(255,255,255,.95);border:none;border-radius:12px;padding:9px 0;width:100%;margin-top:12px;font-family:'Tajawal';font-size:13px;font-weight:700;color:#1E7B7B;cursor:pointer}
+.nb-ok:active{transform:scale(.98)}

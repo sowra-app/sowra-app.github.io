@@ -85,6 +85,7 @@ function showNearby(){
     if(MAP)addUserPin(lat,lng);
     loadWeatherTip();
     if(typeof loadSunTimes==='function'&&window.__USER_LAT)loadSunTimes(window.__USER_LAT,window.__USER_LNG);
+    if(typeof renderNewsBanner==='function')renderNewsBanner();
     if(typeof checkNearby==='function')setTimeout(checkNearby,600);
     if(typeof renderHomeHero==='function')renderHomeHero();
     const distKm=(p)=>Math.hypot(((p.lat||0)-lat)*111,(((p.lng||0)-lng)*111*Math.cos(lat*Math.PI/180)));
@@ -3636,4 +3637,37 @@ window.__onlyEc=false;
 function toggleEcFilter(btn){
   window.__onlyEc=!window.__onlyEc;
   if(btn)btn.classList.toggle('on',window.__onlyEc);
+}
+
+/* ====== بنر التحديثات — يظهر مرة واحدة ====== */
+function renderNewsBanner(){
+  const el=$('newsBanner');if(!el)return;
+  const sp=window.__SPDATA||{};
+  if(!sp.news_on||!sp.news_title){el.style.display='none';return}
+
+  const nid=sp.news_id||('n'+(sp.news_title||'').length);
+  let seen=false;
+  try{seen=localStorage.getItem('sowra_news_'+nid)==='1'}catch(e){}
+  if(seen){el.style.display='none';return}
+
+  el.style.display='block';
+  el.innerHTML=`
+    <div class="nb-top">
+      <span class="nb-tag">✨ جديد</span>
+      <button class="nb-x" onclick="dismissNews('${esc(nid)}')">✕</button>
+    </div>
+    <div class="nb-title">${esc(sp.news_title)}</div>
+    ${sp.news_body?`<div class="nb-body">${esc(sp.news_body)}</div>`:''}
+    <button class="nb-ok" onclick="dismissNews('${esc(nid)}')">✓ فهمت</button>`;
+}
+
+function dismissNews(nid){
+  try{localStorage.setItem('sowra_news_'+nid,'1')}catch(e){}
+  const el=$('newsBanner');
+  if(el){
+    el.style.transition='opacity .25s,transform .25s';
+    el.style.opacity='0';
+    el.style.transform='translateY(-10px)';
+    setTimeout(()=>{el.style.display='none'},260);
+  }
 }

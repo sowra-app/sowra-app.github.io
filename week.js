@@ -83,6 +83,7 @@ async function loadSponsor(){
     window.__SPDATA=b;
     // زر جوجل يظهر فور جهوز البيانات
     try{if(typeof initGoogleBtn==='function')initGoogleBtn()}catch(e){}
+    try{if(typeof renderNewsBanner==='function')renderNewsBanner()}catch(e){}
     window.__SPB=b||{};
     // البطاقة الجانبية
     if(typeof renderSponsorSide==='function')renderSponsorSide();
