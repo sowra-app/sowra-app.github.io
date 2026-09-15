@@ -822,7 +822,8 @@ function admCleanupBlock(){
     </div>
     <button class="btn" style="width:100%;font-size:12px;padding:9px;background:var(--qblue)" onclick="admScanOrphans('all')">🔍 فحص الكل</button>
     <div id="cleanResult" style="font-size:12px;color:var(--txt-dim);margin-top:10px;line-height:1.9"></div>
-  <button class="btn" style="width:100%;margin-top:9px;background:var(--card2);border:1px solid var(--qblue);color:var(--qblue);font-size:12.5px;padding:10px" onclick="admFixAbroadGeo()">🌍 افحص مواقع صور المسافر</button></div>`;
+  <button class="btn" style="width:100%;margin-top:9px;background:var(--card2);border:1px solid var(--qblue);color:var(--qblue);font-size:12.5px;padding:10px" onclick="admFixAbroadGeo()">🌍 افحص مواقع صور المسافر</button><button class="btn" style="width:100%;margin-top:9px;background:var(--card2);border:1px solid var(--qteal);color:var(--qteal);font-size:12.5px;padding:10px" onclick="admRebuildThumbs()">🖼️ حسّن دقة المصغّرات</button>
+    <div id="rtStatus" style="font-size:11.5px;color:var(--txt-dim);margin-top:8px;line-height:1.8;text-align:center"></div></div>`;
 }
 
 async function admScanOrphans(mode){
@@ -1760,4 +1761,47 @@ async function admFixAbroadGeo(){
     toast('✅ انصلحت '+bad.length+' صورة');
     if(typeof loadPhotos==='function')loadPhotos();
   }catch(e){toast('تعذر الفحص: '+((e&&e.message)||''),true)}
+}
+
+/* ═══ إعادة توليد المصغّرات بدقة أعلى ═══ */
+async function admRebuildThumbs(){
+  if(!needOwner('إعادة توليد المصغّرات'))return;
+  if(!confirm('إعادة توليد مصغّرات كل الصور بدقة أعلى (380px)؟\n\nقد تستغرق دقائق — لا تغلق الصفحة.'))return;
+
+  const box=$('rtStatus');
+  const setSt=t=>{if(box)box.innerHTML=t};
+  try{
+    const r=await sb.from('photos').select('id,image_path')
+      .eq('media_type','image').not('image_path','is',null);
+    const list=r.data||[];
+    if(!list.length){toast('ما فيه صور',true);return}
+
+    let ok=0,fail=0;
+    for(let i=0;i<list.length;i++){
+      const p=list[i];
+      setSt(`⏳ ${i+1} / ${list.length} — نجح ${ok} · أخفق ${fail}`);
+      try{
+        // نجلب الأصل
+        const url=imgUrl(p.image_path);
+        const res=await fetch(url);
+        if(!res.ok){fail++;continue}
+        const blob=await res.blob();
+
+        // نولّد مصغّرة جديدة
+        const thumb=await compressTo(blob,380,0.72);
+        const tp=p.image_path.replace(/\.jpg$/,'_t.jpg');
+        const up=await sb.storage.from('photos').upload(tp,thumb,{
+          contentType:'image/jpeg', cacheControl:'31536000', upsert:true
+        });
+        if(up.error){fail++;continue}
+        ok++;
+      }catch(e){fail++}
+      // مهلة قصيرة تفادياً للضغط
+      await new Promise(r=>setTimeout(r,120));
+    }
+    setSt(`✅ اكتمل — نجح ${ok} · أخفق ${fail}<br><span style="font-size:11px">حدّث الصفحة لتشوف الفرق</span>`);
+    toast('✅ انتهت إعادة التوليد');
+  }catch(e){
+    setSt('⚠️ '+((e&&e.message)||'تعذرت العملية'));
+  }
 }

@@ -290,7 +290,7 @@ async function addPhoto(){
       const ok=await runInspection(blob);
       if(!ok){btn.disabled=false;btn.textContent=(pendingVis==='private'?'🔒 احفظ بخزنتي':'انشر الصورة 🚀');return}
     }
-    const thumb=await compressTo(pendingFile,300,0.62);
+    const thumb=await compressTo(pendingFile,380,0.72);
     const path=`${USER.id}/${Date.now()}.jpg`;
     const [up,upT]=await Promise.all([
       sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',cacheControl:'31536000'}),
