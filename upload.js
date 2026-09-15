@@ -1513,6 +1513,7 @@ function openGeoPick(){
 function closeGeoPick(){
   const box=$('geoPickBox');
   if(box)box.classList.remove('show');
+  window.__geoPickMode=null;
 }
 
 function gpUpdateInfo(){
@@ -1545,6 +1546,18 @@ async function gpSearchPlace(){
 function confirmGeoPick(){
   try{
     const c=window.__gpMap.getCenter();
+    // وضع تعديل صورة منشورة
+    if(window.__geoPickMode==='edit'){
+      window.__edGeo={lat:c.lat,lng:c.lng};
+      const main=$('edGeoMain'), sub=$('edGeoSub'), card=$('edGeoCard');
+      if(card)card.classList.remove('warn');
+      if(main)main.textContent='📍 موقع جديد';
+      if(sub)sub.textContent=c.lat.toFixed(5)+', '+c.lng.toFixed(5);
+      window.__geoPickMode=null;
+      closeGeoPick();
+      toast('انضبط الموقع — اضغط «حفظ» لتثبيته');
+      return;
+    }
     pendingGeo={lat:c.lat,lng:c.lng};
     window.__geoManual=true;
     const card=$('geoCard');

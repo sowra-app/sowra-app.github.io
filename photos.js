@@ -2110,9 +2110,11 @@ function openEdit(pid){
   }
   el.dataset.pid=pid;
   el.classList.add('show');
+  try{fillEditGeo(p)}catch(e){}
 }
 
 function closeEdit(){
+  window.__edGeo=null;
   const el=$('editBox');
   if(el)el.classList.remove('show');
 }
@@ -2129,7 +2131,16 @@ async function saveEdit(){
   if(bd){toast('الوصف: '+bd,true);return}
 
   const btn=$('edSave');btn.disabled=true;btn.textContent='⏳';
-  const {error}=await sb.from('photos').update({title,description:desc,title_en:edTrTitle,description_en:edTrDesc}).eq('id',pid).eq('user_id',USER.id);
+  const upd={title,description:desc,title_en:edTrTitle,description_en:edTrDesc};
+  // الموقع إن تغيّر
+  const g=window.__edGeo;
+  const cur=photos.find(x=>x.id===pid);
+  if(g&&(!cur||cur.lat!==g.lat||cur.lng!==g.lng)){
+    upd.lat=g.lat; upd.lng=g.lng;
+  }
+  let q=sb.from('photos').update(upd).eq('id',pid);
+  if(typeof IS_ADMIN==='undefined'||!IS_ADMIN)q=q.eq('user_id',USER.id);
+  const {error}=await q;
   btn.disabled=false;btn.textContent='💾 احفظ';
   if(error){toast('تعذر الحفظ: '+error.message,true);return}
   toast('انحفظ التعديل ✅');
@@ -3672,4 +3683,61 @@ function dismissNews(nid){
     el.style.transform='translateY(-10px)';
     setTimeout(()=>{el.style.display='none'},260);
   }
+}
+
+/* ====== تعديل موقع الصورة ====== */
+window.__edGeo=null;
+
+function fillEditGeo(p){
+  const card=$('edGeoCard'), main=$('edGeoMain'), sub=$('edGeoSub');
+  if(!card)return;
+  window.__edGeo=(p.lat&&p.lng)?{lat:p.lat,lng:p.lng}:null;
+
+  const place=p.abroad?(p.country||p.city):((p.village?p.village+' · ':'')+(p.city||''));
+  if(window.__edGeo){
+    card.classList.remove('warn');
+    if(main)main.textContent=place||'موقع محدّد';
+    if(sub)sub.textContent=p.lat.toFixed(5)+', '+p.lng.toFixed(5);
+  }else{
+    card.classList.add('warn');
+    if(main)main.textContent='⚠️ بلا إحداثيات';
+    if(sub)sub.textContent='اضغط لتحديد المكان على الخريطة';
+  }
+}
+
+function openEditGeo(){
+  const box=$('geoPickBox');if(!box)return;
+  window.__geoPickMode='edit';
+  box.classList.add('show');
+
+  setTimeout(function(){
+    try{
+      if(!window.__gpMap){
+        let c=[23.8859,45.0792], z=5;
+        if(window.__edGeo){c=[window.__edGeo.lat,window.__edGeo.lng];z=13}
+        else if(curPhoto&&curPhoto.region){
+          const RC={'الرياض':[24.7136,46.6753,9],'مكة المكرمة':[21.3891,39.8579,9],
+            'المدينة المنورة':[24.5247,39.5692,9],'القصيم':[26.3260,43.9750,9],
+            'الشرقية':[26.4207,50.0888,8],'عسير':[18.2465,42.5117,9],
+            'تبوك':[28.3835,36.5662,8],'حائل':[27.5219,41.6907,9],
+            'الحدود الشمالية':[30.9843,41.0231,8],'جازان':[16.8892,42.5511,9],
+            'نجران':[17.4924,44.1277,9],'الباحة':[20.0129,41.4677,10],'الجوف':[29.7859,40.2000,8]};
+          if(RC[curPhoto.region]){c=[RC[curPhoto.region][0],RC[curPhoto.region][1]];z=RC[curPhoto.region][2]}
+        }
+        window.__gpMap=L.map('gpMap',{zoomControl:true,attributionControl:false}).setView(c,z);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(window.__gpMap);
+        try{
+          photos.filter(p=>p.lat&&p.lng&&!p.abroad).slice(0,120).forEach(p=>{
+            const ic=L.divIcon({className:'',html:'<div style="width:22px;height:22px;border-radius:50%;overflow:hidden;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"><img src="'+thumbUrl(p.image_path)+'" style="width:100%;height:100%;object-fit:cover"></div>',iconSize:[22,22],iconAnchor:[11,11]});
+            L.marker([p.lat,p.lng],{icon:ic,interactive:false}).addTo(window.__gpMap);
+          });
+        }catch(e){}
+        window.__gpMap.on('moveend',gpUpdateInfo);
+      }else if(window.__edGeo){
+        window.__gpMap.setView([window.__edGeo.lat,window.__edGeo.lng],13);
+      }
+      window.__gpMap.invalidateSize();
+      gpUpdateInfo();
+    }catch(e){}
+  },220);
 }
