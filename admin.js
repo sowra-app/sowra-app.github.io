@@ -822,7 +822,7 @@ function admCleanupBlock(){
     </div>
     <button class="btn" style="width:100%;font-size:12px;padding:9px;background:var(--qblue)" onclick="admScanOrphans('all')">🔍 فحص الكل</button>
     <div id="cleanResult" style="font-size:12px;color:var(--txt-dim);margin-top:10px;line-height:1.9"></div>
-  </div>`;
+  <button class="btn" style="width:100%;margin-top:9px;background:var(--card2);border:1px solid var(--qblue);color:var(--qblue);font-size:12.5px;padding:10px" onclick="admFixAbroadGeo()">🌍 افحص مواقع صور المسافر</button></div>`;
 }
 
 async function admScanOrphans(mode){
@@ -1737,4 +1737,27 @@ async function admBroadcast(){
   }finally{
     if(btn){btn.disabled=false;btn.textContent='🔔 أرسل إشعاراً للجميع'}
   }
+}
+
+/* ═══ إصلاح صور المسافر بإحداثيات محلية ═══ */
+async function admFixAbroadGeo(){
+  if(!needOwner('إصلاح المواقع'))return;
+  try{
+    const r=await sb.from('photos').select('id,title,lat,lng,country')
+      .eq('abroad',true).not('lat','is',null);
+    const list=r.data||[];
+
+    // حدود المملكة تقريباً
+    const inSA=p=>(p.lat>=16&&p.lat<=32.2&&p.lng>=34.5&&p.lng<=55.7);
+    const bad=list.filter(inSA);
+
+    if(!bad.length){toast('✅ ما فيه صور مسافر بإحداثيات محلية');return}
+    if(!confirm('لقينا '+bad.length+' صورة «عدسة مسافر» بإحداثيات داخل المملكة.\n\nنمسح إحداثياتها؟ (تبقى بالمنصة — لكن تختفي من الخريطة والأقرب إليك)'))return;
+
+    const ids=bad.map(p=>p.id);
+    const {error}=await sb.from('photos').update({lat:null,lng:null}).in('id',ids);
+    if(error){toast('تعذر الإصلاح: '+error.message,true);return}
+    toast('✅ انصلحت '+bad.length+' صورة');
+    if(typeof loadPhotos==='function')loadPhotos();
+  }catch(e){toast('تعذر الفحص: '+((e&&e.message)||''),true)}
 }

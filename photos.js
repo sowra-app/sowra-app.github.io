@@ -89,7 +89,7 @@ function showNearby(){
     if(typeof checkNearby==='function')setTimeout(checkNearby,600);
     if(typeof renderHomeHero==='function')renderHomeHero();
     const distKm=(p)=>Math.hypot(((p.lat||0)-lat)*111,(((p.lng||0)-lng)*111*Math.cos(lat*Math.PI/180)));
-const near=photos.filter(p=>p.lat&&p.lng&&p.media_type!=='video'&&distKm(p)<=30).sort((a,b)=>distKm(a)-distKm(b)).slice(0,6);
+const near=photos.filter(p=>p.lat&&p.lng&&!p.abroad&&p.visibility!=='private'&&p.media_type!=='video'&&distKm(p)<=30).sort((a,b)=>distKm(a)-distKm(b)).slice(0,6);
 
     if(!near.length)return;
     $('nearbyWrap').style.display='block';

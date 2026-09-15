@@ -33,6 +33,18 @@ function setDest(abroad){
       if($('aRegion'))$('aRegion').value='';
       if($('aCity'))$('aCity').value='';
       if($('aVillage'))$('aVillage').value='';
+      // الموقع المحلي لا يصلح لصورة خارج المملكة
+      if(pendingGeo&&!window.__geoManual){
+        pendingGeo=null;
+        const card=$('geoCard');
+        if(card){
+          card.classList.add('warn');
+          $('geoStatus').textContent='🌍 صورة من خارج المملكة';
+          $('geoCoords').textContent='';
+          const mb=$('geoManualBox');
+          if(mb)mb.style.display='block';
+        }
+      }
     }else{
       if($('aCountry'))$('aCountry').value='';
     }
