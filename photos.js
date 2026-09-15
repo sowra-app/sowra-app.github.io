@@ -379,7 +379,8 @@ async function openSheet(id){
   const dbw=$('deleteBtn');
   if(dbw){
     const isMine=!!(USER && p.user_id===USER.id);
-    dbw.style.display=isMine?'block':'none';
+    const canEdit=isMine||(typeof ADM_ROLE!=='undefined'&&ADM_ROLE==='owner');
+    dbw.style.display=(isMine||canEdit)?'block':'none';
     if(isMine){
       const dbi=$('deleteBtnInner');
       if(dbi){
@@ -400,16 +401,25 @@ async function openSheet(id){
         ? (isVd?'📢 انشر المقطع للجميع':'📢 انشرها للجميع')
         : (isVd?'🔒 اسحب المقطع لخزنتي':'🔒 اسحبها لخزنتي');
       vb.onclick=function(){isPriv?publishFromVault(p.id):moveToVault(p.id)};
-      // زر تعديل العنوان والوصف
-      let eb=document.getElementById('editBtn');
+    }
+
+    // زر التعديل — لصاحبها وللمالك
+    let eb=document.getElementById('editBtn');
+    if(canEdit){
       if(!eb){
         eb=document.createElement('button');
         eb.id='editBtn';
         eb.style.cssText="background:none;border:none;color:var(--qblue);font-family:'Tajawal';font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;display:block;margin:6px auto 0";
         dbw.appendChild(eb);
       }
-      eb.textContent=(p.media_type==='video')?'✏️ عدّل العنوان':'✏️ عدّل العنوان والوصف';
+      eb.style.display='block';
+      const vd=(p.media_type==='video');
+      eb.textContent=isMine
+        ? (vd?'✏️ عدّل العنوان':'✏️ عدّل العنوان والوصف')
+        : (vd?'🛡️ عدّل المقطع (مالك)':'🛡️ عدّل الصورة (مالك)');
       eb.onclick=function(){openEdit(p.id)};
+    }else if(eb){
+      eb.style.display='none';
     }
   }
   $('overlay').classList.add('show');
@@ -2087,13 +2097,17 @@ async function logRate(kind){
 function openEdit(pid){
   const p=photos.find(x=>x.id===pid);
   if(!p)return;
+  const _mine=!!(USER&&p.user_id===USER.id);
+  const _owner=(typeof ADM_ROLE!=='undefined'&&ADM_ROLE==='owner');
+  if(!_mine&&!_owner){toast('🔒 ما تقدر تعدّل صورة غيرك',true);return}
   const isV=p.media_type==='video';
   const el=$('editBox');if(!el)return;
   $('edTitle').value=p.title||'';
   const dg=$('edDescGroup');
   if(dg)dg.style.display=isV?'none':'block';
   if($('edDesc'))$('edDesc').value=p.description||'';
-  $('edLabel').textContent=isV?'عدّل عنوان المقطع':'عدّل عنوان الصورة ووصفها';
+  $('edLabel').innerHTML=(isV?'عدّل عنوان المقطع':'عدّل عنوان الصورة ووصفها')
+    +(_mine?'':'<div style="font-size:11px;color:var(--sadu);font-weight:700;margin-top:5px">🛡️ تعديل إداري — صورة '+esc(p.photographer||'عضو')+'</div>');
   edTrTitle=p.title_en||'';edTrDesc=p.description_en||'';
   const pv=$('edTrPreview');
   if(pv){
@@ -2139,7 +2153,8 @@ async function saveEdit(){
     upd.lat=g.lat; upd.lng=g.lng;
   }
   let q=sb.from('photos').update(upd).eq('id',pid);
-  if(typeof IS_ADMIN==='undefined'||!IS_ADMIN)q=q.eq('user_id',USER.id);
+  const owner=(typeof ADM_ROLE!=='undefined'&&ADM_ROLE==='owner');
+  if(!owner)q=q.eq('user_id',USER.id);
   const {error}=await q;
   btn.disabled=false;btn.textContent='💾 احفظ';
   if(error){toast('تعذر الحفظ: '+error.message,true);return}
