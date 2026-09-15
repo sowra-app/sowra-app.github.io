@@ -1340,6 +1340,14 @@ function initCommBox(){
 }
 
 function initVideoUpload(){
+  // تبويب الأضواء بالشريط السفلي
+  try{
+    const sp=window.__SPDATA||window.__SPB||{};
+    const off=(!sp.video_enabled&&!sp.reels_soon);
+    const nb=document.getElementById('nb-reels');
+    if(nb)nb.style.display=off?'none':'';
+  }catch(e){}
+
   const row=$('videoRow');if(!row)return;
   const on=(typeof videoAllowed==='function')?videoAllowed():false;
   row.style.display=on?'flex':'none';
@@ -1357,6 +1365,11 @@ function initVideoUpload(){
 let REELS=[], reelObserver=null, reelsMuted=true;
 
 async function openReels(){
+  const _sp=window.__SPDATA||window.__SPB||{};
+  if(!_sp.video_enabled&&!_sp.reels_soon){
+    toast('🎬 الأضواء غير متاحة حالياً',true);
+    return;
+  }
   go('reels');
   const wrap=$('reelsWrap');if(!wrap)return;
 

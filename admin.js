@@ -1820,5 +1820,12 @@ async function admSetReels(state){
   const msg={off:'انطفأت الأضواء',soon:'◐ وضع «قريباً» مفعّل',open:'🎬 الأضواء مفتوحة للجميع'}[state];
   toast(msg);
   try{if(typeof initVideoUpload==='function')initVideoUpload()}catch(e){}
+  // لو كنا بصفحة الأضواء وانطفأت — نرجع للرئيسية
+  try{
+    if(state==='off'){
+      const cur=document.querySelector('.page.on');
+      if(cur&&cur.id==='page-reels')go('feed');
+    }
+  }catch(e){}
   loadAdmWeek();
 }
