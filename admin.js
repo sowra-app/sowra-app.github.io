@@ -1776,30 +1776,34 @@ async function admRebuildThumbs(){
     const list=r.data||[];
     if(!list.length){toast('ما فيه صور',true);return}
 
-    let ok=0,fail=0;
+    let ok=0,fail=0,lastErr='';
     for(let i=0;i<list.length;i++){
       const p=list[i];
       setSt(`⏳ ${i+1} / ${list.length} — نجح ${ok} · أخفق ${fail}`);
       try{
-        // نجلب الأصل
-        const url=imgUrl(p.image_path);
-        const res=await fetch(url);
-        if(!res.ok){fail++;continue}
-        const blob=await res.blob();
+        // نجلب الأصل من التخزين مباشرة (يتفادى CORS)
+        const dl=await sb.storage.from('photos').download(p.image_path);
+        if(dl.error||!dl.data){
+          lastErr=(dl.error&&dl.error.message)||'تعذر التنزيل';
+          fail++;continue;
+        }
 
-        // نولّد مصغّرة جديدة
-        const thumb=await compressTo(blob,380,0.72);
-        const tp=p.image_path.replace(/\.jpg$/,'_t.jpg');
+        const thumb=await compressTo(dl.data,380,0.72);
+        if(!thumb){lastErr='تعذر الضغط';fail++;continue}
+
+        const tp=p.image_path.replace(/\.jpg$/i,'_t.jpg');
         const up=await sb.storage.from('photos').upload(tp,thumb,{
           contentType:'image/jpeg', cacheControl:'31536000', upsert:true
         });
-        if(up.error){fail++;continue}
+        if(up.error){lastErr=up.error.message;fail++;continue}
         ok++;
-      }catch(e){fail++}
+      }catch(e){lastErr=(e&&e.message)||'استثناء';fail++}
       // مهلة قصيرة تفادياً للضغط
       await new Promise(r=>setTimeout(r,120));
     }
-    setSt(`✅ اكتمل — نجح ${ok} · أخفق ${fail}<br><span style="font-size:11px">حدّث الصفحة لتشوف الفرق</span>`);
+    setSt(`${ok?'✅':'⚠️'} اكتمل — نجح ${ok} · أخفق ${fail}`
+      +(lastErr?`<br><span style="font-size:11px;direction:ltr;display:inline-block;color:var(--sadu)">${esc(lastErr)}</span>`:'')
+      +(ok?'<br><span style="font-size:11px">حدّث الصفحة لتشوف الفرق</span>':''));
     toast('✅ انتهت إعادة التوليد');
   }catch(e){
     setSt('⚠️ '+((e&&e.message)||'تعذرت العملية'));
