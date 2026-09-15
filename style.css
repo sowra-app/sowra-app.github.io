@@ -1205,3 +1205,19 @@ body.dark .ed-geo.warn{background:#2E2519}
 .eg-sub{font-size:11px;color:var(--txt-dim);margin-top:2px;direction:ltr;text-align:right}
 .ed-geo.warn .eg-sub{direction:rtl}
 .eg-go{font-size:17px;opacity:.65}
+
+/* ====== دعوة التسجيل ====== */
+.join-box{display:none;position:fixed;inset:0;background:rgba(36,31,28,.72);z-index:9992;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+.join-box.show{display:flex;animation:jbFade .3s ease}
+@keyframes jbFade{from{opacity:0}to{opacity:1}}
+.jb-card{background:var(--card);border:2px solid var(--ink);border-radius:22px;padding:26px 22px;max-width:390px;width:100%;text-align:center;animation:jbUp .35s cubic-bezier(.2,.9,.3,1.1)}
+@keyframes jbUp{from{transform:translateY(24px) scale(.96);opacity:0}to{transform:none;opacity:1}}
+.jb-ic{font-size:46px;margin-bottom:10px}
+.jb-title{font-family:'Reem Kufi',sans-serif;font-size:24px;color:var(--sadu);margin-bottom:5px}
+.jb-sub{font-size:13px;color:var(--txt-dim);margin-bottom:20px}
+.jb-list{display:flex;flex-direction:column;gap:11px;margin-bottom:22px;text-align:right}
+.jb-list div{display:flex;align-items:center;gap:11px;font-size:13.5px;line-height:1.7}
+.jb-list span{font-size:19px;flex-shrink:0;width:26px;text-align:center}
+.jb-go{width:100%;background:var(--sadu);border:none;border-radius:14px;padding:14px;font-family:'Tajawal';font-size:15px;font-weight:700;color:#fff;cursor:pointer;box-shadow:0 3px 10px rgba(214,58,47,.3)}
+.jb-go:active{transform:scale(.98)}
+.jb-later{width:100%;background:none;border:none;padding:12px 0 0;font-family:'Tajawal';font-size:13px;font-weight:700;color:var(--txt-dim);cursor:pointer}

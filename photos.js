@@ -313,6 +313,7 @@ function removeSentinel(){
 /* ============ نافذة الصورة ============ */
 async function openSheet(id){
   curId=id;curPhoto=photos.find(x=>x.id===id);
+  try{bumpJoinCounter()}catch(e){}
    const p=curPhoto;
   const isVid=p.media_type==='video';
   const vfx=(p.filter_key&&p.filter_key!=='none'&&typeof filterCss==='function')?filterCss(p.filter_key):'none';
@@ -2215,7 +2216,7 @@ async function translateEdit(){
 /* ====== الصورة الشخصية والغلاف ====== */
 async function uploadAvatar(inp){
   const f=inp.files[0];if(!f)return;
-  if(!USER||USER.is_anonymous){toast('سجّل أول',true);return}
+  if(!USER||USER.is_anonymous){toast('❤️ سجّل مجاناً وتحفظ مفضلتك',true);showJoinBox();return}
   if(f.size>4*1024*1024){toast('الصورة كبيرة — الحد 4 ميجا',true);inp.value='';return}
   toast('⏳ نرفع صورتك...');
   try{
@@ -2362,7 +2363,7 @@ function stSetSort(s){window.__stSort=s;renderMyStats()}
 
 /* ====== حفظ بيانات البروفايل كاملة ====== */
 async function saveProfileAll(){
-  if(!USER||USER.is_anonymous){toast('سجّل أول',true);return}
+  if(!USER||USER.is_anonymous){toast('❤️ سجّل مجاناً وتحفظ مفضلتك',true);showJoinBox();return}
   const name=($('accEditName')?$('accEditName').value:'').trim();
   const region=($('accRegion')?$('accRegion').value:'').trim();
   const bio=($('accBio')?$('accBio').value:'').trim();
@@ -2511,7 +2512,7 @@ async function uploadCover(inp){
   if(!sessionStorage.getItem('cover_hint')){
     try{sessionStorage.setItem('cover_hint','1')}catch(e){}
   }
-  if(!USER||USER.is_anonymous){toast('سجّل أول',true);return}
+  if(!USER||USER.is_anonymous){toast('❤️ سجّل مجاناً وتحفظ مفضلتك',true);showJoinBox();return}
   if(f.size>6*1024*1024){toast('الصورة كبيرة — الحد 6 ميجا',true);inp.value='';return}
   toast('⏳ نرفع الغلاف...');
   try{
@@ -2936,7 +2937,7 @@ function renderTimeline(p){
 window.__dmTo=null;
 
 function openDmBox(uid,name){
-  if(!USER||USER.is_anonymous){toast('سجّل أول',true);return}
+  if(!USER||USER.is_anonymous){toast('❤️ سجّل مجاناً وتحفظ مفضلتك',true);showJoinBox();return}
   window.__dmTo={id:uid,name:name};
   const el=$('dmBox');if(!el)return;
   $('dmTitle').textContent='✉️ رسالة إلى '+name;
@@ -3355,7 +3356,7 @@ async function isBlockedWith(uid){
 }
 
 async function blockUser(uid,name){
-  if(!USER||USER.is_anonymous){toast('سجّل أول',true);return}
+  if(!USER||USER.is_anonymous){toast('❤️ سجّل مجاناً وتحفظ مفضلتك',true);showJoinBox();return}
   if(!confirm('حظر '+(name||'هذا العضو')+'؟\n\n· ما يقدر يراسلك\n· ما تقدر تراسله\n· رسائله تختفي من صندوقك'))return;
   const {error}=await sb.from('dm_blocks').insert({blocker:USER.id,blocked:uid});
   if(error&&error.code!=='23505'){toast('تعذر الحظر: '+error.message,true);return}
@@ -3755,4 +3756,52 @@ function openEditGeo(){
       gpUpdateInfo();
     }catch(e){}
   },220);
+}
+
+/* ====== دعوة التسجيل بعد تفاعل حقيقي ====== */
+window.__opened=0;
+
+function bumpJoinCounter(){
+  try{
+    if(USER&&!USER.is_anonymous)return;
+    if(localStorage.getItem('sowra_join_seen')==='1')return;
+
+    window.__opened=(window.__opened||0)+1;
+    let total=parseInt(localStorage.getItem('sowra_opens')||'0')||0;
+    total++;
+    localStorage.setItem('sowra_opens',String(total));
+
+    // بعد ٨ صور — أو ٥ بالجلسة الواحدة
+    if(total>=8||window.__opened>=5)setTimeout(showJoinBox,900);
+  }catch(e){}
+}
+
+function showJoinBox(){
+  if(USER&&!USER.is_anonymous)return;
+  try{if(localStorage.getItem('sowra_join_seen')==='1')return}catch(e){}
+  const el=$('joinBox');
+  if(el)el.classList.add('show');
+}
+
+function dismissJoin(){
+  try{localStorage.setItem('sowra_join_seen','1')}catch(e){}
+  const el=$('joinBox');
+  if(el)el.classList.remove('show');
+}
+
+function goJoin(){
+  try{localStorage.setItem('sowra_join_seen','1')}catch(e){}
+  const el=$('joinBox');
+  if(el)el.classList.remove('show');
+  if(typeof closeSheet==='function')closeSheet();
+  go('acc');
+  setTimeout(function(){
+    try{
+      const o=$('accOut'),i=$('accIn');
+      if(o)o.style.display='block';
+      if(i)i.style.display='none';
+      if(typeof accTab==='function')accTab('up');
+      const nm=$('accName');if(nm)nm.focus();
+    }catch(e){}
+  },260);
 }
