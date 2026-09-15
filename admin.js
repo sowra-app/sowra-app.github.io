@@ -360,7 +360,7 @@ async function loadAdmWeek(){
       <div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px">
         <div style="flex:1"><b style="font-size:13px">#${p.id} · ${esc(p.title)}</b></div>
         <button class="btn" style="font-size:12px;padding:7px 12px;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="admWeekRemove(${p.id})">إزالة</button>
-      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + admChallengeBlock() + admVideoBlock() + admReelsSoonBlock() + admInspectBlock() + admCommBlock() + admCleanupBlock() + await admSpBlock() + admSponsorsBtn() + admSponsorSideBlock() +  admNewsBlock() + admGoogleLoginBlock() + admMaintBlock() + await admCuratorsBlock() + await admTeamBlock();
+      </div>`).join(''):'<div class="empty" style="padding:20px">ما فيه ترشيحات بعد</div>'}` + admChallengeBlock() + admReelsBlock() + admInspectBlock() + admCommBlock() + admCleanupBlock() + await admSpBlock() + admSponsorsBtn() + admSponsorSideBlock() +  admNewsBlock() + admGoogleLoginBlock() + admMaintBlock() + await admCuratorsBlock() + await admTeamBlock();
 }
 /* ====== بنر الراعي ====== */
 async function admSpBlock(){
@@ -759,55 +759,9 @@ async function admAddToQuest(pid){
 }
 
 /* ====== تفعيل رفع الفيديو ====== */
-function admVideoBlock(){
-  const b=window.__SPDATA||window.__SPB||{};
-  const on=!!b.video_enabled;
-  return `<div style="background:var(--card);border:1.5px solid ${on?'var(--qblue)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🎬 رفع الفيديوهات <span style="font-size:11px;font-weight:700;color:${on?'var(--qblue)':'var(--txt-dim)'}">${on?'● مفعّل':'○ مطفأ'}</span></div>
-    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px">يظهر خيار «فيديو قصير» بصفحة النشر. ⚠️ الفيديو يستهلك التخزين بسرعة.</div>
-    <button class="btn" style="width:100%;${on?'background:var(--sadu)':'background:var(--qblue)'}" onclick="admVideoToggle()">${on?'🙈 إيقاف الفيديو':'▶️ تفعيل الفيديو'}</button>
-  </div>`;
-}
-async function admVideoToggle(){
-  if(!needOwner('مفتاح الفيديو'))return;
-  const b=window.__SPDATA||window.__SPB||{};
-  const nv=!b.video_enabled;
-  const {error}=await sb.from('site_banner').update({video_enabled:nv}).eq('id',1);
-  if(error){toast('فشلت العملية: '+error.message,true);return}
-  if(window.__SPB)window.__SPB.video_enabled=nv;
-  if(window.__SPDATA)window.__SPDATA.video_enabled=nv;
-  toast(nv?'رفع الفيديو مفعّل 🎬':'اتوقف رفع الفيديو');
-  await loadSponsor();
-  await loadAdmWeek();
-  try{if(typeof initVideoUpload==='function')initVideoUpload()}catch(e){}
-}
 
 /* ====== وضع «قريباً» للأضواء ====== */
-function admReelsSoonBlock(){
-  const b=window.__SPDATA||window.__SPB||{};
-  const on=!!b.reels_soon;
-  return `<div style="background:var(--card);border:1.5px solid ${on?'var(--star)':'var(--line)'};border-radius:14px;padding:14px;margin-top:12px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🎬 أضواء الديرة — وضع «قريباً» <span style="font-size:11px;font-weight:700;color:${on?'var(--star)':'var(--txt-dim)'}">${on?'● مفعّل':'○ مطفأ'}</span></div>
-    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:10px;line-height:1.85">لما يكون مفعّلاً، التبويب يعرض شاشة تشويق بدل المقاطع — <b>ويتوقف رفع الفيديو تلقائياً</b> لأن المقطع لن يظهر لأحد.</div>
-    <button class="btn" style="width:100%;${on?'background:var(--palm)':'background:var(--star);color:var(--ink)'}" onclick="admReelsSoonToggle()">${on?'▶️ افتح الأضواء للجميع':'🎬 فعّل وضع «قريباً»'}</button>
-  </div>`;
-}
 
-async function admReelsSoonToggle(){
-  if(!needOwner('مفتاح الأضواء'))return;
-  const b=window.__SPDATA||window.__SPB||{};
-  const nv=!b.reels_soon;
-  const {error}=await sb.from('site_banner').update({reels_soon:nv}).eq('id',1);
-  if(error){toast('فشلت العملية: '+error.message,true);return}
-  // تحديث محلي فوري للمصدرين
-  if(window.__SPB)window.__SPB.reels_soon=nv;
-  if(window.__SPDATA)window.__SPDATA.reels_soon=nv;
-  toast(nv?'وضع «قريباً» مفعّل 🎬':'الأضواء مفتوحة للجميع ✅');
-  await loadSponsor();
-  await loadAdmWeek();
-  // تحديث عناصر الفيديو فوراً
-  try{if(typeof initVideoUpload==='function')initVideoUpload()}catch(e){}
-}
 
 /* ====== تنظيف الملفات اليتيمة ====== */
 let ORPHANS={v:[],p:[]};
@@ -1808,4 +1762,63 @@ async function admRebuildThumbs(){
   }catch(e){
     setSt('⚠️ '+((e&&e.message)||'تعذرت العملية'));
   }
+}
+
+/* ═══ أضواء الديرة — مفتاح موحّد بثلاث حالات ═══ */
+function reelsState(){
+  const b=window.__SPDATA||window.__SPB||{};
+  if(!b.video_enabled)return 'off';
+  if(b.reels_soon)return 'soon';
+  return 'open';
+}
+
+function admReelsBlock(){
+  if(!isOwner())return '';
+  const st=reelsState();
+  const cfg={
+    off:  {c:'var(--line)',  t:'○ مطفأة',  d:'التبويب مخفي · لا رفع للمقاطع'},
+    soon: {c:'var(--star)',  t:'◐ قريباً', d:'شاشة تشويق · لا رفع للمقاطع'},
+    open: {c:'var(--palm)',  t:'● مفتوحة', d:'تعمل كاملة · الرفع متاح'}
+  }[st];
+
+  return `<div style="background:var(--card);border:1.5px solid ${cfg.c};border-radius:14px;padding:14px;margin-top:12px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:3px">🎬 أضواء الديرة <span style="font-size:11px;color:${cfg.c}">${cfg.t}</span></div>
+    <div style="font-size:11.5px;color:var(--txt-dim);margin-bottom:12px;line-height:1.85">${cfg.d}</div>
+    <div class="rs-states">
+      <button class="rs-st ${st==='off'?'on':''}" onclick="admSetReels('off')">
+        <b>○ مطفأة</b><span>التبويب مخفي تماماً</span>
+      </button>
+      <button class="rs-st ${st==='soon'?'on soon':''}" onclick="admSetReels('soon')">
+        <b>◐ قريباً</b><span>شاشة تشويق تبني التوقع</span>
+      </button>
+      <button class="rs-st ${st==='open'?'on open':''}" onclick="admSetReels('open')">
+        <b>● مفتوحة</b><span>الرفع والعرض يعملان</span>
+      </button>
+    </div>
+    <div style="font-size:10.5px;color:var(--txt-dim);margin-top:9px;line-height:1.75">
+      ⚠️ المقطع الواحد يعادل ١٦ صورة نقلاً — راقب الحصة إن فتحتها.
+    </div>
+  </div>`;
+}
+
+async function admSetReels(state){
+  if(!needOwner('أضواء الديرة'))return;
+  const vals={
+    off:  {video_enabled:false, reels_soon:false},
+    soon: {video_enabled:false, reels_soon:true},
+    open: {video_enabled:true,  reels_soon:false}
+  }[state];
+  if(!vals)return;
+
+  const {error}=await sb.from('site_banner').update(vals).eq('id',1);
+  if(error){toast('تعذرت العملية: '+error.message,true);return}
+
+  ['__SPDATA','__SPB'].forEach(function(k){
+    if(window[k]){window[k].video_enabled=vals.video_enabled;window[k].reels_soon=vals.reels_soon}
+  });
+
+  const msg={off:'انطفأت الأضواء',soon:'◐ وضع «قريباً» مفعّل',open:'🎬 الأضواء مفتوحة للجميع'}[state];
+  toast(msg);
+  try{if(typeof initVideoUpload==='function')initVideoUpload()}catch(e){}
+  loadAdmWeek();
 }

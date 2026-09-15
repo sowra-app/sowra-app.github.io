@@ -1221,3 +1221,19 @@ body.dark .ed-geo.warn{background:#2E2519}
 .jb-go{width:100%;background:var(--sadu);border:none;border-radius:14px;padding:14px;font-family:'Tajawal';font-size:15px;font-weight:700;color:#fff;cursor:pointer;box-shadow:0 3px 10px rgba(214,58,47,.3)}
 .jb-go:active{transform:scale(.98)}
 .jb-later{width:100%;background:none;border:none;padding:12px 0 0;font-family:'Tajawal';font-size:13px;font-weight:700;color:var(--txt-dim);cursor:pointer}
+
+/* ====== حالات أضواء الديرة ====== */
+.rs-states{display:flex;flex-direction:column;gap:7px}
+.rs-st{display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:var(--card2);border:1.5px solid var(--line);border-radius:12px;padding:10px 13px;font-family:'Tajawal';cursor:pointer;text-align:right;transition:.15s}
+.rs-st b{font-size:13px;font-weight:700;color:var(--txt-dim)}
+.rs-st span{font-size:11px;color:var(--txt-dim);opacity:.8}
+.rs-st.on{border-width:2px}
+.rs-st.on b{color:var(--txt)}
+.rs-st.on:not(.soon):not(.open){border-color:var(--line);background:var(--card)}
+.rs-st.on.soon{border-color:var(--star);background:#FFF7E0}
+.rs-st.on.soon b{color:#A87500}
+.rs-st.on.open{border-color:var(--palm);background:#EFF7F1}
+.rs-st.on.open b{color:var(--palm)}
+.rs-st:active{transform:scale(.98)}
+body.dark .rs-st.on.soon{background:#2E2519}
+body.dark .rs-st.on.open{background:#1B2A21}
