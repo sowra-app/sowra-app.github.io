@@ -11,6 +11,7 @@ import { geo, COORDS, REGION_CENTER, nearestCity, loadPlaces, BASE_GEO } from '.
 /* ═══ عبر الحاجز ═══
    openSponsorsPage ← features/contest.js
 */
+const nudgeGeo = need('nudgeGeo');
 const openSponsorsPage = need('openSponsorsPage');
 
 /* ═══ من التنقل — عبر الحاجز ═══ */
@@ -25,6 +26,8 @@ const filteredPhotos = need('filteredPhotos');
 
 /* state.map → state.map */
 export function renderMap(){
+  /* من رفض إذن الموقع لا يرى دبّوسه هنا ولا يدري لماذا */
+  try{ if(typeof nudgeGeo==='function') nudgeGeo(); }catch(e){}
   const wrap=$('mapWrap');
   wrap.style.display='block';$('feed').style.display='none';
   if(typeof L==='undefined'){wrap.innerHTML='<div class="empty">⚠️ تعذر تحميل الخريطة — تأكد من رفع leaflet.js وleaflet.css</div>';return}

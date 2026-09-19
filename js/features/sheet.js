@@ -15,6 +15,7 @@ import { geo, COORDS, REGION_CENTER, nearestCity, loadPlaces, BASE_GEO } from '.
    openAcc ← features/account.js
 */
 const filterCss = need('filterCss');
+const nudgeGeo = need('nudgeGeo');
 const gpUpdateInfo = need('gpUpdateInfo');
 const openAcc = need('openAcc');
 
@@ -61,6 +62,8 @@ state.myBadgeSet=new Set();
 window.CLAIM_MAP=window.CLAIM_MAP||{};
 
 export async function openSheet(id){
+  /* وهنا لا يرى «كم يبعد عنك» ولا ما حوله */
+  try{ if(typeof nudgeGeo==='function') nudgeGeo(); }catch(e){}
   state.curId=id;
   /* state.photos هي الخلاصة العامة — لا تضمّ المخفيّات بقرار إشراف.
      ولوحة الإشراف تعرضها وتحتاج فتحها، فلولا هذا الاحتياط لقال لها

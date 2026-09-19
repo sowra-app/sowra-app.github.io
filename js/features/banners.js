@@ -344,7 +344,7 @@ function readPosOnce(){
     /* كان الردّ فارغاً ()=>{} فيفشل تحديد الموقع بصمت تام
        ولا يعرف أحد لماذا اختفت الأقسام. الآن يقول السبب. */
     console.warn('[near] تعذّر تحديد الموقع — code '+err.code+' · '+err.message);
-    if(err.code===1)stopNearWatch();          /* رُفض الإذن — لا فائدة من الإلحاح */
+    if(err.code===1){ stopNearWatch(); markGeoDenied(); }   /* رُفض الإذن — لا إلحاح، لكن نُذكّره حيث يفيده */
   }, { enableHighAccuracy:false, maximumAge:10000, timeout:15000 });
 }
 
@@ -464,4 +464,36 @@ export function goJoin(){
       const nm=$('accName');if(nm)nm.focus();
     }catch(e){}
   },260);
+}
+
+/* ═══ من رفض الإذن: نذكّره حيث يفيده، لا حيث يزعجه ═══
+   طلبُ الموقع يقع عند الإقلاع، والزائر حينها لا يعرف لماذا يُسأل —
+   فكثيرٌ يضغط «حظر». والحظر شبه نهائي: لا يُعاد السؤال، ولا يعرف
+   صاحبه أنه فقد «قربك صورة» والطقس ودبّوسه في الخريطة، ولا كيف
+   يرجع. وكان كل ما يحدث سطراً في سجلّ لا يقرؤه أحد.
+
+   فتُقال الرسالة في الموضعين اللذين يظهر فيهما الفقد: فتحُ الخريطة،
+   وفتحُ صورة. ومرّةً واحدة في الجلسة — التذكير النافع يُقال مرّة،
+   وما زاد إلحاح. */
+let _geoNudged = false;
+
+export function markGeoDenied(){
+  try{ sessionStorage.setItem('geo_denied','1') }catch(e){}
+}
+
+function geoDenied(){
+  if(window.__USER_LAT) return false;          /* عنده موقعٌ فعلاً */
+  try{ if(sessionStorage.getItem('geo_denied')==='1') return true }catch(e){}
+  return false;
+}
+
+export function nudgeGeo(){
+  if(_geoNudged || !geoDenied()) return;
+  _geoNudged = true;
+  /* مؤجَّلةٌ لا فوريّة: الرسائل كلّها تتشارك عنصراً واحداً، وفتحُ
+     الصورة أو الخريطة قد يرفع رسالته الخاصّة في نفس اللحظة فيمحوها —
+     ويبقى العلم مرفوعاً فلا تُعاد. فنتركه يقول ما عنده ثم نقول. */
+  setTimeout(() => {
+    try{ toast('📍 فعّل إذن الموقع من شريط العنوان لتشوف الصور اللي حولك'); }catch(e){}
+  }, 1400);
 }
