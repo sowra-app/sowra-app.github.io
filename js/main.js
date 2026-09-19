@@ -168,16 +168,11 @@ async function boot(){
 
   /* ═══ الأماكن أولاً — القوائم تُبنى منها ═══
      نستدعي الوحدة مباشرة لا window (الجسر قد يتأخر) */
-  try{
-    await loadPlaces();
+  const places = loadPlaces().then(() => {
     features_feed.initSelects();
     features_feed.fillAddCities();
     features_feed.fillCities();
-    console.info('[boot] القوائم جاهزة:',
-      (document.getElementById('aRegion')?.options.length || 0) - 1, 'منطقة');
-  }catch(e){
-    console.error('[boot] تعذر بناء القوائم', e);
-  }
+  }).catch(e => console.error('[boot] تعذر بناء القوائم', e));
 
   /* ثم الإقلاع المعتاد — nav.js يتولّاه */
   try{
@@ -185,6 +180,7 @@ async function boot(){
   }catch(e){
     console.error('[boot] خطأ بالإقلاع', e);
   }
+  await places;
 
   /* تشخيص بوضع التطوير */
   if(location.search.includes('debug')) hubReport();
