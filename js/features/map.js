@@ -25,7 +25,11 @@ const render = need('render');
 const filteredPhotos = need('filteredPhotos');
 
 /* state.map → state.map */
-export function renderMap(){
+export async function renderMap(){
+  /* الخريطة تُجلب عند أول طلب — لا في الرأس (index.html: needLeaflet) */
+  try{ if(window.needLeaflet) await window.needLeaflet(); }
+  catch(e){ console.warn('[خريطة] تعذّر تحميلها', e); try{ toast('تعذّر تحميل الخريطة — تحقّق من اتصالك', true) }catch(_){} return; }
+
   /* من رفض إذن الموقع لا يرى دبّوسه هنا ولا يدري لماذا */
   try{ if(typeof nudgeGeo==='function') nudgeGeo(); }catch(e){}
   const wrap=$('mapWrap');

@@ -38,7 +38,11 @@ const maybeAskNotifs = need('maybeAskNotifs');
 const fillPlaceFromGeo = need('fillPlaceFromGeo');
 
 
-export function openGeoPick(){
+export async function openGeoPick(){
+  /* الخريطة تُجلب عند أول طلب — لا في الرأس (index.html: needLeaflet) */
+  try{ if(window.needLeaflet) await window.needLeaflet(); }
+  catch(e){ console.warn('[خريطة] تعذّر تحميلها', e); try{ toast('تعذّر تحميل الخريطة — تحقّق من اتصالك', true) }catch(_){} return; }
+
   const box=$('geoPickBox');if(!box)return;
   bindGeoPickEvents();
   box.classList.add('show');
