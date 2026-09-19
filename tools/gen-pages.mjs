@@ -197,11 +197,52 @@ const robotsTxt = base => isProd(base)
   ? `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`
   : `# نسخة مختبر — ممنوعة من الأرشفة حتى لا تنافس sowra.app\nUser-agent: *\nDisallow: /\n`;
 
+/* ═══ تمهيدُ أوّل صورةٍ في index.html ═══
+   أكبر عنصرٍ مرئي عند الزائر هو أوّل بطاقةٍ في الخلاصة، وعنوانها لا
+   يُعرَف إلا بعد سلسلةٍ كاملة تنتهي بجواب القاعدة. فقاس قوقل ٤٫٨٦
+   ثانيةَ انتظارٍ قبل أن يبدأ تنزيلها — والتنزيل نفسه ٤٠ مللي.
+   ونحن هنا نعرفها: نقرأ نفس القاعدة كل ستّ ساعات. فنكتب عنوانها بين
+   علامتين في index.html، فيبدأ المتصفّح تنزيلها من الثانية الأولى.
+
+   والترتيب لا بدّ أن يوافق ما يعرضه التطبيق، وإلا مهّدنا لصورةٍ لا
+   تظهر: الافتراض عنده state.sort='top' — الأعلى تقييماً ثم الأكثر
+   تقييمات ثم الأحدث. وهو ما نُرتّب به هنا حرفاً بحرف.
+   ونمهّد للمصغّرة (_t.jpg) لأنها ما تعرضه البطاقة، لا الأصل. */
+const thumbOf = p => String(p || '').replace(/\.jpg$/i, '_t.jpg');
+
+export function firstCardUrl(rows){
+  const shown = (rows || []).filter(p => p && p.image_path && p.media_type !== 'video');
+  if(!shown.length) return null;
+  const top = shown.slice().sort((a,b) =>
+      (Number(b.avg_stars||0) - Number(a.avg_stars||0))
+   || (Number(b.ratings_count||0) - Number(a.ratings_count||0))
+   || (new Date(b.created_at||0) - new Date(a.created_at||0)))[0];
+  return imgUrl(thumbOf(top.image_path));
+}
+
+export function withPreload(html, url){
+  const a = '<!-- LCP:start -->', b = '<!-- LCP:end -->';
+  const i = html.indexOf(a), j = html.indexOf(b);
+  if(i < 0 || j < 0 || j < i) return null;        /* لا علامتين — لا نلمس الملف */
+  const line = url
+    ? `\n<link rel="preload" as="image" href="${url}" fetchpriority="high">\n`
+    : '\n';
+  return html.slice(0, i + a.length) + line + html.slice(j);
+}
+
 export function build(rows, base = ''){
   const out = new Map();
   for(const p of rows) out.set(`${OUT}/${p.id}.html`, pageHtml(p, base));
   if(isProd(base)) out.set('sitemap.xml', sitemapXml(rows, base));
   out.set('robots.txt', robotsTxt(base));
+  /* index.html يُعدَّل لا يُبنى: نُبقيه كما هو ونستبدل ما بين العلامتين */
+  try{
+    if(fs.existsSync('index.html')){
+      const cur = fs.readFileSync('index.html','utf8');
+      const next = withPreload(cur, firstCardUrl(rows));
+      if(next && next !== cur) out.set('index.html', next);
+    }
+  }catch(e){ console.warn('⚠️  تعذّر تمهيد أوّل صورة —', e.message); }
   return out;
 }
 
@@ -228,7 +269,11 @@ async function main(){
     if(f.endsWith('.html') && !live.has(f)){ fs.unlinkSync(path.join(OUT, f)); removed++; }
   }
   for(const [name, html] of files) fs.writeFileSync(name, html, 'utf8');
-  console.log(`[${base ? 'مختبر — ممنوع من الأرشفة' : 'إنتاج'}] كُتبت ${files.size - (base?1:2)} صفحة${base ? '' : ' + sitemap.xml'}${removed ? `  ·  حُذفت ${removed} صفحة لصور مزالة` : ''}`);
+  /* العدّ من مفاتيح p/ نفسها لا بالطرح: أُضيف index.html للخريطة
+     فاختلّ الطرح وصارت الرسالة تقول صفحةً زائدة. */
+  const pages = [...files.keys()].filter(k => k.startsWith(OUT + '/')).length;
+  const extra = [...files.keys()].filter(k => !k.startsWith(OUT + '/')).join(' · ');
+  console.log(`[${base ? 'مختبر — ممنوع من الأرشفة' : 'إنتاج'}] كُتبت ${pages} صفحة  ·  ${extra}${removed ? `  ·  حُذفت ${removed} صفحة لصور مزالة` : ''}`);
 }
 
 if(import.meta.url === `file://${process.argv[1]}`) main().catch(e => { console.error('✖', e.message); process.exit(1); });
