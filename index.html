@@ -221,7 +221,7 @@
      ولا تنتظرها). والترتيب محفوظ: الوسوم المؤجَّلة والوحدات تُنفَّذ
      بترتيب ورودها، وهذه قبل js/main.js. -->
 <script defer src="vendor/supabase.js?x=s1.9"></script>
-<link rel="stylesheet" href="css/style.css?x=s1.7">
+<link rel="stylesheet" href="css/style.css?x=s2.0">
 <script>
 /* ═══ الخريطة تُحمَّل حين تُطلب ═══
    كان leaflet.js وleaflet.css يُدرَجان في الرأس، فيوقفان رسم الصفحة
@@ -405,34 +405,7 @@ window.needLeaflet = (function(){
   <div id="weatherTip" class="wtip" style="display:none"><div class="wt-ic">🌤️</div><div class="wt-txt"><div class="wt-now" style="opacity:.45">نقرأ الطقس...</div><div class="wt-adv" style="opacity:.45">نجهّز نصيحة التصوير لموقعك</div></div></div>
   <div id="sponsorBar" style="display:none"></div>
   <div id="challengeStrip" style="display:none" class="ch-strip"></div>
-  <div id="weekStrip" style="display:none" class="week-strip" onclick="openWeek()"></div>
-  <script>
-  /* ═══ حجزُ مكانِ الشريط قبل أن تصل بياناته ═══
-     الشريط يظهر بعد جواب القاعدة — ثانيةً أو ثلاثاً — فيدفع الخلاصة
-     كلّها تحته. ولم يكن يُحسب إزاحةً حين كان leaflet يؤخّر الرسم:
-     كان الشريط يسبق الرسم أو يقاربه. فلمّا أسرعنا الرسم بحذفه من
-     الرأس، انكشفت الإزاحة التي كانت مستترة — 0.075 صارت 0.417.
-     فنحجز مكانه بارتفاعٍ يُحفظ من زيارةٍ سابقة: الصندوق موجودٌ في
-     التخطيط ومخفيٌّ بالعين (visibility لا display)، فإذا امتلأ لم
-     يتحرّك شيء. ومن زار أوّل مرّة لا حجز له — إزاحةٌ واحدة لا تتكرّر.
-     ويُمحى المحفوظ متى انتهت المسابقة، فلا يُحجز لفراغ.
-     ويعمل أثناء قراءة الصفحة لا بعدها، وإلا فاته وقتُ الرسم. */
-  (function(){
-    try{
-      /* ولا نشترط ذاكرةً سابقة: أوّل زيارةٍ هي التي يقيسها قوقل دائماً
-         (Lighthouse يبدأ بمتصفّحٍ نظيف)، فلو حجزنا للعائدين وحدهم لبقي
-         القياس كما هو. فالافتراض ٧٢ — ارتفاع سطرٍ واحد — ويُصحَّح من
-         الزيارة الثانية بالمقاس الحقيقي.
-         وثمنه: إن لم تكن هناك مسابقة انطوى الصندوق مرّةً واحدة. وذاك
-         أهون من إزاحةٍ في كل زيارةٍ ومسابقتك قائمةٌ كل أسبوع. */
-      var h = parseInt(localStorage.getItem('wk_h') || '0', 10) || 72;
-      if(h > 0 && h < 200){
-        var el = document.getElementById('weekStrip');
-        if(el){ el.style.display='block'; el.style.visibility='hidden'; el.style.minHeight = h+'px'; }
-      }
-    }catch(e){}
-  })();
-  </script>
+  <div id="weekStrip" style="visibility:hidden" class="week-strip" onclick="openWeek()"></div>
   <div class="hero" id="hero" style="display:none">
     <button class="hero-x" onclick="closeHero()">✕</button>
     <div class="hero-title">شارك جمال ديرتك 🇸🇦</div>
@@ -1077,6 +1050,6 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
-  <script type="module" src="js/main.js?x=s1.9"></script>
+  <script type="module" src="js/main.js?x=s2.0"></script>
 </body>
 </html>
