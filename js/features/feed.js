@@ -45,18 +45,107 @@ state.draftSort='top';
 state.draftScope='home';
 state.scope='home';
 
+/* ═══ الشاشة الأولى لا تنتظر الأرشيف ═══
+   كانت loadPhotos تجلب كل الصور بكل أعمدتها ثم ترسم. فالزائر يرى
+   صفحةً فارغةً حتى يصل آخر صفٍّ في القاعدة — وقاس قوقل ٤٫٨٦ ثانية
+   انتظاراً قبل أن يبدأ المتصفّح تنزيل أوّل صورةٍ أصلاً.
+   واليوم ٤٧ صورةً تساوي ١٢ كيلوبايت فلا يُشعَر بها. وعند خمسة آلاف
+   تصير ميغابايت وربعاً في كل زيارة — لعرض اثنتي عشرة صورةً في الشاشة
+   الأولى. وهذا لا يتدهور شيئاً فشيئاً: ينهار.
+
+   فصار الجلب على نَفَسين:
+     الأول: صفحةٌ أولى بالترتيب المعروض — فتُرسم فوراً.
+     الثاني: بقيّة الأرشيف في وقت فراغ الخيط، بعد أن يرى الزائر صوره.
+   والثاني ضروريٌّ اليوم: خمسةٌ وعشرون ملفاً تقرأ state.photos وتفترضها
+   الأرشيف كاملاً — الخريطة والبحث وعدّادات الملف والأضواء والسباق.
+   فلا نكسرها، بل نؤخّرها عن الطريق الحرِج. وإسقاطُ الأرشيف المشترك
+   نفسِه شغلٌ آخر، كلُّ شاشةٍ تسأل عمّا تحتاج. */
+const FIRST_PAGE = 60;
+let _restTimer = null;
+
+/* الصفحة الأولى تُجلب بترتيب العرض نفسه — وإلا جلبنا أحدث ستّين
+   وعرضنا أعلى اثنتي عشرة تقييماً، فلا يوافق المجلوبُ المعروض. */
+function orderedPage(q){
+  if(state.sort === 'new') return q.order('created_at',{ascending:false});
+  return q.order('avg_stars',{ascending:false}).order('ratings_count',{ascending:false});
+}
+
+/* ═══ آخرُ ما رآه الزائر يُرسَم قبل أن تجيب الشبكة ═══
+   الصفحة تُرسم في ١٤٤ مللي ثم تجلس فارغةً حتى يصل جواب القاعدة. ومن
+   زار أمس رأى صوراً — فلمَ يُستقبَل اليوم بفراغٍ حتى تُجيب؟
+   فنحفظ أوّل أربعٍ وعشرين بطاقةً بجهازه، ونرسمها فور الإقلاع، ثم
+   يحلّ محلّها الجوابُ الحقيقي حين يصل — وأكثره لا يتغيّر فلا يرى
+   قفزة. ومن زار أوّل مرّةٍ لا ذاكرة له، فيرى ما كان يرى.
+   وعمرُها يوم: الأقدم يُهمَل ولا يُعرَض. */
+const CACHE_KEY = 'sowra_feed_v1';
+const CACHE_MAX = 24;
+const CACHE_TTL = 24 * 3600 * 1000;
+
+function saveFeedCache(rows){
+  try{
+    if(!rows || !rows.length) return;
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      t: Date.now(),
+      s: state.sort || 'top',
+      r: rows.slice(0, CACHE_MAX)
+    }));
+  }catch(e){}            /* ممتلئٌ أو محظور — لا يضرّ */
+}
+
+function paintFromCache(){
+  try{
+    const raw = localStorage.getItem(CACHE_KEY);
+    if(!raw) return false;
+    const c = JSON.parse(raw);
+    if(!c || !Array.isArray(c.r) || !c.r.length) return false;
+    if(Date.now() - (c.t||0) > CACHE_TTL) return false;
+    if(c.s && state.sort && c.s !== state.sort) return false;   /* رُتِّبت بغير ترتيبه */
+    state.photos = c.r;
+    paintFeed();
+    return true;
+  }catch(e){ return false; }
+}
+
 export async function loadPhotos(){
+  clearTimeout(_restTimer);
+  /* قبل أي انتظار: ارسم ما بالجهاز إن وُجد ولم يكن عندنا شيء */
+  if(!state.photos.length) paintFromCache();
+  const first = await orderedPage(sb.from('photos_ranked').select('*')).limit(FIRST_PAGE);
+  if(first.error){
+    $('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${first.error.message}</div>`;
+    return;
+  }
+  state.photos = first.data || [];
+  saveFeedCache(state.photos);
+  try{await loadVisitCounts()}catch(e){}
+  try{await loadClaims()}catch(e){}
+  paintFeed();
+  watchPhotos();
+  /* الباقي حين يفرغ الخيط — لا قبله */
+  const rest = () => { loadRest().catch(e => console.warn('[خلاصة] تعذّر جلب البقيّة', e)); };
+  if(window.requestIdleCallback) requestIdleCallback(rest, {timeout: 2500});
+  else _restTimer = setTimeout(rest, 1200);
+}
+
+async function loadRest(){
   const { data, error } = await sb.from('photos_ranked')
     .select('*')
     .order('created_at',{ascending:false});
-  if(error){$('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${error.message}</div>`;return}
-  state.photos = data || [];
+  if(error){ console.warn('[خلاصة] بقيّة الأرشيف لم تصل —', error.message); return; }
+  const all = data || [];
+  /* لا نرسم إن لم يتغيّر شيء: الصفحة الأولى قد تكون الأرشيف كلّه */
+  const grew = all.length !== state.photos.length;
+  state.photos = all;
   _sig = sigOf(state.photos);
   _lastFull = Date.now();
-  try{await loadVisitCounts()}catch(e){}
-  try{await loadClaims()}catch(e){}
-  try{if(typeof state.viewMode!=='undefined'&&state.viewMode==='map'){renderMap()}else{render()}}catch(e){console.warn('render',e)}
-  watchPhotos();
+  if(grew) paintFeed();
+}
+
+function paintFeed(){
+  try{
+    if(typeof state.viewMode!=='undefined' && state.viewMode==='map'){ renderMap(); }
+    else { render(); }
+  }catch(e){ console.warn('render', e); }
 }
 
 /* ═══ القناة الحيّة ═══
