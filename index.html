@@ -165,7 +165,9 @@
 })();
 </script>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- منعُ التكبير عادةٌ من زمن iOS 9، ولم تعد لها حاجة. ومن ضعف
+     بصره كان لا يستطيع تكبير صفحةٍ كلُّها صور. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>صورة من بلدي</title>
 <meta name="description" content="صورة من بلدي — منصّةٌ سعوديّة تجمع صور المناطق والقرى والمعالم بعدسات أهلها. كل صورة مثبّتةٌ على موقعها الحقيقي، ويقيّمها الناس لا الخوارزميات.">
 <meta name="application-name" content="صورة من بلدي">
@@ -208,9 +210,32 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0"></script>
-<script src="vendor/leaflet.js?x=s1.1"></script>
-<link rel="stylesheet" href="css/style.css?x=s1.4">
-<link rel="stylesheet" href="vendor/leaflet.css?x=s1.1">
+<link rel="stylesheet" href="css/style.css?x=s1.6">
+<script>
+/* ═══ الخريطة تُحمَّل حين تُطلب ═══
+   كان leaflet.js وleaflet.css يُدرَجان في الرأس، فيوقفان رسم الصفحة
+   لكل زائر — وأكثر الزوّار لا يفتحون الخريطة أبداً. ٤٧ كيلوبايت
+   وطلبان حاجبان في كل زيارة بلا مقابل.
+   فصارا يُجلبان عند أول حاجة: الخريطة، أو مُنتقي الموقع بالنشر
+   والتعديل. ووعدٌ واحد محفوظ، فمهما تكرّر الطلب لا يُجلب مرّتين. */
+window.needLeaflet = (function(){
+  var p = null;
+  return function(){
+    if(p) return p;
+    p = new Promise(function(res, rej){
+      var c = document.createElement('link');
+      c.rel = 'stylesheet'; c.href = 'vendor/leaflet.css?x=s1.6';
+      document.head.appendChild(c);
+      var s = document.createElement('script');
+      s.src = 'vendor/leaflet.js?x=s1.6';
+      s.onload = function(){ res(window.L) };
+      s.onerror = function(){ p = null; rej(new Error('تعذّر تحميل الخريطة')) };
+      document.head.appendChild(s);
+    });
+    return p;
+  };
+})();
+</script>
 </head>
 <body class="page-feed">
 
@@ -350,6 +375,10 @@
   </div>
 </div>
 <!-- نهاية sticky-top -->
+
+<!-- مَعلمٌ رئيسي: بدونه لا يجد قارئُ الشاشة أين يبدأ المحتوى،
+     فيضطرّ صاحبه أن يمرّ على الترويسة والأزرار في كل صفحة. -->
+<main id="mainArea">
 
 <div class="page on" id="page-feed">
   <div id="newsBanner" class="news-banner" style="display:none"></div>
@@ -791,6 +820,8 @@
   <div class="lb-scroll" id="lbScroll"><img id="lbImg" ondblclick="lbDbl()" alt=""></div>
 </div>
 
+</main>
+
 <nav>
   <button class="nav-btn on" id="nb-feed" onclick="go('feed')">
     <svg class="nb-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -1003,6 +1034,6 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
-  <script type="module" src="js/main.js?x=s1.5"></script>
+  <script type="module" src="js/main.js?x=s1.6"></script>
 </body>
 </html>
