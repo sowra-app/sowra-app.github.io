@@ -74,8 +74,20 @@ export async function loadPhotos(){
        فنُمهل ثلاث ثوانٍ ثم نسأل سؤالاً واحداً رخيصاً. */
 let _ch = null, _burst = null;
 
+/* ═══ القناة تستسلم بعد ثلاثٍ ═══
+   عميل سوبابيس يعيد وصل القناة بلا نهاية. وحيث لا تمرّ WebSocket —
+   شبكةٌ تحجبها، أو وكيلٌ بالعمل، أو بيئة فحصٍ كبيئة PageSpeed التي
+   ردّت ERR_NAME_NOT_RESOLVED أربع مرّات في لقطةٍ واحدة — تصير محاولةً
+   أبديّة: أخطاءٌ تتراكم بالسجلّ، ومقبسٌ يُفتح ويُغلق بلا فائدة،
+   وبطاريّةٌ تُستهلك على جوّالٍ لن يتصل أبداً.
+   والقناة مُسرِّعٌ لا معتمَدٌ عليه: السؤال الدوري كل دقيقتين يغطّي
+   عملها كاملاً. فبعد ثلاث خيبات نصرفها ونكتفي بالسؤال — ونقولها مرّةً
+   واحدة لا مع كل محاولة. */
+const GIVE_UP_AFTER = 3;
+let _fails = 0, _gone = false;
+
 export function watchPhotos(){
-  if(_ch) return;
+  if(_ch || _gone) return;
   if(!sb || typeof sb.channel !== 'function') return;
   try{
     const hit = () => {
@@ -86,14 +98,28 @@ export function watchPhotos(){
       .on('postgres_changes', {event:'INSERT', schema:'public', table:'photos'}, hit)
       .on('postgres_changes', {event:'DELETE', schema:'public', table:'photos'}, hit)
       .subscribe(st => {
-        if(st === 'SUBSCRIBED') console.info('[حيّ] القناة مفتوحة — الصور الجديدة تصل لحظتها');
-        else if(st === 'CHANNEL_ERROR' || st === 'TIMED_OUT')
-          console.warn('[حيّ] تعذّرت القناة ('+st+') — السؤال الدوري يغطّيها');
+        if(st === 'SUBSCRIBED'){
+          _fails = 0;
+          console.info('[حيّ] القناة مفتوحة — الصور الجديدة تصل لحظتها');
+        }else if(st === 'CHANNEL_ERROR' || st === 'TIMED_OUT'){
+          if(++_fails >= GIVE_UP_AFTER) dropChannel(st);
+        }
       });
   }catch(e){
     console.warn('[حيّ] تعذّر الاشتراك — السؤال الدوري يغطّيها', e);
     _ch = null;
   }
+}
+
+function dropChannel(why){
+  /* العميل يواصل نداء الردّ بعد الصرف، والشرط يبقى صادقاً — فكانت
+     تُقال ستّ مرّات. الحارس هنا لا في موضع النداء، لأن مواضع النداء
+     تكثر والقرار واحد. */
+  if(_gone) return;
+  _gone = true;
+  try{ if(_ch && typeof sb.removeChannel === 'function') sb.removeChannel(_ch); }catch(e){}
+  _ch = null;
+  console.warn('[حيّ] تعذّرت القناة ('+why+') بعد '+GIVE_UP_AFTER+' محاولات — صُرفت، والسؤال الدوري كل دقيقتين يغطّيها');
 }
 
 /* ═══ التحديث الآليّ: نسأل قبل أن نجلب ═══
