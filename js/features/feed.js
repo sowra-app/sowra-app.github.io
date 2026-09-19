@@ -117,10 +117,14 @@ export async function loadPhotos(){
   }
   state.photos = first.data || [];
   saveFeedCache(state.photos);
-  try{await loadVisitCounts()}catch(e){}
-  try{await loadClaims()}catch(e){}
+  /* ارسم الآن — الزيارات والملكيّات زينةٌ لا شرطٌ للرسم */
   paintFeed();
   watchPhotos();
+  (async () => {
+    try{ await loadVisitCounts() }catch(e){}
+    try{ await loadClaims() }catch(e){}
+    paintFeed();
+  })();
   /* الباقي حين يفرغ الخيط — لا قبله */
   const rest = () => { loadRest().catch(e => console.warn('[خلاصة] تعذّر جلب البقيّة', e)); };
   if(window.requestIdleCallback) requestIdleCallback(rest, {timeout: 2500});
