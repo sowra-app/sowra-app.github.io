@@ -49,8 +49,14 @@ export async function loadWeek(){
     }
   }catch(err){WEEK=null}
   const strip=$('weekStrip');if(!strip)return;
-  if(!WEEK){strip.style.display='none';return}
-  strip.style.display='block';
+  if(!WEEK){
+    /* لا مسابقة: أعِد الشريط للإخفاء وامحُ الارتفاع المحفوظ، فلا
+       يُحجز مكانٌ لفراغٍ في الزيارة القادمة (index.html: wk_h) */
+    strip.style.display='none'; strip.style.visibility=''; strip.style.minHeight='';
+    try{ localStorage.removeItem('wk_h') }catch(e){}
+    return;
+  }
+  strip.style.display='block'; strip.style.visibility=''; strip.style.minHeight='';
   if(state.weekMode==='results'){
     const win=state.photos.find(x=>x.id===WEEK.winner_photo_id);
     strip.classList.add('win');
@@ -61,6 +67,11 @@ export async function loadWeek(){
     strip.classList.remove('win');
     strip.innerHTML=`🏆 <b>لقطة الأسبوع</b> — شاهد اللقطات الخمس وصوّت ${WEEK.sponsor_name?'· برعاية '+esc(WEEK.sponsor_name):''}`;
   }
+  /* احفظ ارتفاعه ليُحجز مكانه في الزيارة القادمة بلا إزاحة */
+  try{
+    const h = Math.round(strip.getBoundingClientRect().height);
+    if(h > 0 && h < 200) localStorage.setItem('wk_h', String(h));
+  }catch(e){}
 }
 
 export async function openWeek(){
