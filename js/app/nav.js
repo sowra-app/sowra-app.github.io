@@ -278,7 +278,10 @@ export function applyViewPrefs(){
   const wt=document.getElementById('weatherTip');
   const ch=document.getElementById('challengeStrip');
   if(hero&&!p.hero)hero.style.display='none';
-  if(wt)wt.style.display=p.weather?'':'none';
+  /* التفضيل يُخفي ولا يُظهر — الإظهار لمن يملأ (loadWeatherTip)،
+     وإلا ظهر صندوقٌ فارغٌ ثم امتلأ فأزاح ما تحته. وهذا نهج إخوته:
+     if(hero&&!p.hero) … و if(ch&&!p.challenge) … */
+  if(wt&&!p.weather)wt.style.display='none';
   if(ch&&!p.challenge)ch.style.display='none';
   if(hero&&p.hero&&typeof renderHomeHero==='function')renderHomeHero();
   if(ch&&p.challenge&&typeof loadChallenge==='function')loadChallenge();
