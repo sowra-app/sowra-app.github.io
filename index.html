@@ -181,7 +181,10 @@
 <meta property="og:type" content="website">
 <meta property="og:image" content="icon-512.png">
 <link rel="manifest" href="manifest.json?x=s1.1">
-<link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+<!-- أيقونةُ التبويب تُرسَم في ١٦ أو ٣٢ بكسل، وكانت تُنزَّل بـ٨٧
+     كيلوبايت (٢٥٦×٢٥٦). والأصل باقٍ في manifest للتثبيت وفي
+     الإشعارات — وهما لا يُطلبان مع كل زيارة. -->
+<link rel="icon" type="image/png" sizes="48x48" href="img/favicon-48.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><!-- Google Analytics -->
 <script>
@@ -250,7 +253,12 @@ window.needLeaflet = (function(){
 <div class="sticky-top">
 <header>
   <div style="display:flex;align-items:center;gap:10px">
-    <img src="img/icon-192.png" alt="logo" class="hdr-icon">
+    <!-- ٨٧ كيلوبايت كانت تُنزَّل لتُعرَض في ٥٢×٥٢ بكسل — أكبر ملفٍ
+         بالموقع، وأكبر من الستّين وحدةَ جافاسكربت مجتمعة. فصارت نسخةً
+         بمقاس ١٥٦ (ثلاثة أضعاف العرض، يكفي أكثف الشاشات) بصيغة webp.
+         والأصل باقٍ للأيقونة والإشعارات، وإليه يسقط القديمُ إن لم
+         يعرف webp — نفس نهج صور الخلاصة. -->
+    <img src="img/logo-hdr.webp" onerror="this.onerror=null;this.src='img/icon-192.png'" width="52" height="52" alt="شعار صورة من بلدي" class="hdr-icon">
     <div class="logo">صورة من بلدي<span>عدسات أهل الديار</span></div>
   </div>
   <div style="display:flex;gap:8px;align-items:center">
@@ -1061,6 +1069,6 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
-  <script type="module" src="js/main.js?x=s1.7"></script>
+  <script type="module" src="js/main.js?x=s1.9"></script>
 </body>
 </html>
