@@ -84,10 +84,27 @@
   /* ٤. مشرفٌ ثبتت صفته بهذا الجهاز من دخولٍ ناجح */
   try{ if(localStorage.getItem("sowra_admin")==="1"){ say("معفىً: صفةُ إشرافٍ ثابتةٌ بهذا الجهاز (sowra_admin) — وهذا لا يدلّ على الزوّار"); return; } }catch(e){}
 
+  /* ═══ لا نُعمي الزائر انتظاراً لجوابٍ نادرِ الأثر ═══
+     كان الحارس يُخفي الصفحة حتى يصل جواب القاعدة أو تمرّ ٢٥٠٠ مللي.
+     فصار أوّلُ رسمةٍ يتبع بطءَ سوبابيس حرفياً: قِسْتُه بتأخيرٍ ٠٫٣ و١٫٥
+     و٣٫٠ ثانية فجاء ٣٦٠ و١٥٦٤ و٢٥٦٠ — أي أنّ كل زائرٍ ينتظر القاعدة
+     قبل أن يرى شيئاً. وعلى جوّالٍ بطيءٍ صار ٣٫٥ ثانية.
+     والمقايضة كانت خاطئة: حجبُ الجميع كلَّ يومٍ خوفاً من حالةٍ تقع
+     مرّةً في الشهر. فالصيانةُ نادرة، والعمى يوميّ.
+     فصار الإخفاء مشروطاً بما عرفه هذا الجهاز آخرَ مرّة: إن كانت
+     الستارة مسدلةً حينها أخفينا (مهلةٌ قصيرة)، وإلا رسمنا فوراً
+     وسألنا في الخلفية — فإن جاء الجواب بالصيانة وجّهنا حينها.
+     وثمنُه: زائرٌ يفتح أثناء الصيانة أوّلَ مرّةٍ قد يلمح التطبيق ثانيةً
+     قبل أن يُوجَّه. ثمنٌ زهيدٌ مقابل ثلاث ثوانٍ لكل زائرٍ كل يوم. */
   var de=document.documentElement;
-  de.style.visibility="hidden";
-  var shown=false, show=function(){ if(!shown){ shown=true; de.style.visibility=""; } };
-  setTimeout(show,2500);   /* انقطاعُ شبكةٍ لا يحجب أحداً */
+  var wasDown=false;
+  try{ wasDown = localStorage.getItem("mt_last")==="1"; }catch(e){}
+  var shown=true, show=function(){ if(!shown){ shown=true; de.style.visibility=""; } };
+  if(wasDown){
+    de.style.visibility="hidden";
+    shown=false;
+    setTimeout(show,1200);   /* انقطاعُ شبكةٍ لا يحجب أحداً */
+  }
 
   function bsm(s){
     return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function(b){
@@ -142,6 +159,8 @@
     })
     .then(function(row){
       say("جواب الصفّ:", {maintenance:row.maintenance, نوعها:typeof row.maintenance, بصمةٌ_موجودة:!!row.mt_key_sha});
+      /* نحفظ ما عرفناه ليقرّر الحارسُ في الزيارة القادمة: أيُخفي أم يرسم */
+      try{ localStorage.setItem("mt_last", isOn(row.maintenance) ? "1" : "0"); }catch(e){}
       if(!isOn(row.maintenance)){ say("الستارة مرفوعة — الموقع مفتوح للجميع"); show(); return }
       var want=arg("pass"), sha=row.mt_key_sha;
       if(!sha){ halt("الستارة مسدَلة ولا بصمةَ سرٍّ بالصفّ — لا إعفاء لأحد. نفّذ أمر mt_key_sha"); return }
@@ -1067,6 +1086,6 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
-  <script type="module" src="js/main.js?x=s2.1"></script>
+  <script type="module" src="js/main.js?x=s2.2"></script>
 </body>
 </html>
