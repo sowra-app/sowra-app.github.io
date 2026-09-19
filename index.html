@@ -421,6 +421,23 @@ window.needLeaflet = (function(){
     </div>
     <button class="btn hero-cta" onclick="go('add')">📷 انشر أول صورة لك</button>
   </div>
+  <script>
+  /* ═══ قرارُ الترحيب يُتَّخذ هنا لا بعد الشبكة ═══
+     كان initHero() يُظهره بعد await loadPhotos() — أي بعد ثوانٍ — فيدفع
+     الخلاصة كلّها (نحو ٢٧٠ بكسل). وقراره لا يحتاج شبكةً أصلاً: علامةٌ
+     في الجهاز لا غير. ومتصفّح الفحص نظيفٌ دائماً فالعلامة غائبةٌ عنده
+     والبلوك يظهر متأخّراً — فكانت إزاحةً في كل قياس.
+     فصار يُقرَّر أثناء قراءة الصفحة: حاضرٌ من أوّل رسمةٍ أو غائبٌ،
+     ولا حركة بينهما. وinitHero باقيةٌ ولا تضرّ — تُعيد نفس الحكم. */
+  (function(){
+    try{
+      if(!localStorage.getItem("sowra_hero_seen")){
+        var h = document.getElementById("hero");
+        if(h) h.style.display = "block";
+      }
+    }catch(e){}
+  })();
+  </script>
   <div id="sponsorSide" style="display:none" class="sponsor-side"></div>
   <div id="mapWrap" style="display:none">
     <div id="map"></div>
@@ -1050,6 +1067,6 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
-  <script type="module" src="js/main.js?x=s2.0"></script>
+  <script type="module" src="js/main.js?x=s2.1"></script>
 </body>
 </html>
