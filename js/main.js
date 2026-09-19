@@ -159,6 +159,9 @@ async function boot(){
   if(window.__BOOT_FAIL) return;
   installErrorWatch();
 
+  /* الصفحة الأولى تنطلق الآن — لا بعد المصادقة */
+  try{ features_feed.prefetchFirstPage() }catch(e){}
+
   try{
     await ensureAuth();
   }catch(e){
