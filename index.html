@@ -230,9 +230,16 @@
     else setTimeout(bring, 1200);
   });
 </script>
+<!-- ═══ الخطوط لا تحجب الرسم ═══
+     ١٫٦ كيلوبايت تكلّف ٧٥٠ مللي — كلُّها مصافحةُ نطاقٍ جديد، لا
+     تنزيل. وكانت تُحجَز الصفحة كلُّها حتى تصل.
+     media="print" يجعل المتصفّح يجلبها بلا أن ينتظرها، ثم
+     onload يعيدها لكل الوسائط فتُطبَّق. والنصّ يُرسَم بخطّ النظام
+     ثم يُبدَّل — وهو ما كان يحدث أصلاً لأن الرابط فيه display=swap. -->
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all';this.onload=null">
-   <!-- ═══ مكتبة القاعدة: عندنا لا عند غيرنا، ومؤجَّلة ═══
+<noscript><link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
+<!-- ═══ مكتبة القاعدة: عندنا لا عند غيرنا، ومؤجَّلة ═══
      كانت تُجلب من jsDelivr بوسمٍ بلا defer، فتحجب رسم الصفحة
      ٢٢٥٠ مللي — أكبر حاجبٍ في الموقع وحده. وسببه شقّان: طرفٌ
      ثالث (اسمُ نطاقٍ جديد ومصافحةٌ جديدة قبل أن تبدأ)، ووسمٌ
@@ -1087,6 +1094,6 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
-  <script type="module" src="js/main.js?x=s2.2"></script>
+  <script type="module" src="js/main.js?x=s2.4"></script>
 </body>
 </html>
