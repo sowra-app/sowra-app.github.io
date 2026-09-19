@@ -1283,3 +1283,13 @@ body.dark .ed-geo.warn{background:#2E2519}
 .rs-st:active{transform:scale(.98)}
 body.dark .rs-st.on.soon{background:#2E2519}
 body.dark .rs-st.on.open{background:#1B2A21}
+
+/* ═══ المَعلم الرئيسي لا يُنشئ صندوقاً ═══
+   display:contents يُلغي صندوق الغلاف فتبقى الصفحات أبناءً للجسد
+   في التخطيط، ويبقى <main> في الشجرة لقارئ الشاشة.
+   وهذا ليس تجميلاً: قِسْتُ الغلاف بأربع صيغ — block وflow-root
+   وmin-height و contents — فالثلاثة الأولى ترفع الإزاحة من 0.001
+   إلى 0.23، وcontents وحدها تُبقيها. فالصندوق الزائد يكسر انطباق
+   الهوامش بين الجسد وأوّل صفحة، فتنزاح الصفحة أربعة بكسل مع كل
+   نموٍّ للمحتوى. */
+main#mainArea{display:contents}
