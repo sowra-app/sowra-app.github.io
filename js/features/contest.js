@@ -36,6 +36,14 @@ state.weekEntries=[];
 state.weekVotes={};
 state.myWeekVote=null;
 
+/* اسمُ الراعي يُقصّ بعلامةٍ ظاهرة لا بالأنماط: الصندوق ٨٤ بكسل
+   يسع سطرين، واسمٌ طويلٌ جداً يحتاج ثلاثة فيختفي آخره بصمت —
+   والقارئ لا يدري أنّ ثمّة بقيّة. فالقصّ هنا يُعلن نفسه. */
+function shortName(n){
+  const t = String(n||'').trim();
+  return t.length > 24 ? t.slice(0,23).trim()+'…' : t;
+}
+
 export async function loadWeek(){
   WEEK=null;state.weekMode='live';
   try{
@@ -49,29 +57,20 @@ export async function loadWeek(){
     }
   }catch(err){WEEK=null}
   const strip=$('weekStrip');if(!strip)return;
-  if(!WEEK){
-    /* لا مسابقة: أعِد الشريط للإخفاء وامحُ الارتفاع المحفوظ، فلا
-       يُحجز مكانٌ لفراغٍ في الزيارة القادمة (index.html: wk_h) */
-    strip.style.display='none'; strip.style.visibility=''; strip.style.minHeight='';
-    try{ localStorage.removeItem('wk_h') }catch(e){}
-    return;
-  }
-  strip.style.display='block'; strip.style.visibility=''; strip.style.minHeight='';
+  /* المكان محجوزٌ بالأنماط (min-height) والشريط مخفيٌّ بالعين. فإن
+     وُجدت مسابقةٌ أظهرناه في مكانه بلا حركة، وإلا طويناه. */
+  if(!WEEK){ strip.style.display='none'; return; }
+  strip.style.display=''; strip.style.visibility='';
   if(state.weekMode==='results'){
     const win=state.photos.find(x=>x.id===WEEK.winner_photo_id);
     strip.classList.add('win');
     strip.innerHTML=win
-      ?`👑 <b>فائز لقطة الأسبوع:</b> ${rankOf(win).ic} ${esc(win.photographer)} — «${esc(win.title)}» · شاهد النتيجة`
-      :`🏁 <b>لقطة الأسبوع انتهت</b> — شاهد النتيجة`;
+      ?`<span class="wk-txt">👑 <b>فائز لقطة الأسبوع:</b> ${rankOf(win).ic} ${esc(win.photographer)} — «${esc(win.title)}» · شاهد النتيجة</span>`
+      :`<span class="wk-txt">🏁 <b>لقطة الأسبوع انتهت</b> — شاهد النتيجة</span>`;
   }else{
     strip.classList.remove('win');
-    strip.innerHTML=`🏆 <b>لقطة الأسبوع</b> — شاهد اللقطات الخمس وصوّت ${WEEK.sponsor_name?'· برعاية '+esc(WEEK.sponsor_name):''}`;
+    strip.innerHTML=`<span class="wk-txt">🏆 <b>لقطة الأسبوع</b> — شاهد اللقطات الخمس وصوّت ${WEEK.sponsor_name?'· برعاية '+esc(shortName(WEEK.sponsor_name)):''}</span>`;
   }
-  /* احفظ ارتفاعه ليُحجز مكانه في الزيارة القادمة بلا إزاحة */
-  try{
-    const h = Math.round(strip.getBoundingClientRect().height);
-    if(h > 0 && h < 200) localStorage.setItem('wk_h', String(h));
-  }catch(e){}
 }
 
 export async function openWeek(){
