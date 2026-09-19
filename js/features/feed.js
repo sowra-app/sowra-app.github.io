@@ -106,11 +106,32 @@ function paintFromCache(){
   }catch(e){ return false; }
 }
 
+/* ═══ جلبٌ مبكّر — قبل المصادقة ═══
+   سياسة photos_ranked تسمح لدور anon بقراءة العامة (مُتحقَّقٌ منه:
+   set local role anon ← ٣٨ صفّاً). فلا معنى لأن تنتظر الخلاصة
+   الدخول المجهول: رحلةٌ كاملة قبل أن يُطلب أوّل صفّ.
+   نُشعل الاستعلام هنا، وloadPhotos تستهلكه إن وجدته.
+   ولا نفعلها لمن له جلسةٌ محفوظة: قد يملك صوراً خاصّةً لا يراها anon. */
+let _early = null;
+export function prefetchFirstPage(){
+  if(_early) return _early;
+  try{
+    for(const k of Object.keys(localStorage))
+      if(k.startsWith('sb-') && k.endsWith('-auth-token')) return null;
+  }catch(e){ return null; }
+  _early = orderedPage(sb.from('photos_ranked').select('*')).limit(FIRST_PAGE)
+            .then(r => r, e => ({ error: e }));
+  return _early;
+}
+
 export async function loadPhotos(){
   clearTimeout(_restTimer);
   /* قبل أي انتظار: ارسم ما بالجهاز إن وُجد ولم يكن عندنا شيء */
   if(!state.photos.length) paintFromCache();
-  const first = await orderedPage(sb.from('photos_ranked').select('*')).limit(FIRST_PAGE);
+  const early = _early; _early = null;
+  const first = early
+    ? await early
+    : await orderedPage(sb.from('photos_ranked').select('*')).limit(FIRST_PAGE);
   if(first.error){
     $('feed').innerHTML=`<div class="empty"><span class="big">⚠️</span>تعذر تحميل الصور<br>${first.error.message}</div>`;
     return;
