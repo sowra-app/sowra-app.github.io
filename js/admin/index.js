@@ -132,7 +132,11 @@ export async function loadAdmList(){
   const box = $('admList'); if(!box) return;
   const rep = state.admTab === 'rep';
   admTools();
-  const tb = $('admTools'); if(tb) tb.style.display = rep ? 'none' : '';
+  /* ولا نلمس عرض الشريط هنا: القرار لadmSetTab وحده.
+     كان هنا سطرٌ يُظهره، وloadAdmList غير متزامنة — فمن نقر «كل
+     الصور» ثم «الأماكن» بسرعة، انتهى هذا السطر بعد أن انتقل
+     فأعاد الشريط إلى تبويبٍ لا شأن له به. وقرارٌ له مالكان
+     يغلب فيه آخرُ من يتكلّم، لا أصحُّهما. */
   box.innerHTML = '<div class="empty">⏳</div>';
 
   let q = sb.from('photos').select('*, profiles!user_id(display_name, banned)');
@@ -200,6 +204,13 @@ export function admSetTab(t){
   const aq=$('admQs');if(aq)aq.style.display=t==='qs'?'':'none';
   const am=$('admMu');if(am)am.style.display=t==='mu'?'':'none';
   const ae=$('admEC');if(ae)ae.style.display=t==='ec'?'':'none';
+  /* ═══ شريط الفلتر يتبع تبويبه ═══
+     كان admSetTab يُخفي كل لوحةٍ حسب تبويبها ولا يمسّ الشريط، فيبقى
+     معروضاً من التبويب السابق في الأماكن والملاحظات والإحصائيات
+     ولقطة الأسبوع والمهام والموسيقى — تسعة تبويباتٍ لا شأن له بها.
+     ووحده loadAdmList كان يُخفيه، وهو لا يعمل إلا في تبويبَي البلاغات
+     وكل الصور. فصار قراره هنا، مع إخوته، في مكانٍ واحد. */
+  const at=$('admTools');if(at)at.style.display=t==='all'?'':'none';
   /* كان 'block' — ونمطٌ سطريّ يغلب الورقة كلها مهما كتبنا فيها.
      فقائمة الإشراف تبقى بطاقةً واحدة بالسطر على سطح المكتب ولو
      جعلناها شبكةً بالأنماط: السطر هذا يمحو ذلك عند كل نقرة تبويب.
