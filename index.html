@@ -205,7 +205,20 @@
      الإشعارات — وهما لا يُطلبان مع كل زيارة. -->
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon-48.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><!-- Google Analytics -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><!-- ═══ تمهيدٌ لأوّل صورةٍ في الخلاصة ═══
+     أكبر عنصرٍ مرئي عند الزائر هو أوّل صورة، وعنوانها لا يُعرَف إلا
+     بعد سلسلةٍ كاملة: index.html ← main.js ← الوحدات ← جواب القاعدة.
+     فقاس قوقل ٤٫٨٦ ثانية انتظاراً قبل أن يبدأ تنزيلها، والتنزيل نفسه
+     ٤٠ مللي. أي أنّ المتصفّح لا يعلم أنّ ثمّة صورةً أصلاً.
+     ومولّد الصفحات يعرفها — يعمل كل ستّ ساعاتٍ ويقرأ القاعدة. فيكتب
+     عنوانها هنا، فيبدأ المتصفّح تنزيلها من الثانية الأولى بالتوازي مع
+     كل شيء، فتكون جاهزةً حين تصل البيانات.
+     وإن تغيّرت الأولى بين توليدٍ وآخر ضاع طلبٌ واحد (مصغّرة) — ثمنٌ
+     زهيدٌ مقابل ثوانٍ. والسطران التاليان يكتبهما tools/gen-pages.mjs
+     بين العلامتين، فلا تُحرّرهما بيدك. -->
+<!-- LCP:start -->
+<!-- LCP:end -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><!-- Google Analytics -->
 <script>
   /* ═══ الإحصاءات تنتظر دورها ═══
      كانت تُحمَّل async في الرأس: تنزل بالتوازي، لكنها تُنفَّذ لحظة
@@ -1094,6 +1107,6 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
-  <script type="module" src="js/main.js?x=s2.5"></script>
+  <script type="module" src="js/main.js?x=s2.6"></script>
 </body>
 </html>
