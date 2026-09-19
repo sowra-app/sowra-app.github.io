@@ -1,15 +1,65 @@
-/* صورة من بلدي — upload.js | نسخة المختبر م1 */
-/* ============ الإضافة ============ */
-let pendingFile=null,pendingGeo=null,pendingBlob=null,isAbroad=false,pendingVideo=null,pendingVis='public';
-/* ====== مستوى الظهور ====== */
-function setVis(v){
-  pendingVis=v;
+/* صورة من بلدي — features/upload.js
+   النشر */
+
+import { currentUser, isAnon, sb } from '../core/db.js';
+import { checkText, findOpt } from '../core/format.js';
+import { liveLocation, readExifGPS, readExifGPS2, reverseGeo, validPos } from '../core/geo.js';
+import { need } from '../core/hub.js';
+import { compress, compressTo, thumbPath, thumbUrl, hiPath, allPaths, makeHi, imgSize, HI_MIN, SIZES } from '../core/media.js';
+import { state, videoAllowed } from '../core/state.js';
+import { $, esc, toast } from '../core/ui.js';
+import { geo, COORDS, REGION_CENTER, nearestCity, loadPlaces, BASE_GEO } from '../data/places.js';
+
+/* ═══ عبر الحاجز ═══
+   captureVideoFrame ← features/camera.js
+   checkRaceProgress ← features/visits.js
+   checkRate ← features/limits.js
+   fillAddCities ← features/feed.js
+   loadPhotos ← features/feed.js
+   logRate ← features/limits.js
+   openAcc ← features/account.js
+   pushNotify ← features/notify.js
+*/
+const captureVideoFrame = need('captureVideoFrame');
+const checkRaceProgress = need('checkRaceProgress');
+const checkRate = need('checkRate');
+const fillAddCities = need('fillAddCities');
+const loadPhotos = need('loadPhotos');
+const logRate = need('logRate');
+const openAcc = need('openAcc');
+const pushNotify = need('pushNotify');
+
+/* ═══ من التنقل — عبر الحاجز ═══ */
+const go = need('go');
+const maybeAskNotifs = need('maybeAskNotifs');
+/* ═══ عبر الحاجز ═══
+   earlySuggest ← features/inspect.js
+   hideSuggestions ← features/inspect.js
+   renderFilterRow ← features/filters.js
+   resetFilter ← features/filters.js
+   runInspection ← features/inspect.js
+*/
+const earlySuggest = need('earlySuggest');
+const hideSuggestions = need('hideSuggestions');
+const renderFilterRow = need('renderFilterRow');
+const resetFilter = need('resetFilter');
+const runInspection = need('runInspection');
+/* ═══ عبر الحاجز ═══
+   readExifTech ← features/exif.js
+   renderTechCard ← features/exif.js
+   resetTranslation ← features/translate.js
+*/
+const readExifTech = need('readExifTech');
+const renderTechCard = need('renderTechCard');
+const resetTranslation = need('resetTranslation');
+export function setVis(v){
+  state.pendingVis=v;
   const pb=$('visPublic'), pv=$('visPrivate');
   if(pb)pb.classList.toggle('on',v==='public');
   if(pv)pv.classList.toggle('on',v==='private');
   const b=$('pubBtn');
   if(b){
-    const isV=!!pendingVideo;
+    const isV=!!state.pendingVideo;
     b.textContent = v==='private'
       ? (isV?'🔒 احفظ بخزنتي':'🔒 احفظ بخزنتي')
       : (isV?'انشر المقطع 🎬':'انشر الصورة 🚀');
@@ -18,8 +68,8 @@ function setVis(v){
 
 window.setVis=setVis;
 
-function setDest(abroad){
-  isAbroad=abroad;
+export function setDest(abroad){
+  state.isAbroad=abroad;
   $('destHome').classList.toggle('on-dest',!abroad);
   $('destAbroad').classList.toggle('on-dest',abroad);
   $('abroadForm').style.display=abroad?'block':'none';
@@ -34,8 +84,8 @@ function setDest(abroad){
       if($('aCity'))$('aCity').value='';
       if($('aVillage'))$('aVillage').value='';
       // الموقع المحلي لا يصلح لصورة خارج المملكة
-      if(pendingGeo&&!window.__geoManual){
-        pendingGeo=null;
+      if(state.pendingGeo&&!window.__geoManual){
+        state.pendingGeo=null;
         const card=$('geoCard');
         if(card){
           card.classList.add('warn');
@@ -49,12 +99,13 @@ function setDest(abroad){
       if($('aCountry'))$('aCountry').value='';
     }
     // استنتاج جديد للموقع الحالي إن وُجد
-    if(pendingGeo&&typeof fillPlaceFromGeo==='function'){
-      fillPlaceFromGeo(pendingGeo.lat,pendingGeo.lng,true);
+    if(state.pendingGeo&&typeof fillPlaceFromGeo==='function'){
+      fillPlaceFromGeo(state.pendingGeo.lat,state.pendingGeo.lng,true);
     }
   }catch(e){}
 }
-function applyGeo(pos,source){
+
+export function applyGeo(pos,source){
   const card=$('geoCard');card.style.display='block';
   pos=validPos(pos);
   const mb=$('geoManualBox');
@@ -73,8 +124,8 @@ function applyGeo(pos,source){
   // نستنتج المنطقة والمدينة
   if(typeof fillPlaceFromGeo==='function')fillPlaceFromGeo(pos.lat,pos.lng);
   card.classList.remove('warn');
-  pendingGeo={lat:pos.lat,lng:pos.lng};
-  if(isAbroad){
+  state.pendingGeo={lat:pos.lat,lng:pos.lng};
+  if(state.isAbroad){
     $('geoStatus').textContent='📡 تم التقاط إحداثيات موقعك'+(pos.acc?` · دقة ±${pos.acc}م`:'');
     $('geoCoords').textContent=`${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`;
     return;
@@ -84,9 +135,10 @@ function applyGeo(pos,source){
   $('geoStatus').textContent=`📡 تم تحديد الموقع تلقائياً: قرب ${n.city} (≈${n.km} كم)`+(pos.acc?` · دقة ±${pos.acc}م`:'');
   $('geoCoords').textContent=`${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`;
 }
-async function pickImg(inp,isLive){
+
+export async function pickImg(inp,isLive){
   const f=inp.files[0];if(!f)return;
-  pendingGeo=null;pendingFile=f;pendingBlob=null;pendingVideo=null;
+  state.pendingGeo=null;state.pendingFile=f;state.pendingBlob=null;state.pendingVideo=null;
   // إخفاء أي فيديو معلّق
   const _pv=$('videoPreview');
   if(_pv){try{_pv.pause()}catch(e){} _pv.removeAttribute('src'); _pv.load&&_pv.load(); _pv.style.display='none';}
@@ -96,10 +148,10 @@ async function pickImg(inp,isLive){
   $('dropTxt').textContent='✓ تم اختيار الصورة';
   $('drop').classList.add('has');
   showClearBtn();syncPublishBtn();
-  curFilter='none';
+  state.curFilter='none';
   try{ renderFilterRow(URL.createObjectURL(f),false); }catch(e){}
   // ضغط بالخلفية من الحين — عشان النشر يكون لحظي
-  compress(f).then(b=>{pendingBlob=b});
+  compress(f).then(b=>{state.pendingBlob=b});
   $('geoCard').style.display='block';$('geoCard').classList.remove('warn');
   $('geoStatus').textContent='⏳ جاري تحديد الموقع...';$('geoCoords').textContent='';
   if(isLive){
@@ -113,8 +165,8 @@ async function pickImg(inp,isLive){
     applyGeo(pos,'exif');
   }
   // بيانات الكاميرا
-  window.__earlyRes=null;window.__geoPlace=null;
-  window.__exifTech=await readExifTech(f);
+  state.earlyRes=null;state.geoPlace=null;
+  state.exifTech=await readExifTech(f);
   renderTechCard();
   inp.value='';
   // اقتراح ذكي مبكر — لا يمنع النشر
@@ -122,28 +174,8 @@ async function pickImg(inp,isLive){
 }
 
 /* ====== بطاقة بيانات الكاميرا ====== */
-function renderTechCard(){
-  const el=$('techCard');if(!el)return;
-  const t=window.__exifTech;
-  if(!t){el.style.display='none';return}
-  el.style.display='block';
-  const bits=[];
-  if(t.camera)bits.push('<span class="tc-cam">📷 '+esc(t.camera)+'</span>');
-  if(t.lens)bits.push('<span class="tc-cam">🔭 '+esc(t.lens)+'</span>');
-  const set=[t.focal,t.aperture,t.shutter,t.iso].filter(Boolean);
-  el.innerHTML=`
-    <div class="tc-head">
-      <span>⚙️ بيانات التصوير</span>
-      <label class="tc-sw"><input type="checkbox" id="techShow" checked><span>أظهرها مع الصورة</span></label>
-    </div>
-    <div class="tc-body">
-      ${bits.join('')}
-      ${set.length?'<div class="tc-set">'+set.map(x=>'<span>'+esc(x)+'</span>').join('')+'</div>':''}
-    </div>`;
-}
 
-/* ====== اختيار فيديو ====== */
-async function pickVideo(inp){
+export async function pickVideo(inp){
   if(!videoAllowed()){toast('رفع المقاطع مغلق حالياً 🎬',true);inp.value='';return}
   const f=inp.files[0];if(!f)return;
   const MAXMB=25, MAXSEC=30;
@@ -160,7 +192,7 @@ async function pickVideo(inp){
     toast('الفيديو طويل ('+Math.round(dur)+' ثانية) — الحد '+MAXSEC+' ثانية',true);
     inp.value='';return;
   }
-  pendingFile=null;pendingBlob=null;pendingGeo=null;pendingVideo=f;
+  state.pendingFile=null;state.pendingBlob=null;state.pendingGeo=null;state.pendingVideo=f;
   $('drop').style.display='block';
   const _im=$('preview');
   if(_im){_im.removeAttribute('src');_im.style.display='none';}
@@ -169,7 +201,7 @@ async function pickVideo(inp){
   $('dropTxt').textContent='🎬 تم اختيار الفيديو ('+Math.round(f.size/1048576)+' ميجا)';
   $('drop').classList.add('has');
   showClearBtn();syncPublishBtn();
-  curFilter='none';
+  state.curFilter='none';
   const _fu=pv?pv.src:URL.createObjectURL(f);
   try{ renderFilterRow(null,true,_fu); }catch(e){}
   captureVideoFrame(f).then(t=>{if(t)renderFilterRow(t,true)}).catch(()=>{});
@@ -181,49 +213,105 @@ async function pickVideo(inp){
 }
 
 /* ضغط الصورة قبل الرفع (أقصى عرض 1600px) */
-function compressTo(file,maxW,quality){
-  return new Promise(resolve=>{
-    const img=new Image();
-    img.onload=()=>{
-      const scale=Math.min(1,maxW/Math.max(img.width,img.height));
-      const cv=document.createElement('canvas');
-      cv.width=Math.round(img.width*scale);cv.height=Math.round(img.height*scale);
-      const ctx=cv.getContext('2d');
-      // حرق الفلتر المختار على الصورة
-      if(typeof curFilter!=='undefined'&&curFilter!=='none'){
-        try{ctx.filter=filterCss(curFilter)}catch(e){}
-      }
-      ctx.drawImage(img,0,0,cv.width,cv.height);
-      ctx.filter='none';
-      // ختم المنصة المحفور
-      const fsz=Math.max(11,Math.round(cv.width*0.03));
-      ctx.font='bold '+fsz+'px Tajawal, Arial, sans-serif';
-      ctx.textBaseline='bottom';ctx.textAlign='left';
-      const pad=Math.round(fsz*0.7);
-      ctx.lineWidth=Math.max(2,fsz*0.14);ctx.lineJoin='round';
-      ctx.strokeStyle='rgba(36,31,28,.55)';ctx.fillStyle='rgba(255,255,255,.88)';
-      ctx.strokeText('sowra.app',pad,cv.height-pad);
-      ctx.fillText('sowra.app',pad,cv.height-pad);
-      cv.toBlob(b=>resolve(b||file),'image/jpeg',quality);
-    };
-    img.onerror=()=>resolve(file);
-    img.src=URL.createObjectURL(file);
-  });
-}
-function compress(file){return compressTo(file,1100,0.74)}
-const thumbPath=p=>p.replace(/\.jpg$/,'_t.jpg');
-function thumbUrl(p){return imgUrl(thumbPath(p))}
 
-async function addPhoto(){
-  if(!USER || USER.is_anonymous){toast('سجّل أول عشان تنشر 📸');openAcc();return}
+
+/* ═══ مشترك بين مسار الصورة ومسار الفيديو ═══
+   كانت هذه الكتل مكرّرة حرفياً بالمسارين داخل addPhoto، فأي تعديل
+   على أحدهما ينسى الآخر — وهو نفس نوع الخلل الذي فرّق بين فلترة
+   الشبكة وفلترة الخريطة. مصدر واحد يمنع تكراره. */
+
+function mediaRow(title, region, city, country, extra){
+  return Object.assign({
+    user_id: currentUser()?.id, title, region, city,
+    category: $('aCat').value || 'other',
+    abroad: state.isAbroad, country,
+    village: state.isAbroad ? '' : $('aVillage').value.trim(),
+    lat: state.pendingGeo?.lat ?? null,
+    lng: state.pendingGeo?.lng ?? null,
+    visibility: state.pendingVis,
+    commercial: !!($('aComm') && $('aComm').checked),
+    tags: (state.pickedTags || []),
+    exif: ((document.getElementById('techShow') && document.getElementById('techShow').checked && state.exifTech) ? state.exifTech : {})
+  }, extra);
+}
+
+/* ═══ لماذا يُصفَّر التصنيف ═══
+   بلاغ المالك: «أرشّح عمارة فتظهر صورة منتزه مطيس وهي شجر».
+   وتتبّعناه إلى هنا لا إلى المرشِّح: هذه الدالة تمسح العنوان والوصف
+   والوسوم بعد كل نشر، ولا تمسّ قائمة التصنيف. فمن رفع صورة مبنى
+   واختار «🏛️ عمارة»، ثم رفع بعدها صورة حديقة، وجد القائمة ما زالت
+   «عمارة» — فإن لم ينتبه خُزّنت الشجرة تحت العمارة.
+   وليست غلطة رافعٍ واحد: النموذج يقترح عليه الخطأ.
+   والأثر يمتدّ لكل مرشِّح بالمنصة — الخلاصة والتحدي والمسابقة والبحث.
+
+   أما المنطقة والمدينة فتبقيان عمداً: مَن يرفع خمس صور من رحلةٍ
+   واحدة مكانُها واحد، والإبقاء عليها راحةٌ لا خطأ — بخلاف التصنيف
+   الذي يختلف من صورة لأختها. */
+function resetAddForm(){
+  $('aTitle').value=''; $('aVillage').value='';
+  if($('aCat')) $('aCat').value='other';
+  if($('aDesc')){ $('aDesc').value=''; descCount(); }
+  if($('aComm')) $('aComm').checked = false;
+  resetTranslation();
+  state.pickedTags = []; renderTagRow();
+  if(typeof hideSuggestions === 'function') hideSuggestions();
+  state.earlyRes = null; state.exifTech = null; renderTechCard();
+}
+
+async function myDisplayName(){
+  try{
+    return (await sb.from('profiles').select('display_name')
+      .eq('id', currentUser()?.id).maybeSingle()).data?.display_name || 'مصوّر';
+  }catch(e){ return 'مصوّر'; }
+}
+
+async function afterPublish(msg, sortMode){
+  if(typeof logRate === 'function') logRate('photo');
+  toast(msg);
+  try{ state.sort = sortMode; state.draftSort = sortMode; }catch(e){}
+  if(typeof maybeAskNotifs === 'function') maybeAskNotifs();
+  setTimeout(function(){ if(typeof checkRaceProgress === 'function') checkRaceProgress(); }, 3000);
+  await loadPhotos();
+  go('feed');
+}
+
+/* ═══ حفظ نسخة الأرشيف — بالخلفية، صامتة، لا تُفشل النشر ═══
+   تُنادى بعد نجاح تسجيل الصورة. لا await لها: المصوّر يرى «انرفعت»
+   فوراً بينما ترفع هي وراءه. وفشلها لا يضرّ — الصورة منشورة وسليمة،
+   والأرشيف وحده هو ما يفوت، وcleanup بالإشراف تستطيع تعويضه لاحقاً. */
+export async function saveHiCopy(srcFile, path){
+  try{
+    if(!srcFile || !path) return false;
+    const dim = await imgSize(srcFile);
+    /* الصورة الصغيرة أصلاً: النسخة العادية قريبة منها فلا نضاعف التخزين */
+    if(!dim || Math.max(dim.w, dim.h) < HI_MIN){
+      console.info('[أرشيف] تُخطّت — المصدر '+(dim? dim.w+'×'+dim.h : 'مجهول')+' دون الحد '+HI_MIN);
+      return false;
+    }
+    const hi = await makeHi(srcFile);
+    if(!hi) return false;
+    const up = await sb.storage.from('photos').upload(hiPath(path), hi, {
+      contentType:'image/jpeg', cacheControl:'31536000'
+    });
+    if(up.error){ console.warn('[أرشيف] تعذّر الرفع —', up.error.message); return false; }
+    console.info('[أرشيف] حُفظت '+hiPath(path)+' · '+Math.round(hi.size/1024)+' كيلو');
+    return true;
+  }catch(e){
+    console.warn('[أرشيف] استثناء —', (e&&e.message)||e);
+    return false;
+  }
+}
+
+export async function addPhoto(){
+  if(isAnon()){toast('سجّل أول عشان تنشر 📸');openAcc();return}
   const title=$('aTitle').value.trim();
   let region=$('aRegion').value,city=$('aCity').value,country='';
-  if(isAbroad){
+  if(state.isAbroad){
     country=$('aCountry').value.trim();
     if(country.length<2){toast('اكتب الدولة والمدينة 🌍',true);return}
     region='عدسة مسافر';city=country;
   }
-  if(!pendingFile&&!pendingVideo)return toast('اختر صورة أو فيديو أول ⚠️',true);
+  if(!state.pendingFile&&!state.pendingVideo)return toast('اختر صورة أو فيديو أول ⚠️',true);
   // فحص النصوص وحد المعدّل
   if(typeof checkText==='function'){
     const bt=checkText($('aTitle').value);
@@ -240,111 +328,107 @@ async function addPhoto(){
   if(!title)return toast('اكتب عنوان للصورة ⚠️',true);
   if(title.length<2)return toast('العنوان قصير — حرفان على الأقل ✏️',true);
   if(title.length>100)return toast('العنوان طويل — 100 حرف كحد أقصى ✏️',true);
-  if(!isAbroad&&(!region||!city))return toast('حدد المنطقة والمدينة ⚠️',true);
+  if(!state.isAbroad&&(!region||!city))return toast('حدد المنطقة والمدينة ⚠️',true);
   const btn=$('pubBtn');btn.disabled=true;btn.textContent='⏳ جاري الرفع...';
   try{
     // ═══ مسار الفيديو ═══
-    if(pendingVideo){
-      const vpath=`${USER.id}/${Date.now()}.mp4`;
-      const upv=await sb.storage.from('videos').upload(vpath,pendingVideo,{contentType:pendingVideo.type||'video/mp4',cacheControl:'31536000'});
+    if(state.pendingVideo){
+      const vpath=`${currentUser()?.id}/${Date.now()}.mp4`;
+      const upv=await sb.storage.from('videos').upload(vpath,state.pendingVideo,{contentType:state.pendingVideo.type||'video/mp4',cacheControl:'31536000'});
       if(upv.error)throw upv.error;
-      const insv=await sb.from('photos').insert({
-        user_id:USER.id,title,region,city,category:$('aCat').value||'other',
-        abroad:isAbroad,country,
-        village:isAbroad?'':$('aVillage').value.trim(),
-        lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
-        image_path:vpath,media_type:'video',filter_key:curFilter,music_key:(pendingMusicName||''),visibility:pendingVis,description:'',commercial:!!($('aComm')&&$('aComm').checked),tags:(window.__pickedTags||[]),exif:((document.getElementById('techShow')&&document.getElementById('techShow').checked&&window.__exifTech)?window.__exifTech:{})
-      });
+      const insv=await sb.from('photos').insert(mediaRow(title, region, city, country, {
+        image_path: vpath, media_type: 'video',
+        filter_key: state.curFilter,
+        music_key: (state.pendingMusicName || ''),
+        description: ''
+      }));
       if(insv.error){
         await sb.storage.from('videos').remove([vpath]).catch(()=>{});
         throw insv.error;
       }
-      if(pendingVis==='public'){
+      if(state.pendingVis==='public'){
         try{
-          const nm2=(await sb.from('profiles').select('display_name').eq('id',USER.id).maybeSingle()).data?.display_name||'مصوّر';
+          const nm2=await myDisplayName();
           pushNotify({
             title:'🎬 مقطع جديد في الأضواء',
             body:title+' — عدسة '+nm2,
             url:'/',
-            exclude:USER.id
+            exclude:currentUser()?.id
           });
         }catch(e){}
       }
-      pendingVideo=null;resetFilter();pendingVis='public';setVis('public');const _c1=$('clearDraft');if(_c1)_c1.style.display='none';
+      state.pendingVideo=null;resetFilter();state.pendingVis='public';setVis('public');const _c1=$('clearDraft');if(_c1)_c1.style.display='none';
       const pv=$('videoPreview');if(pv){pv.src='';pv.style.display='none';}
       $('drop').style.display='none';$('geoCard').style.display='none';
-      $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();window.__pickedTags=[];renderTagRow();if(typeof hideSuggestions==='function')hideSuggestions();window.__earlyRes=null;window.__exifTech=null;renderTechCard();
-      if(typeof logRate==='function')logRate('photo');
-      toast('انرفع الفيديو 🎬');
-      try{sortMode='new';_sort='new';}catch(e){}
-      if(typeof maybeAskNotifs==='function')maybeAskNotifs();
-    setTimeout(function(){if(typeof checkRaceProgress==='function')checkRaceProgress()},3000);
-    await loadPhotos();go('feed');
-      btn.disabled=false;btn.textContent=(pendingVideo?'انشر المقطع 🎬':'انشر الصورة 🚀');
+      resetAddForm();
+      await afterPublish('انرفع الفيديو 🎬', 'new');
+      btn.disabled=false;btn.textContent=(state.pendingVideo?'انشر المقطع 🎬':'انشر الصورة 🚀');
       return;
     }
-    const blob=pendingBlob||await compress(pendingFile);
+    const blob=state.pendingBlob||await compress(state.pendingFile);
     // الفاحص الذكي
-    const _insp=!!(window.__SPDATA&&window.__SPDATA.inspect_enabled)||!!window.INSPECT_ON;
+    const _insp=!!(state.banner.inspect_enabled)||!!state.inspectOn;
     if(_insp&&typeof runInspection==='function'){
       const ok=await runInspection(blob);
-      if(!ok){btn.disabled=false;btn.textContent=(pendingVis==='private'?'🔒 احفظ بخزنتي':'انشر الصورة 🚀');return}
+      if(!ok){btn.disabled=false;btn.textContent=(state.pendingVis==='private'?'🔒 احفظ بخزنتي':'انشر الصورة 🚀');return}
     }
-    const thumb=await compressTo(pendingFile,380,0.72);
-    const path=`${USER.id}/${Date.now()}.jpg`;
+    const thumb=await compressTo(state.pendingFile,380,0.72);
+    const path=`${currentUser()?.id}/${Date.now()}.jpg`;
     const [up,upT]=await Promise.all([
       sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',cacheControl:'31536000'}),
       sb.storage.from('photos').upload(thumbPath(path),thumb,{contentType:'image/jpeg',cacheControl:'31536000'})
     ]);
     if(up.error)throw up.error;
-    const ins=await sb.from('photos').insert({
-      user_id:USER.id,title,region,city,category:$('aCat').value||'other',
-      abroad:isAbroad,country,
-      village:isAbroad?'':$('aVillage').value.trim(),
-      lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null,
-      image_path:path,visibility:pendingVis,description:($('aDesc')?$('aDesc').value.trim():''),commercial:!!($('aComm')&&$('aComm').checked),title_en:trTitle,description_en:trDesc,tags:(window.__pickedTags||[]),exif:((document.getElementById('techShow')&&document.getElementById('techShow').checked&&window.__exifTech)?window.__exifTech:{})
-    }).select('id').maybeSingle();
+    const ins=await sb.from('photos').insert(mediaRow(title, region, city, country, {
+      image_path: path,
+      description: ($('aDesc') ? $('aDesc').value.trim() : ''),
+      title_en: state.trTitle,
+      description_en: state.trDesc
+    })).select('id').maybeSingle();
     if(ins.error){
       // فشل التسجيل — ننظف ملفات الصورة من المخزن حتى لا تبقى يتيمة
-      await sb.storage.from('photos').remove([path,thumbPath(path)]).catch(()=>{});
+      await sb.storage.from('photos').remove(allPaths(path)).catch(()=>{});
       throw ins.error;
     }
+    /* ═══ نسخة الأرشيف ═══
+       بعد نجاح التسجيل، وبالخلفية: لا ننتظرها ولا نُبطئ النشر على
+       المصوّر. كنا نضغط كل رفعة إلى ١١٠٠ ونرمي الأصل، أي نتلف عمله
+       بلا رجعة. هذه تحفظ ٢٤٠٠ للطباعة والخلفيات وما يأتي. */
+    saveHiCopy(state.pendingFile, path);
     // السبق على الموقع إن سُجّل
     try{
       const cp=$('clPlace'), cr=$('clReason');
       if(cp&&cr&&cp.value.trim()&&cr.value.trim()&&ins.data&&ins.data.id
           &&!(typeof checkText==='function'&&(checkText(cp.value)||checkText(cr.value)))){
         const cl=await sb.from('claims').insert({
-          photo_id:ins.data.id,user_id:USER.id,
+          photo_id:ins.data.id,user_id:currentUser()?.id,
           place_name:cp.value.trim(),reason:cr.value.trim(),
-          lat:pendingGeo?.lat??null,lng:pendingGeo?.lng??null
+          lat:state.pendingGeo?.lat??null,lng:state.pendingGeo?.lng??null
         });
         if(!cl.error){cp.value='';cr.value='';setTimeout(()=>toast('انسجّل سبقك 🏅'),1800);}
       }
     }catch(e){}
     // إشعار للجميع عند نشر صورة عامة
-    if(pendingVis==='public'){
+    if(state.pendingVis==='public'){
       try{
-        const nm=(await sb.from('profiles').select('display_name').eq('id',USER.id).maybeSingle()).data?.display_name||'مصوّر';
+        const nm=await myDisplayName();
         pushNotify({
           title:'📸 صورة جديدة من '+(city||region),
           body:title+' — عدسة '+nm,
           url:'/',
-          exclude:USER.id
+          exclude:currentUser()?.id
         });
       }catch(e){}
     }
-    pendingFile=null;pendingGeo=null;pendingBlob=null;resetFilter();pendingVis='public';setVis('public');const _c2=$('clearDraft');if(_c2)_c2.style.display='none';
+    state.pendingFile=null;state.pendingGeo=null;state.pendingBlob=null;resetFilter();state.pendingVis='public';setVis('public');const _c2=$('clearDraft');if(_c2)_c2.style.display='none';
     $('preview').style.display='none';$('drop').style.display='none';$('geoCard').style.display='none';
-    $('aTitle').value='';$('aVillage').value='';if($('aDesc')){$('aDesc').value='';descCount();}if($('aComm'))$('aComm').checked=false;resetTranslation();window.__pickedTags=[];renderTagRow();if(typeof hideSuggestions==='function')hideSuggestions();window.__earlyRes=null;window.__exifTech=null;renderTechCard();
-    if(typeof logRate==='function')logRate('photo');
-    toast(pendingVis==='private'?'انحفظت بخزنتك 🔒':'نُشرت صورتك 🎉');
-    const wasAbroad=isAbroad;
+    resetAddForm();
+    const wasAbroad=state.isAbroad;
     $('aCountry').value='';
-    try{sortMode=wasAbroad?'abroad':'new';_sort=sortMode;}catch(e){}
-    if(typeof maybeAskNotifs==='function')maybeAskNotifs();
-    setTimeout(function(){if(typeof checkRaceProgress==='function')checkRaceProgress()},3000);
-    await loadPhotos();go('feed');
+    await afterPublish(
+      state.pendingVis==='private' ? 'انحفظت بخزنتك 🔒' : 'نُشرت صورتك 🎉',
+      wasAbroad ? 'abroad' : 'new'
+    );
   }catch(e){
     if(e.message&&e.message.includes('row-level')){
       // نسأل القاعدة عن السبب الحقيقي
@@ -361,360 +445,16 @@ async function addPhoto(){
 }
 
 /* ====== كاميرا التسجيل الداخلية ====== */
-let recStream=null, recorder=null, recChunks=[], recTimer=null, recStart=0, recFacing='environment', pendingMusicName='';
-const REC_MAX=30;
 
-function recSupported(){
-  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
-}
-
-function videoAllowed(){
-  const a=window.__SPDATA||{}, b=window.__SPB||{};
-  const ve=('video_enabled' in a)?a.video_enabled:b.video_enabled;
-  const rs=('reels_soon' in a)?a.reels_soon:b.reels_soon;
-  return !!ve && !rs;
-}
-
-function initRecBtn(){
-  const b=$('recOpenBtn');if(!b)return;
-  b.style.display=(videoAllowed()&&recSupported())?'flex':'none';
-}
-
-async function recOpen(){
-  if(!videoAllowed()){toast('رفع المقاطع مغلق حالياً 🎬',true);return}
-  if(!recSupported()){toast('جهازك ما يدعم التسجيل الداخلي — استخدم المعرض',true);return}
-  try{
-    recStream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:recFacing,width:{ideal:1280},height:{ideal:720}},
-      audio:true
-    });
-  }catch(e){toast('تعذر فتح الكاميرا — تأكد من الإذن',true);return}
-  const pv=$('recPreview');
-  pv.srcObject=recStream;
-  $('recScreen').classList.add('on');
-    setTimeout(function(){try{if(typeof loadGhosts==='function')loadGhosts()}catch(e){}},800);
-  document.body.style.overflow='hidden';
-  $('recFill').style.width='0%';
-  $('recTimer').textContent='00:00';
-  $('recTimer').classList.remove('live');
-  $('recHint').textContent='اضغط مطولاً للتسجيل';
-  pickedMusic=null;ownMusicFile=null;recFilter='none';
-  const pv2=$('recPreview');
-  if(pv2){pv2.style.filter='none';pv2.style.webkitFilter='none';}
-  loadMusicList().then(renderMusicChips);
-  renderRecFilters();
-  initTapFocus();
-  bindRecBtn();
-}
-
-function recClose(){
-  if(typeof ghostClear==="function")ghostClear();
-  const _gb=document.getElementById("ghostBar");if(_gb)_gb.style.display="none";
-  recStop(true);
-  stopMusicPreview();stopMixer();
-  ownMusicFile=null;
-  if(recStream){recStream.getTracks().forEach(t=>t.stop());recStream=null}
-  $('recScreen').classList.remove('on');
-  document.body.style.overflow='';
-}
-
-async function recFlip(){
-  recFacing = recFacing==='environment' ? 'user' : 'environment';
-  if(recStream)recStream.getTracks().forEach(t=>t.stop());
-  try{
-    recStream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:recFacing,width:{ideal:1280},height:{ideal:720}},audio:true
-    });
-    $('recPreview').srcObject=recStream;
-  }catch(e){toast('تعذر تبديل الكاميرا',true)}
-}
-
-function pickMime(){
-  const opts=['video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
-  for(const m of opts){if(MediaRecorder.isTypeSupported(m))return m}
-  return '';
-}
-
-function buzz(ms){try{if(navigator.vibrate)navigator.vibrate(ms)}catch(e){}}
-
-async function recCountdown(){
-  const el=$('recCount');if(!el)return;
-  el.classList.add('on');
-  for(let n=3;n>=1;n--){
-    el.textContent=n;
-    buzz(30);
-    await new Promise(r=>setTimeout(r,700));
-  }
-  el.classList.remove('on');
-  el.textContent='';
-}
-
-async function recBegin(){
-  if(!recStream||recorder)return;
-  recChunks=[];
-  stopMusicPreview();
-  await recCountdown();
-  if(!recStream)return;
-  const mime=pickMime();
-  let target=recStream;
-  try{ target=await buildMixedStream(recStream); }catch(e){}
-  try{
-    recorder=mime?new MediaRecorder(target,{mimeType:mime,videoBitsPerSecond:2500000})
-                 :new MediaRecorder(target);
-  }catch(e){toast('تعذر بدء التسجيل',true);stopMixer();return}
-  recorder.ondataavailable=e=>{if(e.data&&e.data.size)recChunks.push(e.data)};
-  recorder.onstop=recFinish;
-  recorder.start(200);
-  buzz(60);
-  recStart=Date.now();
-  $('recBtn').classList.add('recording');
-  const _h=document.getElementById('recHint');
-  if(_h)_h.textContent='● يسجّل — اضغط الزر للإيقاف';
-  $('recTimer').classList.add('live');
-  $('recHint').textContent='ارفع إصبعك للإيقاف';
-  recTimer=setInterval(()=>{
-    const s=(Date.now()-recStart)/1000;
-    const pct=Math.min(100,s/REC_MAX*100);
-    $('recFill').style.width=pct+'%';
-    const mm=String(Math.floor(s/60)).padStart(2,'0');
-    const ss=String(Math.floor(s%60)).padStart(2,'0');
-    $('recTimer').textContent=mm+':'+ss;
-    if(s>=REC_MAX)recStop();
-  },100);
-}
-
-function recStop(silent){
-  window.__recStart=null;
-  if(recTimer){clearInterval(recTimer);recTimer=null;if(!silent)buzz([40,40,40]);}
-  stopMixer();
-  $('recBtn').classList.remove('recording');
-  const _h2=document.getElementById('recHint');
-  if(_h2)_h2.textContent='اضغط الزر لبدء التسجيل';
-  $('recTimer').classList.remove('live');
-  $('recHint').textContent='اضغط مطولاً للتسجيل';
-  if(recorder&&recorder.state!=='inactive'){
-    if(silent)recorder.onstop=null;
-    recorder.stop();
-  }
-  if(silent)recorder=null;
-}
-
-async function recFinish(){
-  const secs=(Date.now()-recStart)/1000;
-  recorder=null;
-  if(secs<1.2){toast('التسجيل قصير جداً — ثانية على الأقل',true);recChunks=[];return}
-  const type=recChunks[0]?.type||'video/mp4';
-  const ext=type.includes('mp4')?'mp4':'webm';
-  const blob=new Blob(recChunks,{type});
-  recChunks=[];
-  if(blob.size>25*1024*1024){toast('الفيديو كبير — سجّل مدة أقصر',true);return}
-
-  pendingMusicName=pickedMusic?pickedMusic.name:'';
-  if(recFilter&&recFilter!=='none')curFilter=recFilter;
-  pendingVideo=new File([blob],'rec.'+ext,{type});
-  pendingFile=null;pendingBlob=null;
-
-  recClose();
-  go('add');
-  $('drop').style.display='block';
-  const _im2=$('preview');
-  if(_im2){_im2.removeAttribute('src');_im2.style.display='none';}
-  const pv=$('videoPreview');
-  if(pv){pv.src=URL.createObjectURL(blob);pv.style.display='block';}
-  $('dropTxt').textContent='🎬 تسجيل جاهز ('+Math.round(secs)+' ثانية)';
-  $('drop').classList.add('has');
-  showClearBtn();syncPublishBtn();
-  curFilter='none';
-  const _vurl=pv?pv.src:URL.createObjectURL(pendingVideo);
-  try{ renderFilterRow(null,true,_vurl); }catch(e){}
-  captureVideoFrame(pendingVideo).then(t=>{if(t)renderFilterRow(t,true)}).catch(()=>{});
-  $('geoCard').style.display='block';$('geoCard').classList.remove('warn');
-  $('geoStatus').textContent='⏳ جاري تحديد الموقع...';$('geoCoords').textContent='';
-  const pos=await liveLocation();
-  applyGeo(pos,'live');
-  toast('انتهى التسجيل — أضف العنوان وانشر 🎬');
-}
-
-function bindRecBtn(){
-  const b=$('recBtn');
-  if(!b||b._bound)return;
-  b._bound=true;
-
-  // ضغطة واحدة: تبدأ · ضغطة ثانية: توقف
-  const toggle=function(e){
-    e.preventDefault();
-    e.stopPropagation();
-    if(recorder){
-      // حد أدنى ثانيتان قبل السماح بالإيقاف
-      if(window.__recStart&&(Date.now()-window.__recStart)<2000){
-        toast('سجّل ثانيتين على الأقل',true);
-        return;
-      }
-      recStop();
-    }else{
-      window.__recStart=Date.now();
-      recBegin().catch(()=>{});
-    }
-  };
-
-  b.addEventListener('click',toggle);
-  // منع التمرير من تشغيل الزر
-  b.addEventListener('touchstart',function(e){e.stopPropagation()},{passive:true});
-}
-
-/* ====== فلاتر بهوية سعودية ====== */
-const FILTERS=[
-  {k:'none',   n:'الأصلي',        css:'none'},
-  {k:'sunset', n:'غروب السودة',   css:'saturate(1.45) contrast(1.12) sepia(.18) hue-rotate(-8deg) brightness(1.04)'},
-  {k:'mist',   n:'ضباب أبها',     css:'saturate(.78) contrast(.94) brightness(1.12) hue-rotate(6deg)'},
-  {k:'sand',   n:'رمال الصمان',   css:'sepia(.34) saturate(1.28) contrast(1.15) brightness(1.05)'},
-  {k:'night',  n:'ليل نجد',       css:'saturate(1.18) contrast(1.3) brightness(.86) hue-rotate(200deg) saturate(1.1)'},
-  {k:'qatt',   n:'قط عسيري',      css:'saturate(1.85) contrast(1.22) brightness(1.03)'},
-  {k:'clay',   n:'طين نجران',     css:'sepia(.42) saturate(1.35) contrast(1.1) hue-rotate(-12deg)'},
-  {k:'sea',    n:'بحر جدة',       css:'saturate(1.35) hue-rotate(12deg) brightness(1.07) contrast(1.08)'},
-  {k:'palm',   n:'نخيل القصيم',   css:'saturate(1.4) hue-rotate(-10deg) contrast(1.12) brightness(1.02)'},
-  {k:'memory', n:'ذاكرة',         css:'sepia(.62) saturate(.85) contrast(1.06) brightness(1.05)'},
-  {k:'coal',   n:'فحم',           css:'grayscale(1) contrast(1.32) brightness(1.04)'},
-  {k:'clear',  n:'صحو',           css:'contrast(1.28) saturate(1.15) brightness(1.06)'}
-];
-let curFilter='none';
-
-function filterCss(k){
-  const f=FILTERS.find(x=>x.k===k);
-  return f?f.css:'none';
-}
-
-function renderFilterRow(srcUrl,isVideo,videoBlobUrl){
-  try{
-    const row=document.getElementById('filterRow');
-    if(!row)return;
-    if(!srcUrl&&!videoBlobUrl)return;
-    row.innerHTML='';
-    row.style.display='flex';
-    for(let i=0;i<FILTERS.length;i++){
-      const f=FILTERS[i];
-      const item=document.createElement('div');
-      item.className='f-item'+(curFilter===f.k?' on':'');
-      item.setAttribute('data-k',f.k);
-      const thumb=document.createElement('div');
-      thumb.className='f-thumb';
-      thumb.style.filter=f.css;
-      thumb.style.webkitFilter=f.css;
-      if(srcUrl){
-        thumb.style.backgroundImage='url("'+srcUrl+'")';
-        thumb.style.backgroundSize='cover';
-        thumb.style.backgroundPosition='center';
-      }else{
-        const v=document.createElement('video');
-        v.src=videoBlobUrl;v.muted=true;v.playsInline=true;
-        v.setAttribute('playsinline','');v.setAttribute('webkit-playsinline','');
-        v.preload='metadata';
-        v.style.cssText='width:100%;height:100%;object-fit:cover;display:block';
-        thumb.appendChild(v);
-      }
-      const name=document.createElement('div');
-      name.className='f-name';
-      name.textContent=f.n;
-      item.appendChild(thumb);
-      item.appendChild(name);
-      item.onclick=(function(key){return function(){pickFilter(key)}})(f.k);
-      row.appendChild(item);
-    }
-    applyFilterPreview();
-  }catch(e){}
-}
-
-function pickFilter(k){
-  try{
-    curFilter=k;
-    const items=document.querySelectorAll('#filterRow .f-item');
-    for(let i=0;i<items.length;i++){
-      items[i].classList.toggle('on',items[i].getAttribute('data-k')===k);
-    }
-    applyFilterPreview();
-  }catch(e){}
-}
-
-function applyFilterPreview(){
-  try{
-    const css=filterCss(curFilter);
-    const im=document.getElementById('preview'), vd=document.getElementById('videoPreview');
-    if(im){im.style.filter=css;im.style.webkitFilter=css;}
-    if(vd){vd.style.filter=css;vd.style.webkitFilter=css;}
-  }catch(e){}
-}
-
-function resetFilter(){
-  try{
-  curFilter='none';
-  const row=$('filterRow');if(row){row.style.display='none';row.innerHTML=''}
-  const im=$('preview'), vd=$('videoPreview');
-  if(im){im.style.filter='none';im.style.webkitFilter='none';}
-  if(vd){vd.style.filter='none';vd.style.webkitFilter='none';}
-  }catch(e){}
-}
-
-/* حرق الفلتر على الصورة عند الضغط */
-function bakeFilter(ctx,w,h){
-  if(curFilter==='none')return;
-  ctx.filter=filterCss(curFilter);
-}
-
-/* التقاط إطار من الفيديو لمعاينة الفلاتر */
-function captureVideoFrame(file){
-  return new Promise(res=>{
-    try{
-      const v=document.createElement('video');
-      v.preload='metadata';v.muted=true;v.playsInline=true;
-      v.onloadeddata=()=>{
-        try{
-          v.currentTime=Math.min(0.6,(v.duration||1)/3);
-        }catch(e){res(null)}
-      };
-      v.onseeked=()=>{
-        try{
-          const cv=document.createElement('canvas');
-          const s=Math.min(1,160/Math.max(v.videoWidth,v.videoHeight));
-          cv.width=Math.round(v.videoWidth*s);cv.height=Math.round(v.videoHeight*s);
-          cv.getContext('2d').drawImage(v,0,0,cv.width,cv.height);
-          URL.revokeObjectURL(v.src);
-          res(cv.toDataURL('image/jpeg',0.7));
-        }catch(e){res(null)}
-      };
-      v.onerror=()=>res(null);
-      v.src=URL.createObjectURL(file);
-    }catch(e){res(null)}
-  });
-}
-
-/* مصغّرة dataURL للمعاينة (أضمن على iOS من blob URL) */
-function makeThumbDataUrl(file){
-  return new Promise(res=>{
-    try{
-      const img=new Image();
-      img.onload=()=>{
-        try{
-          const s=Math.min(1,160/Math.max(img.width,img.height));
-          const cv=document.createElement('canvas');
-          cv.width=Math.max(1,Math.round(img.width*s));
-          cv.height=Math.max(1,Math.round(img.height*s));
-          cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-          URL.revokeObjectURL(img.src);
-          res(cv.toDataURL('image/jpeg',0.72));
-        }catch(e){res(null)}
-      };
-      img.onerror=()=>res(null);
-      img.src=URL.createObjectURL(file);
-    }catch(e){res(null)}
-  });
-}
-
-/* ====== إلغاء المسودة ====== */
-function clearDraft(){
+export function clearDraft(){
   try{
     const _is=$('inspectStatus');if(_is)_is.style.display='none';
+    /* بطاقة الاقتراح الذكي كانت تبقى معلّقة بعد إلغاء الصورة */
+    if(typeof hideSuggestions==='function')hideSuggestions();
+    if(typeof inspClose==='function')inspClose();
+    state.earlyRes=null; state.sugT=''; state.sugD='';
     setTimeout(syncPublishBtn,0);
-    pendingFile=null;pendingBlob=null;pendingVideo=null;pendingGeo=null;
+    state.pendingFile=null;state.pendingBlob=null;state.pendingVideo=null;state.pendingGeo=null;
     const im=$('preview');
     if(im){im.removeAttribute('src');im.style.display='none';}
     const vd=$('videoPreview');
@@ -727,228 +467,18 @@ function clearDraft(){
     toast('انلغت المسودة');
   }catch(e){}
 }
-function showClearBtn(){
+
+export function showClearBtn(){
   const cd=$('clearDraft');
   if(cd)cd.style.display='block';
 }
 
 /* ====== موسيقى التسجيل — دمج حقيقي بالملف ====== */
-let MUSIC_LIST=[], pickedMusic=null, musicAudio=null, audioCtx=null;
 
-async function loadMusicList(){
-  try{
-    const r=await sb.from('music').select('*').eq('active',true).order('created_at');
-    MUSIC_LIST=r.data||[];
-  }catch(e){MUSIC_LIST=[]}
-}
-
-function musicUrl(path){return sb.storage.from('music').getPublicUrl(path).data.publicUrl}
-
-function renderMusicChips(){
-  const el=$('recMusic');if(!el)return;
-  el.style.display='flex';
-  el.innerHTML='';
-  // زر رفع موسيقى من الجهاز
-  const own=document.createElement('button');
-  own.className='m-chip own'+(pickedMusic&&pickedMusic._local?' on':'');
-  own.textContent=pickedMusic&&pickedMusic._local?('🎵 '+pickedMusic.name.slice(0,14)):'➕ موسيقاي';
-  const openOwn=function(ev){
-    if(ev){ev.preventDefault();ev.stopPropagation();}
-    $('recMusicFile').click();
-  };
-  own.addEventListener('touchend',openOwn,{passive:false});
-  own.addEventListener('click',openOwn);
-  el.appendChild(own);
-  const none=document.createElement('button');
-  none.className='m-chip'+(pickedMusic?'':' on');
-  none.textContent='🔇 بلا موسيقى';
-  none.onclick=()=>{pickedMusic=null;stopMusicPreview();renderMusicChips()};
-  el.appendChild(none);
-  MUSIC_LIST.forEach(m=>{
-    const b=document.createElement('button');
-    b.className='m-chip'+(pickedMusic&&pickedMusic.id===m.id?' on':'');
-    b.textContent='🎵 '+m.name;
-    const pick=function(ev){
-      if(ev){ev.preventDefault();ev.stopPropagation();}
-      pickedMusic=m;previewMusic(m);renderMusicChips();
-    };
-    b.addEventListener('touchend',pick,{passive:false});
-    b.addEventListener('click',pick);
-    el.appendChild(b);
-  });
-}
-
-function previewMusic(m){
-  try{
-    if(!window.__actx)window.__actx=new (window.AudioContext||window.webkitAudioContext)();
-    if(window.__actx.state==='suspended')window.__actx.resume();
-  }catch(e){}
-  const el=document.getElementById('musicPreview');
-  if(!el)return;
-  try{
-    el.pause();
-    const src=m._local?URL.createObjectURL(ownMusicFile):musicUrl(m.path);
-    el.onerror=()=>{};
-    el.src=src;
-    el.volume=0.55;
-    el.loop=true;
-    el.load();
-    const pr=el.play();
-    if(pr&&pr.catch)pr.catch(()=>{});
-    musicAudio=el;
-  }catch(e){}
-}
-
-function stopMusicPreview(){
-  const el=document.getElementById('musicPreview');
-  if(el){try{el.pause()}catch(e){}}
-  musicAudio=null;
-}
-
-/* بناء مسار صوتي مدمج: ميكروفون + موسيقى */
-async function buildMixedStream(camStream){
-  if(!pickedMusic)return camStream;
-  const el=document.getElementById('musicPreview');
-  if(!el||!el.src)return camStream;
-  try{
-    if(!window.__actx)window.__actx=new (window.AudioContext||window.webkitAudioContext)();
-    audioCtx=window.__actx;
-    if(audioCtx.state==='suspended'){try{await audioCtx.resume()}catch(e){}}
-
-    const dest=audioCtx.createMediaStreamDestination();
-
-    // صوت الكاميرا
-    if(camStream.getAudioTracks().length){
-      const micSrc=audioCtx.createMediaStreamSource(camStream);
-      const micGain=audioCtx.createGain();
-      micGain.gain.value=0.9;
-      micSrc.connect(micGain).connect(dest);
-    }
-
-    // الموسيقى من عنصر الصفحة (يُنشأ المصدر مرة واحدة فقط)
-    if(!el._srcNode){
-      el._srcNode=audioCtx.createMediaElementSource(el);
-      el._gain=audioCtx.createGain();
-      el._srcNode.connect(el._gain);
-      el._gain.connect(audioCtx.destination);
-    }
-    el._gain.gain.value=0.45;
-    el._gain.connect(dest);
-
-    el.currentTime=0;
-    try{await el.play()}catch(e){}
-
-    const mixed=new MediaStream();
-    camStream.getVideoTracks().forEach(t=>mixed.addTrack(t));
-    dest.stream.getAudioTracks().forEach(t=>mixed.addTrack(t));
-    window.__mixDest=dest;
-    return mixed;
-  }catch(e){
-    toast('تعذر دمج الموسيقى — سُجّل بالصوت الأصلي',true);
-    return camStream;
-  }
-}
-
-function stopMixer(){
-  try{
-    const el=document.getElementById('musicPreview');
-    if(el){
-      try{el.pause()}catch(e){}
-      if(el._gain&&window.__mixDest){try{el._gain.disconnect(window.__mixDest)}catch(e){}}
-    }
-    window.__mixDest=null;
-  }catch(e){}
-}
-
-/* ====== فلاتر حية بشاشة التسجيل ====== */
-let recFilter='none';
-
-function renderRecFilters(){
-  const el=$('recFilters');if(!el)return;
-  el.innerHTML='';
-  FILTERS.forEach(f=>{
-    const b=document.createElement('button');
-    b.className='rf-chip'+(recFilter===f.k?' on':'');
-    b.textContent=f.n;
-    const setF=function(ev){
-      if(ev){ev.preventDefault();ev.stopPropagation();}
-      recFilter=f.k;
-      const pv=$('recPreview');
-      if(pv){pv.style.filter=f.css;pv.style.webkitFilter=f.css;}
-      renderRecFilters();
-    };
-    b.addEventListener('touchend',setF,{passive:false});
-    b.addEventListener('click',setF);
-    el.appendChild(b);
-  });
-}
-
-/* ====== شبكة الأثلاث ====== */
-function toggleGrid(){
-  const g=$('recGrid');
-  if(g)g.classList.toggle('on');
-}
-
-/* ====== قفل التركيز باللمس ====== */
-function initTapFocus(){
-  const pv=$('recPreview');
-  if(!pv||pv._focusBound)return;
-  pv._focusBound=true;
-  pv.addEventListener('click',async e=>{
-    if(!recStream)return;
-    const track=recStream.getVideoTracks()[0];
-    if(!track)return;
-    const rect=pv.getBoundingClientRect();
-    const x=(e.clientX-rect.left)/rect.width;
-    const y=(e.clientY-rect.top)/rect.height;
-    // مؤشر بصري
-    let ring=document.getElementById('recFocus');
-    if(!ring){
-      ring=document.createElement('div');
-      ring.id='recFocus';ring.className='rec-focus';
-      $('recScreen').appendChild(ring);
-    }
-    ring.style.left=(e.clientX-rect.left-38)+'px';
-    ring.style.top=(e.clientY-rect.top-38)+'px';
-    ring.classList.remove('on');
-    void ring.offsetWidth;
-    ring.classList.add('on');
-    setTimeout(()=>ring.classList.remove('on'),900);
-    buzz(20);
-    // محاولة ضبط البؤرة إن دعمها الجهاز
-    try{
-      const caps=track.getCapabilities?track.getCapabilities():{};
-      if(caps.focusMode&&caps.focusMode.includes('manual')&&caps.pointsOfInterest){
-        await track.applyConstraints({advanced:[{pointsOfInterest:[{x,y}],focusMode:'manual'}]});
-      }else if(caps.focusMode&&caps.focusMode.includes('single-shot')){
-        await track.applyConstraints({advanced:[{focusMode:'single-shot'}]});
-      }
-    }catch(err){}
-  });
-}
-
-/* ====== موسيقى من جهاز الزائر ====== */
-let ownMusicFile=null;
-
-function pickOwnMusic(inp){
-  const f=inp.files[0];if(!f)return;
-  if(f.size>8*1024*1024){toast('الملف كبير — الحد 8 ميجا',true);inp.value='';return}
-  ownMusicFile=f;
-  try{
-    if(!window.__actx)window.__actx=new (window.AudioContext||window.webkitAudioContext)();
-    if(window.__actx.state==='suspended')window.__actx.resume();
-  }catch(e){}
-  pickedMusic={id:'own',name:f.name.replace(/\.[^.]+$/,''),path:null,_local:true};
-  previewMusic(pickedMusic);
-  renderMusicChips();
-  inp.value='';
-}
-
-/* نص زر النشر حسب النوع */
-function syncPublishBtn(){
-  const isV=!!pendingVideo;
+export function syncPublishBtn(){
+  const isV=!!state.pendingVideo;
   const b=$('pubBtn');
-  if(b)b.textContent=(pendingVis==='private')?'🔒 احفظ بخزنتي':(isV?'انشر المقطع 🎬':'انشر الصورة 🚀');
+  if(b)b.textContent=(state.pendingVis==='private')?'🔒 احفظ بخزنتي':(isV?'انشر المقطع 🎬':'انشر الصورة 🚀');
   const t=$('addTitle');
   if(t)t.textContent=isV?'شارك مقطعاً من ديرتك':'شارك صورة من ديرتك';
   const lt=$('lblTitle');
@@ -966,260 +496,29 @@ function syncPublishBtn(){
 }
 
 /* ====== نص الصناديق القابلة للطي ====== */
-function syncRulesLabel(){
+
+export function syncRulesLabel(){
   const d=$('rulesBox'), l=$('rulesLabel');
   if(!d||!l)return;
   l.textContent=d.open?'📋 إرشادات النشر — اضغط للطي':'📋 إرشادات النشر — اضغط للعرض';
 }
-function syncClaimLabel(){
+
+export function syncClaimLabel(){
   const d=$('claimForm'), l=$('claimLabel');
   if(!d||!l)return;
   l.textContent=d.open?'🏅 سجّل سبقك في هذا الموقع — اضغط للطي':'🏅 سجّل سبقك في هذا الموقع — اضغط للعرض';
 }
 
-
-function descCount(){
+export function descCount(){
   const t=$('aDesc'), l=$('descLen');
   if(t&&l)l.textContent=t.value.length+' / 600';
 }
 
 /* ====== الترجمة التلقائية ====== */
-let trTitle='', trDesc='';
 
-async function translateFields(){
-  const t=$('aTitle')?$('aTitle').value.trim():'';
-  const d=$('aDesc')?$('aDesc').value.trim():'';
-  if(!t&&!d){toast('اكتب العنوان أول',true);return}
-  const btn=$('trBtn');btn.disabled=true;btn.textContent='⏳ نترجم...';
-  try{
-    // المسار الأول: مكتبة Supabase
-    let data=null, err=null;
-    try{
-      const res=await sb.functions.invoke('translate',{body:{title:t,description:d}});
-      data=res.data; err=res.error;
-    }catch(e){err=e}
+/* state.trTitle → state.trTitle */
 
-    // المسار الثاني: fetch مباشر إن فشل الأول
-    if(!data||err){
-      const sess=await sb.auth.getSession();
-      const tok=sess?.data?.session?.access_token;
-      const r=await fetch('https://gquzjaxpqeggknhipmzk.supabase.co/functions/v1/translate',{
-        method:'POST',
-        headers:Object.assign(
-          {'Content-Type':'application/json','apikey':'sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX'},
-          tok?{'Authorization':'Bearer '+tok}:{}
-        ),
-        body:JSON.stringify({title:t,description:d})
-      });
-      const raw=await r.text();
-      if(!r.ok)throw new Error('HTTP '+r.status+' — '+raw.slice(0,100));
-      data=JSON.parse(raw);
-    }
-
-    if(data&&data.error)throw new Error(data.error);
-    trTitle=(data&&data.title_en)||'';
-    trDesc=(data&&data.description_en)||'';
-    if(!trTitle&&!trDesc)throw new Error('رد فاضي');
-
-    const pv=$('trPreview');
-    if(pv){
-      pv.style.display='block';
-      pv.innerHTML=(trTitle?'<b>Title</b>'+esc(trTitle):'')
-        +(trDesc?'<div class="d">'+esc(trDesc)+'</div>':'');
-    }
-    btn.textContent='✅ تُرجم — اضغط لإعادة الترجمة';
-    toast('انترجم ✅');
-  }catch(e){
-    toast('تعذرت الترجمة — جرّب مرة ثانية',true);
-    btn.textContent='🌐 ترجم العنوان والوصف للإنجليزية';
-  }finally{btn.disabled=false}
-}
-
-function resetTranslation(){
-  trTitle='';trDesc='';
-  const pv=$('trPreview');if(pv){pv.style.display='none';pv.innerHTML=''}
-  const b=$('trBtn');if(b)b.textContent='🌐 ترجم العنوان والوصف للإنجليزية';
-}
-
-/* ====== الفاحص الذكي ====== */
-async function inspectPhoto(blob){
-  // سفاري: نصغّر أولاً لتفادي فشل التحويل
-  try{
-    if(blob&&blob.size>900*1024&&typeof compressTo==='function'){
-      blob=await compressTo(blob,640,0.55);
-    }
-  }catch(e){}
-  try{
-    // تصغير للفحص (توفير تكلفة وسرعة)
-    const dataUrl=await new Promise((res,rej)=>{
-      const img=new Image();
-      img.onload=()=>{
-        try{
-          const s=Math.min(1,640/Math.max(img.width,img.height));
-          const cv=document.createElement('canvas');
-          cv.width=Math.round(img.width*s);cv.height=Math.round(img.height*s);
-          cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-          URL.revokeObjectURL(img.src);
-          res(cv.toDataURL('image/jpeg',0.7));
-        }catch(e){rej(e)}
-      };
-      img.onerror=rej;
-      img.src=URL.createObjectURL(blob);
-    });
-
-    let data=null,err=null;
-    try{
-      const _gp=window.__geoPlace||{};
-      const _pl={
-        region:($('aRegion')&&$('aRegion').value)||_gp.region||'',
-        city:($('aCity')&&$('aCity').value)||_gp.city||'',
-        village:($('aVillage')&&$('aVillage').value)||_gp.village||''
-      };
-      const r=await sb.functions.invoke('translate',{body:{action:'inspect',image:dataUrl,..._pl}});
-      data=r.data;err=r.error;
-    }catch(e){err=e}
-
-    if(!data||err){
-      const sess=await sb.auth.getSession();
-      const tok=sess?.data?.session?.access_token;
-      const r=await fetch('https://gquzjaxpqeggknhipmzk.supabase.co/functions/v1/translate',{
-        method:'POST',
-        headers:Object.assign(
-          {'Content-Type':'application/json','apikey':'sb_publishable_BNp6Fg3VLXa1Pf4V6QjncQ_f496PquX'},
-          tok?{'Authorization':'Bearer '+tok}:{}
-        ),
-        body:JSON.stringify(Object.assign({action:'inspect',image:dataUrl},{
-          region:($('aRegion')&&$('aRegion').value)||(window.__geoPlace&&window.__geoPlace.region)||'',
-          city:($('aCity')&&$('aCity').value)||(window.__geoPlace&&window.__geoPlace.city)||'',
-          village:($('aVillage')&&$('aVillage').value)||(window.__geoPlace&&window.__geoPlace.village)||''
-        }))
-      });
-      if(!r.ok){
-        let t='';try{t=await r.text()}catch(e){}
-        console.warn('inspect HTTP',r.status,t);
-        window.__inspErr='HTTP '+r.status+' '+t.slice(0,120);
-        return null;
-      }
-      data=await r.json();
-    }
-    if(data&&data.error){
-      console.warn('inspect error',data.error);
-      window.__inspErr=String(data.error).slice(0,140);
-      return null;
-    }
-    window.__inspErr='';
-    return data||null;
-  }catch(e){
-    console.warn('inspect exception',e);
-    window.__inspErr=(e&&e.message)||'استثناء';
-    return null;
-  }
-}
-
-/* يرجع true إذا يُسمح بالمتابعة */
-async function runInspection(blob){
-  const st=$('inspectStatus');
-  if(st){st.style.display='block';st.className='inspect-box';st.innerHTML='🤖 نفحص الصورة...'}
-  const res=window.__earlyRes||await inspectPhoto(blob);
-  if(!res){
-    if(st){
-      if(window.__inspErr){
-        st.className='inspect-box bad';
-        st.innerHTML='⚠️ <b>تعذر الفحص</b><br><span style="font-size:11px;direction:ltr;display:inline-block">'+esc(window.__inspErr)+'</span>';
-        setTimeout(()=>{if(st)st.style.display='none'},9000);
-      }else st.style.display='none';
-    }
-    return true;
-  }
-
-  // منع صريح
-  if(res.nsfw||res.violence){
-    if(st){
-      st.className='inspect-box bad';
-      st.innerHTML='⛔ <b>الصورة مرفوضة</b><br><span>فيها محتوى مخالف لإرشادات النشر</span>';
-      setTimeout(()=>{if(st)st.style.display='none'},5000);
-    }
-    return false;
-  }
-
-  // تحذيرات
-  const warns=[];
-  if(res.face)warns.push('👤 فيها وجه واضح — تأكد من إذن صاحبه');
-  if(res.plate)warns.push('🚗 فيها لوحة مركبة مقروءة');
-  if(res.indoor_private)warns.push('🏠 تبدو من داخل منزل خاص');
-  if(res.military)warns.push('🚫 قد تكون منشأة عسكرية أو أمنية — تصويرها محظور نظاماً');
-
-  if(warns.length){
-    if(st)st.style.display='none';
-    return confirm('تنبيه:\n\n'+warns.join('\n')+'\n\nتبي تكمل النشر؟');
-  }
-
-  // نظيفة — نقترح التصنيف
-  if(st){
-    st.className='inspect-box ok';
-    st.innerHTML='✅ <b>الصورة سليمة</b>';
-    setTimeout(()=>{if(st)st.style.display='none'},2500);
-  }
-  if(res.category&&$('aCat')){
-    const opt=Array.from($('aCat').options).find(o=>o.value===res.category);
-    if(opt)$('aCat').value=res.category;
-  }
-  showSuggestions(res);
-  return true;
-}
-
-/* ====== بطاقة الاقتراحات الذكية ====== */
-function showSuggestions(res){
-  const box=$('sugBox');if(!box)return;
-  const t=(res.suggested_title_ar||'').trim();
-  const d=(res.suggested_desc_ar||'').trim();
-  if(!t&&!d){box.style.display='none';return}
-
-  window.__sugT=t; window.__sugD=d;
-  box.style.display='block';
-  box.innerHTML=`
-    <div class="sg-head">
-      <span>✨ اقتراح ذكي</span>
-      <button onclick="hideSuggestions()">✕</button>
-    </div>
-    ${t?`<div class="sg-row">
-      <div class="sg-lbl">العنوان</div>
-      <div class="sg-txt">${esc(t)}</div>
-      <button class="sg-use" onclick="useSug('t')">استخدمه</button>
-    </div>`:''}
-    ${d?`<div class="sg-row">
-      <div class="sg-lbl">الوصف</div>
-      <div class="sg-txt">${esc(d)}</div>
-      <button class="sg-use" onclick="useSug('d')">استخدمه</button>
-    </div>`:''}
-    ${(t&&d)?`<button class="sg-all" onclick="useSug('all')">✓ استخدم الاثنين</button>`:''}
-    <div class="sg-note">اقتراح من الذكاء الاصطناعي — عدّله كما تحب</div>`;
-}
-
-function useSug(what){
-  try{
-    const ti=$('aTitle'), de=$('aDesc');
-    if((what==='t'||what==='all')&&ti&&window.__sugT){
-      ti.value=window.__sugT;
-      try{ti.dispatchEvent(new Event('input',{bubbles:true}))}catch(e){}
-    }
-    if((what==='d'||what==='all')&&de&&window.__sugD){
-      de.value=window.__sugD;
-      try{de.dispatchEvent(new Event('input',{bubbles:true}))}catch(e){}
-      if(typeof descCount==='function')descCount();
-    }
-    toast('انتقل للحقل ✍️');
-    if(what==='all')hideSuggestions();
-  }catch(e){toast('تعذر النقل',true)}
-}
-
-function hideSuggestions(){
-  const box=$('sugBox');
-  if(box)box.style.display='none';
-}
-
-/* ====== سمات الصورة ====== */
-const PHOTO_TAGS=[
+export const PHOTO_TAGS=[
   {k:'pure',   n:'💎 طبيعة نقية'},
   {k:'night',  n:'🌙 ليلي'},
   {k:'season', n:'🍂 موسمي'},
@@ -1227,20 +526,20 @@ const PHOTO_TAGS=[
   {k:'rare',   n:'✨ مشهد نادر'},
   {k:'sunrise',n:'🌅 شروق/غروب'}
 ];
-window.__pickedTags=[];
+state.pickedTags=[];
 
-function renderTagRow(){
+export function renderTagRow(){
   const el=$('tagRow');if(!el)return;
   el.innerHTML='';
   PHOTO_TAGS.forEach(t=>{
     const b=document.createElement('button');
     b.type='button';
-    b.className='tag-chip'+(window.__pickedTags.includes(t.k)?' on':'');
+    b.className='tag-chip'+(state.pickedTags.includes(t.k)?' on':'');
     b.textContent=t.n;
     b.onclick=()=>{
-      const i=window.__pickedTags.indexOf(t.k);
-      if(i>-1)window.__pickedTags.splice(i,1);
-      else if(window.__pickedTags.length<3)window.__pickedTags.push(t.k);
+      const i=state.pickedTags.indexOf(t.k);
+      if(i>-1)state.pickedTags.splice(i,1);
+      else if(state.pickedTags.length<3)state.pickedTags.push(t.k);
       else{toast('حد أقصى ٣ سمات',true);return}
       renderTagRow();
     };
@@ -1248,458 +547,42 @@ function renderTagRow(){
   });
 }
 
-function tagName(k){
+export function tagName(k){
   const t=PHOTO_TAGS.find(x=>x.k===k);
   return t?t.n:k;
 }
 
 /* ====== قراءة بيانات الكاميرا من EXIF ====== */
-async function readExifTech(file){
+
+export async function fillPlaceFromGeo(lat,lng,silent,force){
   try{
-    const buf=await file.slice(0,256*1024).arrayBuffer();
-    const dv=new DataView(buf);
-    if(dv.getUint16(0)!==0xFFD8)return null;
+    let info=await reverseGeo(lat,lng);
 
-    let off=2, tiff=0;
-    while(off<dv.byteLength-4){
-      if(dv.getUint16(off)===0xFFE1){
-        if(dv.getUint32(off+4)===0x45786966){tiff=off+10;break}
-      }
-      const len=dv.getUint16(off+2);
-      if(!len)break;
-      off+=2+len;
-    }
-    if(!tiff)return null;
-
-    const le=dv.getUint16(tiff)===0x4949;
-    const u16=(p)=>dv.getUint16(p,le);
-    const u32=(p)=>dv.getUint32(p,le);
-
-    function readTags(dirStart,wanted,out){
-      const n=u16(dirStart);
-      for(let i=0;i<n;i++){
-        const e=dirStart+2+i*12;
-        const tag=u16(e), type=u16(e+2), cnt=u32(e+4);
-        if(!wanted[tag])continue;
-        const key=wanted[tag];
-        let valOff=e+8;
-        const sizes={1:1,2:1,3:2,4:4,5:8,7:1,9:4,10:8};
-        const total=(sizes[type]||1)*cnt;
-        if(total>4)valOff=tiff+u32(e+8);
-        if(valOff+total>dv.byteLength)continue;
-
-        if(type===2){
-          let s='';
-          for(let k=0;k<cnt-1;k++){
-            const ch=dv.getUint8(valOff+k);
-            if(ch)s+=String.fromCharCode(ch);
-          }
-          out[key]=s.trim();
-        }else if(type===3){
-          out[key]=u16(valOff);
-        }else if(type===4){
-          out[key]=u32(valOff);
-        }else if(type===5){
-          const a=u32(valOff), b=u32(valOff+4);
-          if(b)out[key]=a/b;
-        }else if(type===10){
-          const a=dv.getInt32(valOff,le), b=dv.getInt32(valOff+4,le);
-          if(b)out[key]=a/b;
+    /* ═══ احتياطي محلي ═══
+       خدمة الأسماء (nominatim) تفشل أحياناً: محجوبة، أو تجاوزنا حدّها،
+       أو الشبكة بطيئة — وقتها كان الحقن يتوقف بصمت.
+       جدول COORDS عندنا محلي ولا يحتاج إنترنت، فنستعمله. */
+    if(!info || (!info.region && !info.city)){
+      try{
+        const nc = nearestCity(lat,lng);
+        if(nc && nc.city){
+          info = {
+            region : (info&&info.region ) || (nc.km<=200 ? nc.region : ''),
+            city   : (info&&info.city   ) || (nc.km<=60  ? nc.city   : ''),
+            village: (info&&info.village) || '',
+            country: (info&&info.country) || 'السعودية'
+          };
         }
-      }
+      }catch(e){}
     }
 
-    const out={};
-    const ifd0=tiff+u32(tiff+4);
-    readTags(ifd0,{0x010F:'make',0x0110:'model',0x0132:'taken'},out);
-
-    // IFD الفرعي (بيانات التصوير)
-    const n0=u16(ifd0);
-    for(let i=0;i<n0;i++){
-      const e=ifd0+2+i*12;
-      if(u16(e)===0x8769){
-        const sub=tiff+u32(e+8);
-        if(sub<dv.byteLength)readTags(sub,{
-          0x829A:'shutter',0x829D:'aperture',0x8827:'iso',
-          0x920A:'focal',0xA434:'lens',0x9003:'taken'
-        },out);
-        break;
-      }
-    }
-
-    const tech={};
-    if(out.make||out.model){
-      let cam=(out.model||'').trim();
-      const mk=(out.make||'').trim();
-      if(mk&&!cam.toLowerCase().startsWith(mk.toLowerCase().split(' ')[0]))cam=mk+' '+cam;
-      if(cam)tech.camera=cam.slice(0,60);
-    }
-    if(out.lens)tech.lens=String(out.lens).slice(0,60);
-    if(out.focal)tech.focal=Math.round(out.focal)+'mm';
-    if(out.aperture)tech.aperture='f/'+(Math.round(out.aperture*10)/10);
-    if(out.iso)tech.iso='ISO '+out.iso;
-    if(out.shutter){
-      const s=out.shutter;
-      tech.shutter=s>=1?(Math.round(s*10)/10)+'s':'1/'+Math.round(1/s);
-    }
-    return Object.keys(tech).length?tech:null;
-  }catch(e){return null}
-}
-
-/* ====== كاميرا الزاوية — صورة شبحية للمحاذاة ====== */
-window.__ghostId=null;
-
-async function loadGhosts(){
-  const bar=$('ghostBar'), strip=$('ghostStrip');
-  if(!bar||!strip)return;
-  bar.style.display='none';
-  try{
-    if(!window.__USER_LAT||typeof photos==='undefined')return;
-    const lat=window.__USER_LAT, lng=window.__USER_LNG;
-    const d=p=>Math.hypot((p.lat-lat)*111000,(p.lng-lng)*111000*Math.cos(lat*Math.PI/180));
-
-    const near=photos.filter(p=>
-      p.lat&&p.lng&&p.media_type!=='video'&&p.visibility!=='private'&&d(p)<=200
-    ).sort((a,b)=>d(a)-d(b)).slice(0,10);
-
-    if(!near.length)return;
-    bar.style.display='block';
-    strip.innerHTML=near.map(p=>
-      `<img class="gb-thumb" src="${thumbUrl(p.image_path)}" onclick="ghostPick(${p.id},this)" alt="">`
-    ).join('');
-  }catch(e){}
-}
-
-function ghostPick(pid,el){
-  const img=$('ghostImg');
-  if(!img)return;
-  const p=photos.find(x=>x.id===pid);
-  if(!p)return;
-
-  if(window.__ghostId===pid){ghostClear();return}
-
-  window.__ghostId=pid;
-  img.src=thumbUrl(p.image_path);
-  img.style.display='block';
-  const sl=$('ghostSlider'), off=$('ghostOff');
-  if(sl)sl.style.display='flex';
-  if(off)off.style.display='block';
-  document.querySelectorAll('.gb-thumb').forEach(t=>t.classList.remove('on'));
-  if(el)el.classList.add('on');
-  toast('👻 حاذِ المشهد مع الصورة');
-}
-
-function ghostOpacity(v){
-  const img=$('ghostImg');
-  if(img)img.style.opacity=(v/100);
-}
-
-function ghostClear(){
-  window.__ghostId=null;
-  const img=$('ghostImg');
-  if(img){img.style.display='none';img.src=''}
-  const sl=$('ghostSlider'), off=$('ghostOff');
-  if(sl)sl.style.display='none';
-  if(off)off.style.display='none';
-  document.querySelectorAll('.gb-thumb').forEach(t=>t.classList.remove('on'));
-}
-
-
-/* تحقق: إحداثيات صالحة فعلاً؟ */
-function validPos(p){
-  if(!p)return null;
-  const la=Number(p.lat), ln=Number(p.lng);
-  if(!isFinite(la)||!isFinite(ln))return null;
-  if(Math.abs(la)>90||Math.abs(ln)>180)return null;
-  if(la===0&&ln===0)return null;
-  return {lat:la,lng:ln};
-}
-/* ====== قارئ GPS احتياطي — يفكّ EXIF مباشرة ====== */
-async function readExifGPS2(file){
-  try{
-    const buf=await file.slice(0,512*1024).arrayBuffer();
-    const dv=new DataView(buf);
-    if(dv.getUint16(0)!==0xFFD8)return null;
-
-    let off=2, tiff=0;
-    while(off<dv.byteLength-4){
-      const marker=dv.getUint16(off);
-      if(marker===0xFFE1&&dv.getUint32(off+4)===0x45786966){tiff=off+10;break}
-      if((marker&0xFF00)!==0xFF00)break;
-      const len=dv.getUint16(off+2);
-      if(!len)break;
-      off+=2+len;
-    }
-    if(!tiff)return null;
-
-    const le=dv.getUint16(tiff)===0x4949;
-    const u16=p=>dv.getUint16(p,le);
-    const u32=p=>dv.getUint32(p,le);
-
-    const ifd0=tiff+u32(tiff+4);
-    if(ifd0>=dv.byteLength)return null;
-    const n0=u16(ifd0);
-    let gpsOff=0;
-    for(let i=0;i<n0;i++){
-      const e=ifd0+2+i*12;
-      if(e+12>dv.byteLength)break;
-      if(u16(e)===0x8825){gpsOff=tiff+u32(e+8);break}
-    }
-    if(!gpsOff||gpsOff>=dv.byteLength)return null;
-
-    const rat=p=>{const a=u32(p),b=u32(p+4);return b?a/b:0};
-    const g={};
-    const ng=u16(gpsOff);
-    for(let i=0;i<ng;i++){
-      const e=gpsOff+2+i*12;
-      if(e+12>dv.byteLength)break;
-      const tag=u16(e), type=u16(e+2), cnt=u32(e+4);
-      if(tag===1||tag===3){
-        g[tag]=String.fromCharCode(dv.getUint8(e+8));
-      }else if((tag===2||tag===4)&&type===5&&cnt===3){
-        const vo=tiff+u32(e+8);
-        if(vo+24<=dv.byteLength)g[tag]=[rat(vo),rat(vo+8),rat(vo+16)];
-      }
-    }
-    if(!g[2]||!g[4])return null;
-
-    const toDeg=a=>a[0]+a[1]/60+a[2]/3600;
-    let lat=toDeg(g[2]), lng=toDeg(g[4]);
-    if(g[1]==='S')lat=-lat;
-    if(g[3]==='W')lng=-lng;
-    if(!lat&&!lng)return null;
-    if(Math.abs(lat)>90||Math.abs(lng)>180)return null;
-    return {lat,lng};
-  }catch(e){return null}
-}
-
-
-/* ====== اختيار موقع الصورة من الخريطة ====== */
-window.__gpMap=null;
-
-function openGeoPick(){
-  const box=$('geoPickBox');if(!box)return;
-  box.classList.add('show');
-
-  setTimeout(function(){
-    try{
-      if(!window.__gpMap){
-        // نقطة البداية: المنطقة المختارة أو وسط المملكة
-        let c=[23.8859,45.0792], z=5;
-        const reg=$('aRegion')?$('aRegion').value:'';
-        const RC={
-          'الرياض':[24.7136,46.6753,9],'مكة المكرمة':[21.3891,39.8579,9],
-          'المدينة المنورة':[24.5247,39.5692,9],'القصيم':[26.3260,43.9750,9],
-          'الشرقية':[26.4207,50.0888,8],'عسير':[18.2465,42.5117,9],
-          'تبوك':[28.3835,36.5662,8],'حائل':[27.5219,41.6907,9],
-          'الحدود الشمالية':[30.9843,41.0231,8],'جازان':[16.8892,42.5511,9],
-          'نجران':[17.4924,44.1277,9],'الباحة':[20.0129,41.4677,10],'الجوف':[29.7859,40.2000,8]
-        };
-        if(RC[reg]){c=[RC[reg][0],RC[reg][1]];z=RC[reg][2]}
-        // لو عنده موقع حالي، نبدأ منه
-        else if(window.__USER_LAT){c=[window.__USER_LAT,window.__USER_LNG];z=11}
-
-        window.__gpMap=L.map('gpMap',{zoomControl:true,attributionControl:false}).setView(c,z);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(window.__gpMap);
-
-        // دبابيس صور المنصة القريبة — تساعد على التعرّف
-        try{
-          if(typeof photos!=='undefined'){
-            photos.filter(p=>p.lat&&p.lng&&!p.abroad).slice(0,120).forEach(p=>{
-              const ic=L.divIcon({className:'',html:'<div style="width:22px;height:22px;border-radius:50%;overflow:hidden;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"><img src="'+thumbUrl(p.image_path)+'" style="width:100%;height:100%;object-fit:cover"></div>',iconSize:[22,22],iconAnchor:[11,11]});
-              L.marker([p.lat,p.lng],{icon:ic,interactive:false}).addTo(window.__gpMap);
-            });
-          }
-        }catch(e){}
-
-        window.__gpMap.on('moveend',gpUpdateInfo);
-      }
-      window.__gpMap.invalidateSize();
-      gpUpdateInfo();
-    }catch(e){
-      $('gpInfo').textContent='تعذر تحميل الخريطة';
-    }
-  },220);
-}
-
-function closeGeoPick(){
-  const box=$('geoPickBox');
-  if(box)box.classList.remove('show');
-  window.__geoPickMode=null;
-}
-
-function gpUpdateInfo(){
-  try{
-    const c=window.__gpMap.getCenter();
-    $('gpInfo').innerHTML='📍 '+c.lat.toFixed(5)+' , '+c.lng.toFixed(5)
-      +'<br><span style="font-size:11px">حرّك الخريطة حتى يقع الدبوس على مكان التصوير</span>';
-  }catch(e){}
-}
-
-async function gpSearchPlace(){
-  const q=($('gpSearch').value||'').trim();
-  if(!q)return;
-  $('gpInfo').textContent='⏳ نبحث...';
-  try{
-    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=sa&q='+encodeURIComponent(q),
-      {headers:{'Accept-Language':'ar'}});
-    const j=await r.json();
-    if(j&&j[0]){
-      window.__gpMap.setView([parseFloat(j[0].lat),parseFloat(j[0].lon)],13);
-      gpUpdateInfo();
-    }else{
-      $('gpInfo').textContent='ما لقينا المكان — جرّب اسماً آخر أو حرّك الخريطة يدوياً';
-    }
-  }catch(e){
-    $('gpInfo').textContent='تعذر البحث — حرّك الخريطة يدوياً';
-  }
-}
-
-function confirmGeoPick(){
-  try{
-    const c=window.__gpMap.getCenter();
-    // وضع تعديل صورة منشورة
-    if(window.__geoPickMode==='edit'){
-      window.__edGeo={lat:c.lat,lng:c.lng};
-      const main=$('edGeoMain'), sub=$('edGeoSub'), card=$('edGeoCard');
-      if(card)card.classList.remove('warn');
-      if(main)main.textContent='📍 موقع جديد';
-      if(sub)sub.textContent=c.lat.toFixed(5)+', '+c.lng.toFixed(5);
-      window.__geoPickMode=null;
-      closeGeoPick();
-      toast('انضبط الموقع — اضغط «حفظ» لتثبيته');
-      return;
-    }
-    pendingGeo={lat:c.lat,lng:c.lng};
-    window.__geoManual=true;
-    const card=$('geoCard');
-    if(card){
-      card.classList.remove('warn');
-      $('geoStatus').innerHTML='🗺️ حدّدت الموقع يدوياً على الخريطة';
-      $('geoCoords').textContent=c.lat.toFixed(5)+', '+c.lng.toFixed(5);
-    }
-    const mb=$('geoManualBox');
-    if(mb)mb.style.display='none';
-    closeGeoPick();
-    toast('انحفظ الموقع 📍');
-    if(typeof fillPlaceFromGeo==='function')fillPlaceFromGeo(c.lat,c.lng);
-  }catch(e){toast('تعذر الحفظ',true)}
-}
-
-/* ====== اقتراح مبكر عند اختيار الصورة ====== */
-async function earlySuggest(){
-  try{
-    const on=!!(window.__SPDATA&&window.__SPDATA.inspect_enabled)||!!window.INSPECT_ON;
-    if(!on)return;
-    // سفاري يحتاج مهلة أطول لاكتمال الضغط
-    let tries=0;
-    while(!pendingBlob&&!pendingFile&&tries<20){
-      await new Promise(r=>setTimeout(r,150));
-      tries++;
-    }
-    const blob=pendingBlob||pendingFile;
-    if(!blob)return;
-    await new Promise(r=>setTimeout(r,900));
-
-    const box=$('sugBox');
-    if(box){
-      box.style.display='block';
-      box.innerHTML='<div class="sg-head"><span>✨ نقرأ الصورة...</span></div>';
-    }
-
-    const res=await inspectPhoto(blob);
-    if(!res){
-      if(box){
-        if(window.__inspErr){
-          box.innerHTML='<div class="sg-head"><span>⚠️ تعذر الاقتراح</span><button onclick="hideSuggestions()">✕</button></div>'
-            +'<div style="font-size:11px;direction:ltr;color:var(--txt-dim);padding:4px 2px">'+esc(window.__inspErr)+'</div>';
-        }else box.style.display='none';
-      }
-      return;
-    }
-    window.__earlyRes=res;
-    showSuggestions(res);
-
-    // التحذيرات مبكراً — قبل كتابة العنوان
-    const warns=[];
-    if(res.face)warns.push('🙂 فيها وجه واضح — تأكد من إذن صاحبه');
-    if(res.plate)warns.push('🚗 لوحة مركبة مقروءة');
-    if(res.indoor_private)warns.push('🏠 تبدو من داخل منزل خاص');
-    if(res.military)warns.push('🚫 قد تكون منشأة عسكرية — تصويرها محظور نظاماً');
-    const st=$('inspectStatus');
-    if(st){
-      if(res.nsfw||res.violence){
-        st.style.display='block';
-        st.className='inspect-box bad';
-        st.innerHTML='⛔ <b>الصورة مرفوضة</b><br><span style="font-size:12px">محتوى مخالف — اختر صورة أخرى</span>';
-      }else if(warns.length){
-        st.style.display='block';
-        st.className='inspect-box warn';
-        st.innerHTML='⚠️ <b>تنبيه</b><br><span style="font-size:12px;line-height:1.9">'+warns.join('<br>')+'</span>';
-      }else{
-        st.style.display='block';
-        st.className='inspect-box ok';
-        st.innerHTML='✅ <b>الصورة سليمة</b>';
-        setTimeout(()=>{if(st&&st.className.indexOf('ok')>-1)st.style.display='none'},2600);
-      }
-    }
-    // التصنيف
-    if(res.category&&$('aCat')){
-      const opt=Array.from($('aCat').options).find(o=>o.value===res.category);
-      if(opt&&!$('aCat').value)$('aCat').value=res.category;
-    }
-  }catch(e){}
-}
-
-/* ====== استنتاج المنطقة والمدينة من الإحداثيات ====== */
-async function reverseGeo(lat,lng){
-  try{
-    const r=await fetch('https://nominatim.openstreetmap.org/reverse?format=json&zoom=12&lat='+lat+'&lon='+lng,
-      {headers:{'Accept-Language':'ar'}});
-    if(!r.ok)return null;
-    const j=await r.json();
-    const a=j.address||{};
-    return {
-      region:a.state||a.region||'',
-      city:a.city||a.town||a.municipality||a.county||'',
-      village:a.village||a.suburb||a.neighbourhood||a.hamlet||'',
-      country:a.country||''
-    };
-  }catch(e){return null}
-}
-
-/* تطبيع للمطابقة المرنة */
-function _nrm(s){
-  return String(s||'')
-    .replace(/[\u064B-\u0652\u0640]/g,'')
-    .replace(/[أإآا]/g,'ا').replace(/[ىي]/g,'ي').replace(/ة/g,'ه')
-    .replace(/منطقة|محافظة|امارة|مدينة/g,'')
-    .replace(/\s+/g,'').trim();
-}
-
-function _pickOpt(sel,want){
-  if(!sel||!want)return null;
-  const w=_nrm(want);
-  if(!w)return null;
-  return Array.from(sel.options).find(o=>_nrm(o.value)===w||_nrm(o.textContent)===w)
-      || Array.from(sel.options).find(o=>{
-           const t=_nrm(o.textContent);
-           return t&&(t.includes(w)||w.includes(t));
-         })
-      || null;
-}
-
-/* يملأ القوائم من الإحداثيات */
-async function fillPlaceFromGeo(lat,lng,silent){
-  try{
-    const info=await reverseGeo(lat,lng);
     if(!info)return null;
-    window.__geoPlace=info;
+    state.geoPlace=info;
 
     const outside=!!(info.country&&!/السعود|Saudi/i.test(info.country));
 
     // ═══ وضع عدسة مسافر ═══
-    if(typeof isAbroad!=='undefined'&&isAbroad){
+    if(typeof state.isAbroad!=='undefined'&&state.isAbroad){
       const ct=$('aCountry');
       if(ct&&!ct.value.trim()){
         const parts=[info.city||info.village,info.country].filter(Boolean);
@@ -1717,21 +600,22 @@ async function fillPlaceFromGeo(lat,lng,silent){
       return info;
     }
 
+    /* force: المستخدم حدّد المكان بنفسه على الخريطة — اختياره يغلب أي قيمة سابقة */
     const rs=$('aRegion');
-    const ro=_pickOpt(rs,info.region);
-    if(ro&&rs&&!rs.value){
+    const ro=findOpt(rs,info.region);
+    if(ro&&rs&&(force||!rs.value)){
       rs.value=ro.value;
       if(typeof fillAddCities==='function')fillAddCities();
       await new Promise(r=>setTimeout(r,180));
     }
 
     const cs=$('aCity');
-    const co=_pickOpt(cs,info.city)||_pickOpt(cs,info.village);
-    if(co&&cs&&!cs.value)cs.value=co.value;
+    const co=findOpt(cs,info.city)||findOpt(cs,info.village);
+    if(co&&cs&&(force||!cs.value))cs.value=co.value;
 
     // القرية حقل نصي غالباً
     const vs=$('aVillage');
-    if(vs&&info.village&&!vs.value.trim()&&vs.tagName==='INPUT'){
+    if(vs&&info.village&&(force||!vs.value.trim())&&vs.tagName==='INPUT'){
       vs.value=info.village;
     }
 
