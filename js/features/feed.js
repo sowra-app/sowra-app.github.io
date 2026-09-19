@@ -258,10 +258,19 @@ export function buildCard(p,i){
  try{
   const medal=(state.sort==='top'&&i<3&&p.ratings_count>0)?['🥇','🥈','🥉'][i]:'';
   const isV=p.media_type==='video';
+  /* ═══ أوّل صورةٍ لا تُؤجَّل ═══
+     قوقل يقيس سرعة الموقع بأكبر عنصرٍ مرئي، وهو عندنا أوّل صورةٍ في
+     الخلاصة. وكانت تحمل loading="lazy" — أي أننا نطلب من المتصفّح أن
+     يؤخّر الصورة نفسَها التي ينتظرها ليحكم علينا.
+     فالأربع الأولى (ما يُرى قبل التمرير) تُجلب فوراً، وأولاهنّ بأولويّة
+     عالية. وما بعدهنّ يبقى كسولاً — وهو الأكثر. */
+  const eager = i < 4
+    ? 'fetchpriority="' + (i === 0 ? 'high' : 'auto') + '"'
+    : 'loading="lazy"';
   return `<div class="mcard" onclick="openSheet(${p.id})">
     ${isV
       ? `<video src="${vidUrl(p.image_path)}#t=0.5" muted playsinline preload="metadata" style="width:100%;display:block;filter:${(p.filter_key&&p.filter_key!=='none'&&typeof filterCss==='function')?filterCss(p.filter_key):'none'}"></video>`
-      : `<img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" loading="lazy" decoding="async" alt="${esc(p.title)}">`}
+      : `<img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" ${eager} decoding="async" alt="${esc(p.title)}">`}
     ${medal?`<div class="mc-medal">${medal}</div>`:''}
     ${state.visitCounts[p.id]?`<div class="mc-visits">👣 ${state.visitCounts[p.id]}</div>`:''}
     ${p.editors_choice?'<div class="mc-ec">🏵️ اختيار المحررين</div>':''}
