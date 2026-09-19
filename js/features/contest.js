@@ -1,23 +1,58 @@
-/* صورة من بلدي — week.js | لقطة الأسبوع 🏆 */
-let WEEK=null,WEEK_MODE='live',weekEntries=[],weekVotes={},myWeekVote=null;
+/* صورة من بلدي — features/contest.js
+   المسابقة والراعي والتحدي */
 
-async function loadWeek(){
-  WEEK=null;WEEK_MODE='live';
+import { currentUser, sb } from '../core/db.js';
+import { rankOf } from '../core/format.js';
+import { need } from '../core/hub.js';
+import { imgUrl, thumbUrl } from '../core/media.js';
+import { state } from '../core/state.js';
+import { $, dbErr, esc, toast } from '../core/ui.js';
+import { geo, COORDS, nearestCity, loadPlaces, BASE_GEO } from '../data/places.js';
+const shootThere = need('shootThere');
+
+/* ═══ عبر الحاجز ═══
+   applyPendingPlace ← features/map.js
+   initCommBox ← features/notify.js
+   initGoogleBtn ← features/account.js
+   initInspect ← features/notify.js
+   initVideoUpload ← features/reels.js
+   renderNewsBanner ← features/feed.js
+   renderSponsorSide ← features/feed.js
+*/
+const applyPendingPlace = need('applyPendingPlace');
+const initCommBox = need('initCommBox');
+const initGoogleBtn = need('initGoogleBtn');
+const initInspect = need('initInspect');
+const initVideoUpload = need('initVideoUpload');
+const renderNewsBanner = need('renderNewsBanner');
+const renderSponsorSide = need('renderSponsorSide');
+
+/* ═══ من التنقل — عبر الحاجز ═══ */
+const go = need('go');
+
+export let WEEK=null;
+state.weekMode='live';
+state.weekEntries=[];
+state.weekVotes={};
+state.myWeekVote=null;
+
+export async function loadWeek(){
+  WEEK=null;state.weekMode='live';
   try{
     const c=await sb.from('weekly_contest').select('*').eq('active',true).order('id',{ascending:false}).limit(1).maybeSingle();
     if(c.data){WEEK=c.data;}
     else{
       const e=await sb.from('weekly_contest').select('*').not('ended_at','is',null).order('ended_at',{ascending:false}).limit(1).maybeSingle();
       if(e.data && (Date.now()-new Date(e.data.ended_at).getTime()) < 7*24*3600*1000){
-        WEEK=e.data;WEEK_MODE='results';
+        WEEK=e.data;state.weekMode='results';
       }
     }
   }catch(err){WEEK=null}
   const strip=$('weekStrip');if(!strip)return;
   if(!WEEK){strip.style.display='none';return}
   strip.style.display='block';
-  if(WEEK_MODE==='results'){
-    const win=photos.find(x=>x.id===WEEK.winner_photo_id);
+  if(state.weekMode==='results'){
+    const win=state.photos.find(x=>x.id===WEEK.winner_photo_id);
     strip.classList.add('win');
     strip.innerHTML=win
       ?`👑 <b>فائز لقطة الأسبوع:</b> ${rankOf(win).ic} ${esc(win.photographer)} — «${esc(win.title)}» · شاهد النتيجة`
@@ -28,63 +63,72 @@ async function loadWeek(){
   }
 }
 
-async function openWeek(){
+export async function openWeek(){
   if(!WEEK){toast('ما فيه مسابقة حالياً');return}
   go('week');
   $('weekBody').innerHTML='<div class="empty">⏳</div>';
   const [en,bd,mv]=await Promise.all([
     sb.from('weekly_entries').select('photo_id').eq('contest_id',WEEK.id),
     sb.from('weekly_board').select('*').eq('contest_id',WEEK.id),
-    (WEEK_MODE==='live'&&USER)?sb.from('weekly_votes').select('photo_id').eq('contest_id',WEEK.id).eq('user_id',USER.id).maybeSingle():Promise.resolve({data:null})
+    (state.weekMode==='live'&&currentUser())?sb.from('weekly_votes').select('photo_id').eq('contest_id',WEEK.id).eq('user_id',currentUser()?.id).maybeSingle():Promise.resolve({data:null})
   ]);
-  weekVotes={};(bd.data||[]).forEach(r=>weekVotes[r.photo_id]=r.votes);
-  myWeekVote=mv.data?.photo_id??null;
+  state.weekVotes={};(bd.data||[]).forEach(r=>state.weekVotes[r.photo_id]=r.votes);
+  state.myWeekVote=mv.data?.photo_id??null;
   const ids=(en.data||[]).map(e=>e.photo_id);
-  weekEntries=photos.filter(p=>ids.includes(p.id));
+  state.weekEntries=state.photos.filter(p=>ids.includes(p.id));
   renderWeek();
 }
 
-function renderWeek(){
-  const results=WEEK_MODE==='results';
+export function renderWeek(){
+  const results=state.weekMode==='results';
   $('weekTitle').textContent=(results?'🏁 نتيجة لقطة الأسبوع':'🏆 لقطة الأسبوع')+(WEEK.week_label?' — '+WEEK.week_label:'');
   $('weekSponsor').innerHTML=[WEEK.sponsor_name?`برعاية <b style="color:var(--sadu)">${esc(WEEK.sponsor_name)}</b>`:'',WEEK.prize?`🎁 الجائزة: ${esc(WEEK.prize)}`:''].filter(Boolean).join(' · ')||(results?'':'صوّت لأجمل لقطة — صوت واحد وتقدر تغيّره');
-  const sorted=weekEntries.slice().sort((a,b)=>(weekVotes[b.id]||0)-(weekVotes[a.id]||0));
-  const winId=results?(WEEK.winner_photo_id??(sorted[0]?.id)):(sorted[0]&&(weekVotes[sorted[0].id]||0)>0?sorted[0].id:null);
-  $('weekBody').innerHTML=weekEntries.length?sorted.map((p,i)=>{
-    const v=weekVotes[p.id]||0, isWin=p.id===winId;
-    return `<div class="card wcard ${isWin&&results?'winner':''} ${myWeekVote===p.id&&!results?'voted':''}">
-      <div class="ph" style="height:170px"><img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" alt="${esc(p.title)}">
+  const sorted=state.weekEntries.slice().sort((a,b)=>(state.weekVotes[b.id]||0)-(state.weekVotes[a.id]||0));
+  const winId=results?(WEEK.winner_photo_id??(sorted[0]?.id)):(sorted[0]&&(state.weekVotes[sorted[0].id]||0)>0?sorted[0].id:null);
+  $('weekBody').innerHTML=state.weekEntries.length?sorted.map((p,i)=>{
+    const v=state.weekVotes[p.id]||0, isWin=p.id===winId;
+    /* الضغط على الصورة يفتح ورقتها الكاملة — التكبير والعنوان والمصوّر
+       والمكان والتقييم والتعليقات. فالزائر يُحكّم بالنظر لا بالمربّع
+       الصغير، ثم يرجع فيصوّت. وهي ورقةٌ قائمة أصلاً، لا نبني غيرها. */
+    return `<div class="card wcard ${isWin&&results?'winner':''} ${state.myWeekVote===p.id&&!results?'voted':''}">
+      <div class="ph sq" style="cursor:zoom-in" onclick="openSheet(${p.id})" title="اضغط للتكبير والتفاصيل"><img src="${thumbUrl(p.image_path)}" onerror="this.onerror=null;this.src='${imgUrl(p.image_path)}'" alt="${esc(p.title)}">
         ${isWin?'<div class="medal">👑 '+(results?'الفائز':'متصدرة')+'</div>':(results?`<div class="medal">#${i+1}</div>`:'')}
+        <span class="w-zoom">🔍 تكبير</span>
       </div>
       <div class="card-body">
         <div class="card-title">${esc(p.title)}</div>
         <div class="card-meta"><span class="who">${rankOf(p).ic} ${esc(p.photographer)}</span><span>🗳️ ${v} صوت</span></div>
-        ${results?'':`<button class="btn wvote ${myWeekVote===p.id?'on':''}" onclick="voteWeek(${p.id})">${myWeekVote===p.id?'✓ صوتك هنا':'صوّت لهذه اللقطة'}</button>`}
+        <!-- زرٌّ صريح لا شارةٌ بالزاوية: الشارة الصغيرة الشفافة تذوب في
+             الصورة فلا يجدها الزائر — وقد لا يجدها صاحب التطبيق نفسه.
+             وشاشة تحكيم يجب أن تقول ما يُفعل فيها لا أن تُخفيه. -->
+        <button class="btn wzoom-btn" onclick="openSheet(${p.id})">🔍 تكبير وتفاصيل</button>
+        ${results?'':`<button class="btn wvote ${state.myWeekVote===p.id?'on':''}" onclick="voteWeek(${p.id})">${state.myWeekVote===p.id?'✓ صوتك هنا':'صوّت لهذه اللقطة'}</button>`}
       </div>
     </div>`;
   }).join(''):'<div class="empty">🎬 اللقطات الخمس تُعلن قريباً — ترقبوا</div>';
 }
 
-async function voteWeek(pid){
-  const {error}=await sb.from('weekly_votes').upsert({contest_id:WEEK.id,user_id:USER.id,photo_id:pid});
-  if(error){toast('تعذر التصويت',true);return}
-  myWeekVote=pid;
+export async function voteWeek(pid){
+  const {error}=await sb.from('weekly_votes').upsert({contest_id:WEEK.id,user_id:currentUser()?.id,photo_id:pid});
+  if(error){dbErr('تصويت لقطة الأسبوع',error,'تعذر التصويت');return}
+  state.myWeekVote=pid;
   const bd=await sb.from('weekly_board').select('*').eq('contest_id',WEEK.id);
-  weekVotes={};(bd.data||[]).forEach(r=>weekVotes[r.photo_id]=r.votes);
+  state.weekVotes={};(bd.data||[]).forEach(r=>state.weekVotes[r.photo_id]=r.votes);
   toast('تم تصويتك 🗳️');
   renderWeek();
 }
 
 /* ====== بنر الراعي ====== */
-async function loadSponsor(){
+
+export async function loadSponsor(){
   try{
     const r=await sb.from('site_banner').select('*').eq('id',1).maybeSingle();
     const b=r.data||null;
-    window.__SPDATA=b;
+    state.banner=b;
     // زر جوجل يظهر فور جهوز البيانات
     try{if(typeof initGoogleBtn==='function')initGoogleBtn()}catch(e){}
     try{if(typeof renderNewsBanner==='function')renderNewsBanner()}catch(e){}
-    window.__SPB=b||{};
+    state.banner=b||{};
     // البطاقة الجانبية
     if(typeof renderSponsorSide==='function')renderSponsorSide();
     // زر الرعاة
@@ -97,9 +141,10 @@ async function loadSponsor(){
 }
 
 /* ====== صفحة الرعاة ====== */
-function openSponsorsPage(){
+
+export function openSponsorsPage(){
   go('sponsors');
-  const SP=window.__SPDATA;
+  const SP=state.banner;
   // البنر الكبير برأس الصفحة
   const el=$('spBannerPage');
   if(el&&SP&&SP.active&&SP.image_path){
@@ -127,15 +172,17 @@ function openSponsorsPage(){
   }
 }
 
-function renderSponsorsBtn(){
+export function renderSponsorsBtn(){
   const btn=$('fdSponsorsBtn');if(!btn)return;
-  const sp=window.__SPDATA;
+  const sp=state.banner;
   btn.style.display=(sp&&sp.sponsors_btn)?'inline-block':'none';
 }
 
 /* ====== تحدي الأسبوع ====== */
-let CHALLENGE=null;
-async function loadChallenge(){
+
+export let CHALLENGE=null;
+
+export async function loadChallenge(){
   const el=$('challengeStrip');if(!el)return;
   try{
     const r=await sb.from('challenge').select('*').eq('id',1).maybeSingle();
@@ -164,13 +211,14 @@ async function loadChallenge(){
 }
 
 /* ====== المشاركة بالتحدي ====== */
-function catName(k){
+
+export function catName(k){
   const m={nature:'🌿 طبيعة',arch:'🏛️ عمارة',wildlife:'🦅 طيور وحيوانات',
     people:'👥 أشخاص',bw:'⬛ أبيض وأسود',landmark:'🕌 معلم',heritage:'🏺 تراث',other:'📷 أخرى'};
   return m[k]||k;
 }
 
-function joinChallenge(){
+export function joinChallenge(){
   go('add');
   const c=window.__CH||{};
   if(c.region&&typeof shootThere==='function'){
