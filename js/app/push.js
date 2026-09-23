@@ -112,6 +112,32 @@ export async function renderNotifBox(){
   btn.style.border=on?'1px solid var(--line)':'none';
 }
 
+/* ═══ هويّةُ الجهاز ═══
+   كان مفتاح التعارض في push_subs هو «العنوان» — وهو أكثر ما يتبدّل:
+   يتغيّر عند كل إعادة تفعيل، وعند مسح بيانات الموقع، وحين يجدّده
+   المتصفّح من نفسه. فكل تبدّلٍ يُضيف سطراً جديداً ولا يُلغي القديم،
+   والقديم يبقى حيّاً يستقبل — فيصير الجهاز الواحد عدّة مشتركين
+   ويُشعَر صاحبه مرّتين وثلاثاً. (بلغ الأمر خمسة اشتراكاتٍ لجهازٍ
+   واحدٍ عملياً.)
+
+   وحذفُ الميت لا يعالجه: الوظيفة تحذف ما يردّ بـ404/410، وهذه
+   الاشتراكات كلّها حيّةٌ صالحة.
+
+   فالمفتاح صار هويّةً ثابتةً تُولَّد مرّةً وتبقى: يتبدّل العنوان
+   فيُحدَّث نفس السطر بدل أن يُضاف غيره. جهازٌ واحد = سطرٌ واحد.
+   ولكل متصفّحٍ هويّته — وهذا صحيح: كروم وسفاري مشتركان مستقلّان. */
+export function deviceId(){
+  try{
+    let d = localStorage.getItem('sowra_device');
+    if(!d){
+      d = (crypto && crypto.randomUUID) ? crypto.randomUUID()
+        : 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem('sowra_device', d);
+    }
+    return d;
+  }catch(e){ return null; }
+}
+
 export async function toggleNotifs(){
   if(!notifSupported()){toast('جهازك ما يدعم الإشعارات',true);return}
   const btn=$('notifBtn');
@@ -124,6 +150,10 @@ export async function toggleNotifs(){
       // إيقاف
       const ep=existing.endpoint;
       await existing.unsubscribe();
+      /* بالهويّة أولاً: لو كان العنوان قد تبدّل ولم يُحدَّث السطر،
+         فالحذف بالعنوان وحده يُبقيه حيّاً ويستمر الإشعار بعد الإيقاف */
+      const dev=deviceId();
+      if(dev) await sb.from('push_subs').delete().eq('device_id',dev);
       await sb.from('push_subs').delete().eq('endpoint',ep);
       toast('اتوقفت الإشعارات');
       renderNotifBox();
@@ -142,12 +172,18 @@ export async function toggleNotifs(){
       applicationServerKey:urlB64ToUint8(window.__VAPID_PUB)
     });
     const j=sub.toJSON();
-    const {error}=await sb.from('push_subs').upsert({
+    const dev=deviceId();
+    const row={
       user_id:currentUser()?.id,
       endpoint:sub.endpoint,
       p256dh:j.keys.p256dh,
       auth:j.keys.auth
-    },{onConflict:'endpoint'});
+    };
+    if(dev) row.device_id=dev;
+    /* بلا هويّة (متصفّحٌ يمنع التخزين) نرجع للعنوان — أضعف لكنه
+       أفضل من لا شيء، ولا يكسر التفعيل على ذلك الجهاز */
+    const {error}=await sb.from('push_subs')
+      .upsert(row,{onConflict: dev ? 'device_id' : 'endpoint'});
     if(error)throw error;
 
     toast('انفعّلت الإشعارات 🔔');
