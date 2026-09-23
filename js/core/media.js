@@ -22,6 +22,14 @@ export const thumbPath = p => String(p||'').replace(/\.jpg$/i, '_t.jpg');
    والخلفيات وأي استعمال قادم يحتاج بكسلات حقيقية. */
 export const hiPath = p => String(p||'').replace(/\.jpg$/i, '_h.jpg');
 
+/* ═══ الأصل كما خرج من الكاميرا ═══
+   كنّا نضغط كل رفعة إلى ١١٠٠ ونرمي الأصل، ثم أضفنا _h بـ٢٤٠٠ — وهي
+   ضغطٌ آخر، أقلّ فقداً لا بلا فقد. وصاحب الصورة يريد عمله كما صوّره.
+   فهذه النسخة تُرفع كما هي: نفس البايتات، بلا إعادة ترميز.
+   ولا تُعرض في الشبكة ولا عند فتح الصورة — تُجلب بعد أن تظهر النسخة
+   الخفيفة فتحلّ محلّها، حتى لا تدفع الشاشة الأولى ثمن ميغاباتها. */
+export const origPath = p => String(p||'').replace(/\.jpg$/i, '_o.jpg');
+
 export function thumbUrl(p){
   return imgUrl(thumbPath(p));
 }
@@ -30,11 +38,15 @@ export function hiUrl(p){
   return imgUrl(hiPath(p));
 }
 
+export function origUrl(p){
+  return imgUrl(origPath(p));
+}
+
 /* ═══ كل ملفات الصورة الواحدة ═══
    مصدر واحد يعرف ما يخصّ الصورة من ملفات. كل موضع يحذف صورةً يناديه،
    فإضافة نوع ملف جديد غداً لا تترك ملفات يتيمة بمواضع نسيها أحدهم.
    كانت ثلاثة مواضع تحسب مسار المصغّرة بنفسها بـreplace خام. */
-export const allPaths = p => [p, thumbPath(p), hiPath(p)];
+export const allPaths = p => [p, thumbPath(p), hiPath(p), origPath(p)];
 
 /* احتياطي: لو أخفقت المصغّرة، نجلب الأصل */
 export function imgFallback(path){
