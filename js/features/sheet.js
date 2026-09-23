@@ -4,7 +4,7 @@
 import { currentUser, isAnon, sb } from '../core/db.js';
 import { checkText, rankOf, timeAgo } from '../core/format.js';
 import { need } from '../core/hub.js';
-import { imgUrl, thumbUrl, vidUrl } from '../core/media.js';
+import { imgUrl, thumbUrl, vidUrl, hiUrl, origUrl } from '../core/media.js';
 import { isOwner, state } from '../core/state.js';
 import { $, esc, toast } from '../core/ui.js';
 import { geo, COORDS, REGION_CENTER, nearestCity, loadPlaces, BASE_GEO } from '../data/places.js';
@@ -86,6 +86,7 @@ export async function openSheet(id){
     ? `<video controls playsinline webkit-playsinline preload="metadata" style="width:100%;height:100%;object-fit:contain;background:#000;filter:${vfx}"><source src="${vidUrl(p.image_path)}" type="video/mp4"></video>`
     : `<img src="${imgUrl(p.image_path)}" onclick="zoomOpen(this.src)" alt="${esc(p.title)}">
     <button class="zoombtn" id="zoomBtn" onclick="togglePhotoZoom()">⤢ عرض كامل</button>`;
+  if(!isVid) upgradePhoto(p);
   if(!seenViews.has(p.id)){seenViews.add(p.id);try{sb.rpc('bump_view',{pid:p.id}).then(()=>{},()=>{})}catch(_){}}
   $('sPh').classList.remove('full');
   $('sTitle').textContent=p.title;
@@ -211,11 +212,66 @@ export async function openSheet(id){
   drawStars();renderPoll();renderComments();
 }
 
+/* ═══ ترقية الصورة إلى أعلى دقّةٍ موجودة ═══
+   الشاشة تعرض النسخة الخفيفة (١١٠٠) فوراً — فلا انتظار ولا بياض —
+   ثم نجلب الوسيط (_h ‏٢٤٠٠) بالخلفية ويحلّ محلّها حين يجهز.
+
+   ولا نصعد إلى الأصل هنا: النقل الشهري محدود، والأصل ميغاباتٌ لا
+   تراها عينٌ على شاشة جوال. من أرادها ضغط «⤢ عرض كامل» أو كبّر،
+   فتُجلب حينئذٍ ولمن طلبها وحده — وهذا ما تفعله wantOriginal.
+
+   والصور القديمة لا تملك _h، فالمحاولة تفشل بهدوءٍ وتبقى الخفيفة.
+
+   ولا يُبدَّل المصدر إلا إن كان المستخدم ما زال على نفس الصورة: كان
+   يمكن أن يفتح صورةً ثم يغلقها ويفتح غيرها، فتصل الترقية متأخّرةً
+   فتضع صورة الأولى مكان الثانية. */
+export function upgradePhoto(p){
+  if(!p || !p.image_path) return;
+  const cur = () => { const w=$('sPh'); return w ? w.querySelector('img') : null; };
+  const tryNext = list => {
+    if(!list.length) return;
+    const url = list.shift();
+    const probe = new Image();
+    probe.onload = () => {
+      const img = cur();
+      if(img && state.curPhoto && state.curPhoto.id === p.id) img.src = url;
+    };
+    probe.onerror = () => tryNext(list);
+    probe.src = url;
+  };
+  tryNext([ hiUrl(p.image_path) ]);
+}
+
+/* ═══ الأصل — بطلبٍ صريحٍ لا غير ═══
+   تُنادى عند «عرض كامل» وعند التكبير. تجلب الأصل بالخلفية وتضعه في
+   العنصر المعروض حين يجهز، فلا يرى المستخدم فراغاً بين الضغطة
+   والوصول: أمامه الوسيط حتى يحلّ الأصل محلّه.
+
+   ونمنع الجلب المكرّر: الضغط على «عرض كامل» مرّتين لا يجلب الأصل
+   مرّتين، ولا يُلغي جلباً جارياً. */
+const _origDone = new Set();
+export function wantOriginal(p){
+  if(!p || !p.image_path || _origDone.has(p.id)) return;
+  _origDone.add(p.id);
+  const url = origUrl(p.image_path);
+  const probe = new Image();
+  probe.onload = () => {
+    if(!state.curPhoto || state.curPhoto.id !== p.id) return;
+    const w = $('sPh'); const img = w ? w.querySelector('img') : null;
+    if(img) img.src = url;
+    const lb = $('lbImg');
+    if(lb && lb.src && $('lightbox') && $('lightbox').classList.contains('show')) lb.src = url;
+  };
+  probe.onerror = () => { _origDone.delete(p.id); };   /* لا وجود له — دع غيره يحاول لاحقاً */
+  probe.src = url;
+}
+
 export function closeSheet(){$('overlay').classList.remove('show');document.body.style.overflow=''}
 
 export function togglePhotoZoom(){
   const full=$('sPh').classList.toggle('full');
   $('zoomBtn').textContent=full?'⤡ تصغير':'⤢ عرض كامل';
+  if(full) wantOriginal(state.curPhoto);
 }
 
 export function renderPhotoTags(p){
@@ -296,6 +352,7 @@ export let lbW=100;
 export function zoomOpen(src){
   lbW=100;
   const im=$('lbImg');im.src=src;im.style.width='100%';
+  wantOriginal(state.curPhoto);
   $('lightbox').classList.add('show');
   document.body.style.overflow='hidden';
 }

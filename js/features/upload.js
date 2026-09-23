@@ -5,7 +5,7 @@ import { currentUser, isAnon, sb } from '../core/db.js';
 import { checkText, findOpt } from '../core/format.js';
 import { liveLocation, readExifGPS, readExifGPS2, reverseGeo, validPos } from '../core/geo.js';
 import { need } from '../core/hub.js';
-import { compress, compressTo, thumbPath, thumbUrl, hiPath, allPaths, makeHi, imgSize, HI_MIN, SIZES } from '../core/media.js';
+import { compress, compressTo, thumbPath, thumbUrl, hiPath, origPath, allPaths, makeHi, imgSize, SIZES } from '../core/media.js';
 import { state, videoAllowed } from '../core/state.js';
 import { $, esc, toast } from '../core/ui.js';
 import { geo, COORDS, REGION_CENTER, nearestCity, loadPlaces, BASE_GEO } from '../data/places.js';
@@ -279,25 +279,59 @@ async function afterPublish(msg, sortMode){
    تُنادى بعد نجاح تسجيل الصورة. لا await لها: المصوّر يرى «انرفعت»
    فوراً بينما ترفع هي وراءه. وفشلها لا يضرّ — الصورة منشورة وسليمة،
    والأرشيف وحده هو ما يفوت، وcleanup بالإشراف تستطيع تعويضه لاحقاً. */
+/* ═══ سُلَّمُ الدقّة ═══
+   أربع درجاتٍ لكل صورة، وكلٌّ لها موضعها:
+     _t   ٣٨٠    شبكة الصور
+     الأصل المضغوط ١١٠٠  أول ما يُعرض عند الفتح — خفيفٌ وفوري
+     _h   ٢٤٠٠   يحلّ محلّه تلقائياً بعد لحظة
+     _o   الأصل  عند «⤢ عرض كامل» وحده
+
+   ولماذا نُبقي _h مع وجود الأصل؟ لأن النقل الشهري محدود. الأصل عندك
+   ميغاباتٌ والوسيط ٤٤٧ كيلو، فجلبُ الأصل في كل فتحةٍ يستنزف الباقة
+   على شيءٍ لا تراه العين في شاشةِ جوال. الأصل يبقى محفوظاً وجاهزاً،
+   ولا يُجلب إلا حين يطلبه صاحبه.
+
+   وكان شرط _h «الأصل فوق ١٤٠٠» فتخطّى ٥١ صورةً من ٥٨. صار الشرط
+   واحداً للاثنين: كل ما تجاوز ١١٠٠ فقد فقد شيئاً، فيستحق الدرجتين. */
 export async function saveHiCopy(srcFile, path){
   try{
     if(!srcFile || !path) return false;
     const dim = await imgSize(srcFile);
-    /* الصورة الصغيرة أصلاً: النسخة العادية قريبة منها فلا نضاعف التخزين */
-    if(!dim || Math.max(dim.w, dim.h) < HI_MIN){
-      console.info('[أرشيف] تُخطّت — المصدر '+(dim? dim.w+'×'+dim.h : 'مجهول')+' دون الحد '+HI_MIN);
-      return false;
-    }
+    if(!dim || Math.max(dim.w, dim.h) <= SIZES.full.w) return false;
     const hi = await makeHi(srcFile);
     if(!hi) return false;
     const up = await sb.storage.from('photos').upload(hiPath(path), hi, {
       contentType:'image/jpeg', cacheControl:'31536000'
     });
-    if(up.error){ console.warn('[أرشيف] تعذّر الرفع —', up.error.message); return false; }
-    console.info('[أرشيف] حُفظت '+hiPath(path)+' · '+Math.round(hi.size/1024)+' كيلو');
+    if(up.error){ console.warn('[وسيط] تعذّر الرفع —', up.error.message); return false; }
+    console.info('[وسيط] حُفظ '+hiPath(path)+' · '+Math.round(hi.size/1024)+' كيلو');
     return true;
   }catch(e){
-    console.warn('[أرشيف] استثناء —', (e&&e.message)||e);
+    console.warn('[وسيط] استثناء —', (e&&e.message)||e);
+    return false;
+  }
+}
+
+export async function saveOriginal(srcFile, path){
+  try{
+    if(!srcFile || !path) return false;
+    const dim = await imgSize(srcFile);
+    /* الأصل لا يتجاوز النسخة العادية: لا شيء فُقد، فلا نضاعف التخزين */
+    if(!dim || Math.max(dim.w, dim.h) <= SIZES.full.w){
+      console.info('[أصل] تُخطّي — المصدر '+(dim? dim.w+'×'+dim.h : 'مجهول')+' لا يتجاوز '+SIZES.full.w);
+      return false;
+    }
+    /* بلا ضغطٍ ولا قصّ: نفس الملف الذي اختاره المصوّر، بايتاً بايتاً.
+       ونحفظ نوعه الحقيقي — قد يكون HEIC أو PNG، والشاشات تعرض
+       الدرجات الأدنى على كل حال فلا يضرّها ألّا يفهمه المتصفّح. */
+    const up = await sb.storage.from('photos').upload(origPath(path), srcFile, {
+      contentType: srcFile.type || 'image/jpeg', cacheControl:'31536000'
+    });
+    if(up.error){ console.warn('[أصل] تعذّر الرفع —', up.error.message); return false; }
+    console.info('[أصل] حُفظ '+origPath(path)+' · '+Math.round(srcFile.size/1024)+' كيلو · '+dim.w+'×'+dim.h);
+    return true;
+  }catch(e){
+    console.warn('[أصل] استثناء —', (e&&e.message)||e);
     return false;
   }
 }
@@ -395,6 +429,7 @@ export async function addPhoto(){
        المصوّر. كنا نضغط كل رفعة إلى ١١٠٠ ونرمي الأصل، أي نتلف عمله
        بلا رجعة. هذه تحفظ ٢٤٠٠ للطباعة والخلفيات وما يأتي. */
     saveHiCopy(state.pendingFile, path);
+    saveOriginal(state.pendingFile, path);
     // السبق على الموقع إن سُجّل
     try{
       const cp=$('clPlace'), cr=$('clReason');
