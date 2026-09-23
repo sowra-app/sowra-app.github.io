@@ -3,6 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#F7F1E3">
+<script>
+/* ═══ الوضع الليلي — نفس قانون js/app/theme.js ═══
+   هذه صفحةٌ قائمةٌ بذاتها: لا تُحمّل الوحدات ولا style.css، فلا يصلها
+   ما يفعله theme.js. فننسخ قراره هنا: نقرأ نفس المفتاح (sowra_theme)
+   ونفس جدول الشروق والغروب (sowra_sun) ونفس الاحتياط (٦ ← ١٨).
+   فمن بدّل الوضع في التطبيق يجده هنا كما تركه.
+
+   ويُتَّخذ القرار وسط <head> لا بعد التحميل، حتى لا يومض الموقع
+   أبيضَ ثم يسودّ. والصنف على <html> لا <body> لأن <body> لم يوجد بعد.
+
+   ⚠️ ألوان .dark أدناه منسوخةٌ من body.dark في css/style.css.
+   من غيّرها هناك فليغيّرها هنا — والفاحص يصرخ إن افترقتا. */
+(function(){
+  try{
+    var mode = localStorage.getItem('sowra_theme') || 'auto';
+    var night;
+    if(mode === 'dark')      night = true;
+    else if(mode === 'light') night = false;
+    else {
+      night = null;
+      try{
+        var o = JSON.parse(localStorage.getItem('sowra_sun') || 'null');
+        var now = Date.now();
+        if(o && o.rise && o.set && (now - o.at) < 86400000) night = (now < o.rise || now > o.set);
+      }catch(e){}
+      if(night === null){ var h = new Date().getHours(); night = (h < 6 || h >= 18); }
+    }
+    if(night){
+      document.documentElement.className += ' dark';
+      var m = document.querySelector('meta[name="theme-color"]');
+      if(m) m.setAttribute('content', '#161310');
+    }
+  }catch(e){}
+})();
+</script>
 <title>Sowra — Saudi Arabia Through Local Lenses</title>
 <meta name="description" content="A Saudi platform where locals and travellers document the Kingdom's landscapes, villages and landmarks — every photo pinned to its real location.">
 <meta property="og:title" content="Sowra — Saudi Arabia Through Local Lenses">
@@ -38,6 +74,17 @@ b{color:var(--red2)}
 .note{background:#FFF7E0;border:1.5px solid var(--star);border-radius:14px;padding:14px 17px;font-size:14px;line-height:1.85;margin:20px 0}
 .foot{margin-top:34px;padding-top:18px;border-top:1px dashed var(--line);text-align:center;font-size:13px;color:var(--dim)}
 .foot a{color:var(--red);font-weight:600;text-decoration:none}
+
+/* ═══ الوضع الليلي — منسوخٌ من body.dark في css/style.css ═══ */
+:root.dark{--bg:#161310;--card:#221E1A;--red:#E85445;--red2:#E8A89C;--ink:#F0E8DA;--dim:#A89B8B;--line:#3A322B;--palm:#3FA96A;--star:#F0B448;color-scheme:dark}
+/* الشريط السعودي: خلفيته لونُ الصفحة، وكانت مثبّتةً بالفاتح فتظهر
+   شريحةً بيضاء فوق صفحةٍ سوداء. */
+:root.dark .strip{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='16'%3E%3Crect width='128' height='16' fill='%23161310'/%3E%3Cpath d='M0 15 L16 2 L32 15 Z' fill='%23E85445' stroke='%23F0E8DA' stroke-width='1.6'/%3E%3Cpath d='M32 15 L48 2 L64 15 Z' fill='%234A8CD4' stroke='%23F0E8DA' stroke-width='1.6'/%3E%3Cpath d='M64 15 L80 2 L96 15 Z' fill='%23F0B448' stroke='%23F0E8DA' stroke-width='1.6'/%3E%3Cpath d='M96 15 L112 2 L128 15 Z' fill='%233FA96A' stroke='%23F0E8DA' stroke-width='1.6'/%3E%3C/svg%3E")}
+/* والملاحظة الصفراء: خلفيةٌ كريميةٌ مثبّتة ونصٌّ يصير فاتحاً — أبيضُ
+   على كريمي، أي لا يُقرأ. وهي نفس علّة بنر لقطة الأسبوع. */
+:root.dark .note{background:linear-gradient(135deg,#2E2519,var(--card))}
+:root.dark .lead,:root.dark .box,:root.dark .install{box-shadow:0 3px 10px rgba(0,0,0,.4)}
+:root.dark .cta{box-shadow:0 4px 14px rgba(232,84,69,.28)}
 </style>
 </head>
 <body>
