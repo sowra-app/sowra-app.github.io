@@ -119,7 +119,17 @@ select{flex:1;background:var(--card);border:1px solid var(--line);border-radius:
 .submit-btn{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);width:calc(100% - 40px);max-width:480px;z-index:35;padding:15px;font-size:16px;box-shadow:0 6px 20px rgba(214,58,47,.4)}
 /* nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;z-index:30;background:var(--card);border-top:1px solid var(--line);display:flex;padding:8px 10px calc(8px + env(safe-area-inset-bottom))} */
 nav{position:fixed;bottom:0;left:0;right:0;width:100%;z-index:30;background:var(--card);border-top:1px solid var(--line);display:flex;padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
-.nav-btn{flex:1;background:none;border:none;color:var(--txt-dim);font-family:'Tajawal';font-size:11.5px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 4px;transition:color .15s}
+/* ═══ مساحة اللمس تساوي ما تراه العين ═══
+   كان flex:1 يوزّع عرض الشريط كلّه على الأزرار، فصار عرض الزر ٩٨
+   بكسلاً وما يُرى منه ٣٠ — أي ثلثاه مساحةُ لمسٍ خفيّة. ولأن الأزرار
+   تقتسم الشريط كلّه بلا فراغ، ما كان في الشريط موضعٌ واحدٌ تضغطه
+   ولا يفتح شيئاً: الضغطة قرب الحافّة تفتح أقرب أيقونة.
+
+   فصار الزر لا يستقبل اللمس، ويستقبله عنه ::before بعرض ٦٨ بكسلاً
+   في وسطه — أوسع من الحدّ المريح (٤٤) ويترك بين كل زرّين ثلاثين
+   بكسلاً صامتة. والتخطيط لم يتغيّر: الموضع المطلق لا يزحزح شيئاً. */
+.nav-btn{flex:1;background:none;border:none;color:var(--txt-dim);font-family:'Tajawal';font-size:11.5px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 4px;transition:color .15s;position:relative;pointer-events:none}
+.nav-btn::before{content:'';position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);width:68px;pointer-events:auto}
 .nb-ic{width:24px;height:24px;stroke:currentColor;flex-shrink:0}
 .nav-btn span{font-size:10.5px;line-height:1}
 .nav-btn.on{color:var(--sadu)}
