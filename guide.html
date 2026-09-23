@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#F7F1E3">
+<title>دليل الاستخدام — صورة من بلدي</title>
+<meta name="description" content="دليل مختصر لكل ما في تطبيق «صورة من بلدي»: الدخول، نشر الصور، التقييم، الخريطة، الزيارات الميدانية، المسابقات، والإشعارات.">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all';this.onload=null">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
+<script>
+/* ═══ الوضع الليلي — نفس قانون js/app/theme.js ═══
+   صفحةٌ قائمةٌ بذاتها لا تُحمّل الوحدات ولا style.css، فننسخ قرارها:
+   نفس المفتاح (sowra_theme) ونفس جدول الشروق (sowra_sun) ونفس
+   الاحتياط (٦ ← ١٨). ويُتَّخذ داخل <head> لا بعد التحميل حتى لا
+   تومض الصفحة بيضاء ثم تسودّ.
+   ⚠️ ألوان .dark منسوخةٌ من body.dark في css/style.css — الفاحص
+   يصرخ إن افترقتا. */
+(function(){
+  try{
+    var mode = localStorage.getItem('sowra_theme') || 'auto', night;
+    if(mode === 'dark') night = true;
+    else if(mode === 'light') night = false;
+    else {
+      night = null;
+      try{
+        var o = JSON.parse(localStorage.getItem('sowra_sun') || 'null'), now = Date.now();
+        if(o && o.rise && o.set && (now - o.at) < 86400000) night = (now < o.rise || now > o.set);
+      }catch(e){}
+      if(night === null){ var h = new Date().getHours(); night = (h < 6 || h >= 18); }
+    }
+    if(night){
+      document.documentElement.className += ' dark';
+      var m = document.querySelector('meta[name="theme-color"]');
+      if(m) m.setAttribute('content', '#161310');
+    }
+  }catch(e){}
+})();
+</script>
+<style>
+:root{--night:#F7F1E3;--card:#FFFFFF;--card2:#F1E8D6;--sand:#8C2F23;--sadu:#D63A2F;--palm:#2E8B57;--star:#E8A020;--line:#D9CDB4;--ink:#241F1C;--txt-dim:#6B6259}
+/* ═══ الوضع الليلي — منسوخٌ من body.dark في css/style.css ═══ */
+:root.dark{--night:#161310;--card:#221E1A;--card2:#2C2621;--sand:#E8A89C;--sadu:#E85445;--palm:#3FA96A;--star:#F0B448;--line:#3A322B;--ink:#F0E8DA;--txt-dim:#A89B8B;color-scheme:dark}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Tajawal',system-ui,sans-serif;background:var(--night);color:var(--ink);line-height:1.9;max-width:820px;margin:0 auto;padding:0 16px 60px}
+
+.strip{height:14px;margin:0 -16px 22px;background-repeat:repeat-x;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='16'%3E%3Cpath d='M0 15 L16 2 L32 15 Z' fill='%23D63A2F'/%3E%3Cpath d='M32 15 L48 2 L64 15 Z' fill='%232E6FB7'/%3E%3Cpath d='M64 15 L80 2 L96 15 Z' fill='%23F2B33D'/%3E%3Cpath d='M96 15 L112 2 L128 15 Z' fill='%232E8B57'/%3E%3C/svg%3E")}
+
+.top{display:flex;align-items:center;gap:13px;margin-bottom:6px}
+.top img{width:56px;height:56px;border-radius:50%;border:2px solid var(--line);flex-shrink:0}
+h1{font-family:'Reem Kufi',sans-serif;font-size:25px;font-weight:700;color:var(--sand);line-height:1.3}
+.sub{font-size:13.5px;color:var(--txt-dim)}
+
+.hunt{position:sticky;top:0;z-index:5;background:var(--night);padding:14px 0 10px;margin-bottom:4px}
+.hunt input{width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 15px;font-family:'Tajawal';font-size:14.5px;color:var(--ink);outline:none}
+.hunt input:focus{border-color:var(--sadu)}
+.hunt input::placeholder{color:var(--txt-dim)}
+.chips{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding-top:9px}
+.chips::-webkit-scrollbar{display:none}
+.chips a{flex:0 0 auto;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:6px 12px;font-size:12.5px;font-weight:500;color:var(--txt-dim);text-decoration:none;white-space:nowrap}
+.chips a:hover{border-color:var(--sadu);color:var(--sadu)}
+
+section{background:var(--card);border:1.5px solid var(--line);border-radius:17px;padding:17px 19px;margin-bottom:13px;scroll-margin-top:118px}
+section h2{font-family:'Reem Kufi',sans-serif;font-size:18.5px;color:var(--sand);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+section .lead{font-size:14px;color:var(--txt-dim);margin-bottom:12px}
+section p{font-size:14.5px;margin-bottom:9px}
+section p:last-child{margin-bottom:0}
+b{color:var(--sadu);font-weight:700}
+
+ol.steps{list-style:none;counter-reset:s;margin:4px 0}
+ol.steps li{counter-increment:s;position:relative;padding-inline-start:36px;margin-bottom:11px;font-size:14.5px}
+ol.steps li::before{content:counter(s);position:absolute;inset-inline-start:0;top:3px;width:25px;height:25px;border-radius:50%;background:var(--sadu);color:#fff;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}
+ol.steps li:last-child{margin-bottom:0}
+
+.tip{background:var(--card2);border-inline-start:3px solid var(--star);border-radius:11px;padding:11px 14px;font-size:13.5px;margin-top:11px;line-height:1.85}
+.tip b{color:var(--ink)}
+.warn{background:var(--card2);border-inline-start:3px solid var(--sadu);border-radius:11px;padding:11px 14px;font-size:13.5px;margin-top:11px;line-height:1.85}
+
+.pair{display:grid;grid-template-columns:1fr;gap:9px;margin-top:10px}
+@media(min-width:560px){.pair{grid-template-columns:1fr 1fr}}
+.mini{background:var(--card2);border-radius:12px;padding:12px 14px}
+.mini b{display:block;color:var(--ink);font-size:14px;margin-bottom:2px}
+.mini span{font-size:13px;color:var(--txt-dim);line-height:1.8}
+
+.empty{display:none;text-align:center;padding:38px 20px;color:var(--txt-dim);font-size:14.5px}
+.cta{display:block;background:var(--sadu);color:#fff;text-decoration:none;text-align:center;padding:15px;border-radius:14px;font-weight:700;font-size:16px;margin:22px 0 14px}
+.foot{margin-top:26px;padding-top:16px;border-top:1px dashed var(--line);text-align:center;font-size:13px;color:var(--txt-dim)}
+.foot a{color:var(--sadu);font-weight:600;text-decoration:none;margin:0 5px}
+</style>
+</head>
+<body>
+<div class="strip"></div>
+
+<div class="top">
+  <img src="img/icon-192.png" alt="صورة من بلدي" width="56" height="56">
+  <div>
+    <h1>دليل الاستخدام</h1>
+    <div class="sub">كل شيء في التطبيق، بخطواته</div>
+  </div>
+</div>
+
+<div class="hunt">
+  <input id="q" type="search" placeholder="دوّر على خطوة… مثلاً: نشر، خريطة، إشعارات" oninput="hunt()" autocomplete="off">
+  <div class="chips">
+    <a href="#start">البداية</a>
+    <a href="#login">الدخول</a>
+    <a href="#post">انشر صورة</a>
+    <a href="#rate">التقييم</a>
+    <a href="#explore">الاستكشاف</a>
+    <a href="#visit">زرت المكان</a>
+    <a href="#claim">السبق</a>
+    <a href="#contest">المسابقات</a>
+    <a href="#save">المفضلة</a>
+    <a href="#msgs">الرسائل</a>
+    <a href="#install">التثبيت</a>
+  </div>
+</div>
+
+<section id="start">
+  <h2>🚪 أول مرّة هنا</h2>
+  <div class="lead">تتصفّح بلا حساب — الحساب يلزمك حين تشارك</div>
+  <p>افتح <b>sowra.app</b> وأنت في الخلاصة مباشرةً: صور المناطق مرتّبةً بتقييم الناس. تقدر تتصفّح وتفتح أي صورة وتشوف موقعها على الخريطة بلا تسجيل.</p>
+  <p>الحساب يلزمك حين تبي <b>تنشر</b> أو <b>تقيّم</b> أو <b>تسجّل زيارة</b> أو <b>ترسل رسالة</b>.</p>
+</section>
+
+<section id="login">
+  <h2>🔑 الدخول والحساب</h2>
+  <div class="lead">من الشريط السفلي ← حسابي</div>
+  <div class="pair">
+    <div class="mini"><b>بحساب Google</b><span>ضغطة واحدة، بلا كلمة سر تحفظها. أسرع طريقة.</span></div>
+    <div class="mini"><b>بالإيميل وكلمة السر</b><span>اكتب إيميلك وكلمة سرك واضغط «دخول». حساب جديد؟ سجّل من نفس الشاشة.</span></div>
+  </div>
+  <p style="margin-top:12px">بعد الدخول، افتح <b>حسابي ← بياناتي</b> واكتب اسمك الظاهر وحدّث صورتك — الاسم هو اللي يظهر تحت صورك للناس.</p>
+  <div class="tip"><b>نسيت كلمة السر؟</b> استخدم دخول Google بنفس الإيميل — يوصّلك لنفس الحساب.</div>
+</section>
+
+<section id="post">
+  <h2>📷 انشر صورتك</h2>
+  <div class="lead">من زر ➕ الأحمر في أسفل الشاشة</div>
+  <ol class="steps">
+    <li>اضغط <b>➕</b> واختر صورة من معرضك أو صوّر مباشرةً.</li>
+    <li>الموقع يُقرأ تلقائياً — من بيانات الصورة نفسها إن كانت تحملها، وإلا من موقعك الحالي. تقدر تعدّله بيدك من الخريطة.</li>
+    <li>اختر <b>المنطقة</b> و<b>المدينة</b> (والقرية إن وُجدت) و<b>التصنيف</b>.</li>
+    <li>اكتب عنواناً ووصفاً. التطبيق يقترح عليك عنواناً ووصفاً جاهزين — عدّلهما كما تحب.</li>
+    <li>اضغط <b>انشر الصورة 🚀</b>.</li>
+  </ol>
+  <div class="tip"><b>صورتك تُحفظ بدقّتها الأصلية.</b> المعروض في الشبكة نسخةٌ خفيفة عشان تفتح بسرعة، وحين تضغط «⤢ عرض كامل» تشوف الأصل كما صوّرته.</div>
+  <div class="warn"><b>تبيها لك وحدك؟</b> اجعل ظهورها «خاصة» قبل النشر — تنحفظ في <b>خزنتك</b> ولا يشوفها أحد غيرك.</div>
+</section>
+
+<section id="rate">
+  <h2>⭐ التقييم والتعليق</h2>
+  <div class="lead">الجمهور هو من يرفع الصورة، لا المتابعون</div>
+  <p>افتح أي صورة، واسحب على <b>النجوم</b> لتقييمها من ١ إلى ٥. تقدر تغيّر تقييمك في أي وقت.</p>
+  <p>وتحت الصورة صندوق تعليق — اكتب رأيك في المكان أو اسأل المصوّر كيف وصل إليه.</p>
+  <p>الصور الأعلى تقييماً تتصدّر الخلاصة تلقائياً. ما فيه خوارزمية ولا عدد متابعين — النجوم وحدها.</p>
+</section>
+
+<section id="explore">
+  <h2>🗺️ الاستكشاف</h2>
+  <div class="lead">أربع طرق توصّلك للصورة اللي تبيها</div>
+  <div class="pair">
+    <div class="mini"><b>الشبكة والخريطة</b><span>بدّل بينهما من الزرّين أعلى الشاشة. الخريطة تعرض كل صورة في مكانها الحقيقي.</span></div>
+    <div class="mini"><b>البحث الموحّد</b><span>اكتب اسم مكان أو مصوّر في شريط البحث — يبحث في الاثنين معاً.</span></div>
+    <div class="mini"><b>الفلاتر</b><span>من أيقونة «فلتر»: المنطقة، المدينة، التصنيف. تجمع بينها كما تشاء.</span></div>
+    <div class="mini"><b>الترتيب</b><span>الأعلى تقييماً، أو الأحدث.</span></div>
+  </div>
+  <div class="tip"><b>فعّل إذن الموقع</b> عشان تشوف الصور اللي حواليك أولاً، ويصير تسجيل الزيارات ممكناً.</div>
+</section>
+
+<section id="visit">
+  <h2>👣 زرت المكان</h2>
+  <div class="lead">زيارة موثّقة — ما تُسجَّل إلا وأنت هناك فعلاً</div>
+  <p>افتح صورة أي مكان وأنت <b>واقفٌ فيه</b>، وينزل لك زر <b>«✅ زرت هذا المكان»</b>. اضغطه وتنضاف زيارتك، وتقدر تكتب انطباعك عن المكان.</p>
+  <p>وإن كنت بعيداً، يظهر لك كم تبعد عنه بدل الزر.</p>
+  <p>عدّاد الزوّار تحت كل صورة يقول لك كم واحداً وصل المكان فعلاً — لا كم واحداً ضغط إعجاباً.</p>
+  <div class="tip">تقدر تلغي زيارتك في أي وقت من نفس الزر.</div>
+</section>
+
+<section id="claim">
+  <h2>🏁 السبق</h2>
+  <div class="lead">أنت أول من وثّق هذا المكان</div>
+  <p>حين تنشر صورةً لمكانٍ ما وثّقه أحد قبلك، تقدر تسجّل <b>سبقاً</b> عليه: تكتب اسم المكان وسبب استحقاقك، والناس يصوّتون على صحّته.</p>
+  <p>السبق المؤكَّد يظهر وسام على صورتك. وتقدر تسحبه متى ما شئت.</p>
+</section>
+
+<section id="contest">
+  <h2>🏆 المسابقات والرحلات</h2>
+  <div class="lead">ثلاثة أبواب تخرجك من البيت</div>
+  <div class="pair">
+    <div class="mini"><b>لقطة الأسبوع</b><span>موضوع كل أسبوع، والفائز يُعلن في نهايته. يظهر لك شريطه أعلى الخلاصة.</span></div>
+    <div class="mini"><b>كنوز الديرة</b><span>رحلات موسمية: مجموعة أماكن تكتشفها وتوثّقها، وتكسب أوسمة بإكمالها.</span></div>
+    <div class="mini"><b>سباق الديار</b><span>منافسة بين المناطق — أي ديرة توثّق أكثر.</span></div>
+  </div>
+  <p style="margin-top:12px">وفي الشريط السفلي <b>أضواء الديرة</b>: مقاطع قصيرة (٣٠ ثانية) تُري المكان كما هو، لا كما تظهره صورة ثابتة.</p>
+</section>
+
+<section id="save">
+  <h2>❤️ المفضلة والخزنة</h2>
+  <div class="lead">من الشريط السفلي ← المفضلة</div>
+  <p><b>المفضلة:</b> اضغط القلب على أي صورة تعجبك، وترجع لها متى ما شئت.</p>
+  <p><b>خزنتي:</b> صورك الخاصة — اللي نشرتها بظهورٍ «خاص». محفوظةٌ لك وحدك بدقّتها الكاملة، ولا تظهر في الخلاصة ولا للبحث.</p>
+</section>
+
+<section id="msgs">
+  <h2>💬 الرسائل والإشعارات</h2>
+  <div class="lead">من الشريط السفلي ← رسائلي</div>
+  <p>راسل أي مصوّر مباشرةً — اضغط اسمه تحت صورته ثم «راسله». وتوصلك ردوده في <b>الوارد</b>.</p>
+  <p>ومن <b>حسابي ← الإشعارات</b> فعّل إشعارات الجوال: توصلك حين يصلك ردّ، أو تُنشر صورة جديدة، أو تبدأ مسابقة.</p>
+  <div class="tip"><b>ما وصلتك إشعارات؟</b> تأكّد أن الإذن مفعّل للموقع من إعدادات المتصفّح، ثم أوقف الإشعارات وفعّلها مرّة أخرى من داخل التطبيق.</div>
+</section>
+
+<section id="install">
+  <h2>📲 ثبّته كتطبيق</h2>
+  <div class="lead">أيقونة على شاشتك، ويفتح بلا شريط متصفّح</div>
+  <div class="pair">
+    <div class="mini"><b>🍎 آيفون / آيباد</b><span>افتح sowra.app في Safari ← زر المشاركة ← «إضافة إلى الشاشة الرئيسية».</span></div>
+    <div class="mini"><b>🤖 أندرويد</b><span>افتح sowra.app في Chrome ← القائمة (⋮) ← «تثبيت التطبيق».</span></div>
+  </div>
+  <div class="tip"><b>الوضع الليلي</b> من زر 🌙 أعلى الشاشة: نهاري، ليلي، أو تلقائي حسب غروب الشمس في موقعك.</div>
+</section>
+
+<div class="empty" id="none">ما لقينا شيئاً بهذا الاسم — جرّب كلمة أقصر</div>
+
+<a class="cta" href="index.html">افتح التطبيق ←</a>
+
+<div class="foot">
+  <a href="index.html">الرئيسية</a>·<a href="en.html">English</a>·<a href="about.html">عن المنصة</a>·<a href="terms.html">الشروط</a>·<a href="privacy.html">الخصوصية</a>
+  <div style="margin-top:9px;font-size:12px">صورة من بلدي 🇸🇦 — من ديرتك… للعالم</div>
+</div>
+
+<script>
+/* بحثٌ يُخفي ما لا يطابق — الدليل طويل، ومن جاء يسأل عن خطوةٍ بعينها
+   لا ينبغي أن يقرأه كلّه. نطابق على نصّ القسم كاملاً لا على عنوانه
+   وحده، فمن كتب «كلمة السر» يصله قسم الدخول وإن لم يكن في عنوانه. */
+function hunt(){
+  var q = (document.getElementById('q').value || '').trim().replace(/[أإآ]/g,'ا').replace(/ة/g,'ه');
+  var secs = document.querySelectorAll('section'), hit = 0;
+  for(var i = 0; i < secs.length; i++){
+    var t = (secs[i].textContent || '').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه');
+    var ok = !q || t.indexOf(q) !== -1;
+    secs[i].style.display = ok ? '' : 'none';
+    if(ok) hit++;
+  }
+  document.getElementById('none').style.display = hit ? 'none' : 'block';
+}
+</script>
+</body>
+</html>
