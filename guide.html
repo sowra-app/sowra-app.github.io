@@ -85,6 +85,13 @@ ol.steps li:last-child{margin-bottom:0}
 .mini b{display:block;color:var(--ink);font-size:14px;margin-bottom:2px}
 .mini span{font-size:13px;color:var(--txt-dim);line-height:1.8}
 
+/* ═══ الصور التوضيحية ═══
+   width/height مكتوبان على كل صورة حتى يحجز المتصفّح مكانها قبل
+   وصولها، فلا يقفز النصّ تحتها. وloading=lazy يؤجّل ما تحت الشاشة. */
+figure{margin:12px 0 4px}
+figure img{width:100%;height:auto;display:block;border:1.5px solid var(--line);border-radius:13px;background:var(--card2)}
+figure figcaption{font-size:12.5px;color:var(--txt-dim);text-align:center;margin-top:6px}
+figure svg{width:100%;height:auto;display:block}
 .empty{display:none;text-align:center;padding:38px 20px;color:var(--txt-dim);font-size:14.5px}
 .cta{display:block;background:var(--sadu);color:#fff;text-decoration:none;text-align:center;padding:15px;border-radius:14px;font-weight:700;font-size:16px;margin:22px 0 14px}
 .foot{margin-top:26px;padding-top:16px;border-top:1px dashed var(--line);text-align:center;font-size:13px;color:var(--txt-dim)}
@@ -124,6 +131,12 @@ ol.steps li:last-child{margin-bottom:0}
   <div class="lead">تتصفّح بلا حساب — الحساب يلزمك حين تشارك</div>
   <p>افتح <b>sowra.app</b> وأنت في الخلاصة مباشرةً: صور المناطق مرتّبةً بتقييم الناس. تقدر تتصفّح وتفتح أي صورة وتشوف موقعها على الخريطة بلا تسجيل.</p>
   <p>الحساب يلزمك حين تبي <b>تنشر</b> أو <b>تقيّم</b> أو <b>تسجّل زيارة</b> أو <b>ترسل رسالة</b>.</p>
+  <p>والتنقّل كلّه من الشريط السفلي:</p>
+  <figure>
+    <img src="img/guide/nav.webp" width="760" height="153" loading="lazy" decoding="async"
+         alt="الشريط السفلي: الصور، أضواء، المفضلة، رسائلي، حسابي">
+    <figcaption>خمسة أبواب — والزر الأحمر ➕ للنشر</figcaption>
+  </figure>
 </section>
 
 <section id="login">
@@ -161,13 +174,63 @@ ol.steps li:last-child{margin-bottom:0}
 
 <section id="explore">
   <h2>🗺️ الاستكشاف</h2>
-  <div class="lead">أربع طرق توصّلك للصورة اللي تبيها</div>
+  <div class="lead">كل شيء يبدأ من هذا الشريط أعلى الشاشة</div>
+
+  <figure>
+    <img src="img/guide/search.webp" width="760" height="127" loading="lazy" decoding="async"
+         alt="شريط البحث: زرّا الشبكة والخريطة على اليسار، خانة البحث في الوسط، وزر فلتر على اليمين">
+    <figcaption>يميناً: <b>فلتر</b> · وسطاً: البحث · يساراً: <b>الشبكة</b> و<b>الخريطة</b></figcaption>
+  </figure>
+
+  <p><b>البحث:</b> اكتب اسم مكان أو اسم مصوّر — يبحث في الاثنين معاً ويعرض لك النتائج وأنت تكتب.</p>
+  <p><b>الفلاتر:</b> اضغط «فلتر» ينفتح لك درجٌ فيه كل ما تحتاجه:</p>
+
+  <figure>
+    <img src="img/guide/filters.webp" width="700" height="935" loading="lazy" decoding="async"
+         alt="درج الفلاتر: النطاق، التصنيف، المنطقة والمدينة، الترتيب، والسمات">
+    <figcaption>اجمع ما شئت منها، ثم <b>✓ تطبيق</b></figcaption>
+  </figure>
+
   <div class="pair">
-    <div class="mini"><b>الشبكة والخريطة</b><span>بدّل بينهما من الزرّين أعلى الشاشة. الخريطة تعرض كل صورة في مكانها الحقيقي.</span></div>
-    <div class="mini"><b>البحث الموحّد</b><span>اكتب اسم مكان أو مصوّر في شريط البحث — يبحث في الاثنين معاً.</span></div>
-    <div class="mini"><b>الفلاتر</b><span>من أيقونة «فلتر»: المنطقة، المدينة، التصنيف. تجمع بينها كما تشاء.</span></div>
-    <div class="mini"><b>الترتيب</b><span>الأعلى تقييماً، أو الأحدث.</span></div>
+    <div class="mini"><b>النطاق</b><span>داخل المملكة 🇸🇦 أو عدسة مسافر 🌍 — صور أهل الديار من خارجها.</span></div>
+    <div class="mini"><b>التصنيف</b><span>طبيعة، عمارة، طيور وحيوانات، أشخاص، أبيض وأسود، تراث، معلم.</span></div>
+    <div class="mini"><b>الترتيب</b><span>الأعلى تقييماً ⭐ · الأحدث 🕐 · الأكثر زيارة 👣</span></div>
+    <div class="mini"><b>السمات</b><span>طبيعة نقية 💎 · ليلي 🌙 · موسمي 🍂 · صعب الوصول ⛰️ · مشهد نادر ✨</span></div>
   </div>
+
+  <p style="margin-top:13px">وفي آخر الشريط زرّان يبدّلان طريقة العرض:</p>
+
+  <figure>
+    <svg viewBox="0 0 400 190" role="img" aria-label="مقارنة بين عرض الشبكة وعرض الخريطة">
+      <style>
+        .fr{fill:var(--card2);stroke:var(--line);stroke-width:2}
+        .tl{fill:var(--line)}
+        .lbl{font-family:'Tajawal',sans-serif;font-size:13px;font-weight:700;fill:var(--ink)}
+        .sml{font-family:'Tajawal',sans-serif;font-size:10.5px;fill:var(--txt-dim)}
+      </style>
+      <!-- الشبكة -->
+      <rect class="fr" x="214" y="8" width="176" height="128" rx="12"/>
+      <rect class="tl" x="226" y="20" width="74" height="50" rx="6"/>
+      <rect class="tl" x="306" y="20" width="74" height="50" rx="6"/>
+      <rect class="tl" x="226" y="76" width="74" height="50" rx="6"/>
+      <rect class="tl" x="306" y="76" width="74" height="50" rx="6"/>
+      <text class="lbl" x="302" y="158" text-anchor="middle">الشبكة</text>
+      <text class="sml" x="302" y="176" text-anchor="middle">الأجمل أولاً</text>
+      <!-- الخريطة -->
+      <rect class="fr" x="10" y="8" width="176" height="128" rx="12"/>
+      <path d="M22 96 q28-22 54-6 t50-14 t48 6" fill="none" stroke="var(--line)" stroke-width="3"/>
+      <path d="M22 60 q34 14 62-4 t60 10" fill="none" stroke="var(--line)" stroke-width="3"/>
+      <g fill="var(--sadu)">
+        <path d="M60 52c0-7 5-12 11-12s11 5 11 12c0 8-11 20-11 20s-11-12-11-20z"/>
+        <path d="M112 84c0-7 5-12 11-12s11 5 11 12c0 8-11 20-11 20s-11-12-11-20z"/>
+        <path d="M150 44c0-7 5-12 11-12s11 5 11 12c0 8-11 20-11 20s-11-12-11-20z"/>
+      </g>
+      <text class="lbl" x="98" y="158" text-anchor="middle">الخريطة</text>
+      <text class="sml" x="98" y="176" text-anchor="middle">كل صورة في مكانها</text>
+    </svg>
+    <figcaption>نفس الصور، بعينين مختلفتين — بدّل بينهما متى شئت</figcaption>
+  </figure>
+
   <div class="tip"><b>فعّل إذن الموقع</b> عشان تشوف الصور اللي حواليك أولاً، ويصير تسجيل الزيارات ممكناً.</div>
 </section>
 
