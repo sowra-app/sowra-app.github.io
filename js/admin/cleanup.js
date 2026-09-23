@@ -3,7 +3,7 @@
 
 import { sb } from '../core/db.js';
 import { need } from '../core/hub.js';
-import { compressTo, thumbPath, hiPath } from '../core/media.js';
+import { compressTo, thumbPath, hiPath, origPath } from '../core/media.js';
 import { isOwner, reelsState, state } from '../core/state.js';
 import { $, esc, toast } from '../core/ui.js';
 import { geo, COORDS, REGION_CENTER, nearestCity, loadPlaces, BASE_GEO } from '../data/places.js';
@@ -59,6 +59,7 @@ export async function admScanOrphans(mode){
       keepImg.add(x.image_path);
       keepImg.add(thumbPath(x.image_path));
       keepImg.add(hiPath(x.image_path));   /* بدونه يعدّ منظّف اليتامى كل نسخ الأرشيف نفاية ويمحوها */
+      keepImg.add(origPath(x.image_path)); /* وكذلك الأصول — أثمن ما في المخزن ولا رجعة لها */
     });
     // بنر الراعي وملفات الإدارة — مسجّلة بجداول أخرى
     try{
