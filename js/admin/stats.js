@@ -4,7 +4,45 @@
 import { sb } from '../core/db.js';
 import { isOwner } from '../core/state.js';
 import { $, esc } from '../core/ui.js';
+import { onlineNow } from '../features/feed.js';
 import { geo, COORDS, REGION_CENTER, nearestCity, loadPlaces, BASE_GEO } from '../data/places.js';
+
+/* ═══ من يتصفّح الآن ═══
+   يُقرأ من قناة الحضور التي يفتحها كل زائر — لا من جدول، فلا كتابة
+   ولا صفوف تتراكم. والعدّ للأجهزة لا للتبويبات: مفتاح الحضور هو
+   معرّف الجهاز، فتبويبات الجهاز الواحد تجتمع تحته.
+
+   وإن كانت القناة غير قائمة (انقطعت أو صُرفت) نقول «لا نعرف» ولا
+   نكتب صفراً — الصفر كذبةٌ يصدّقها من يقرأها. */
+function liveBox(){
+  const n = onlineNow();
+  const box = (body, tone) => `<div id="admLive" style="background:var(--card);border:1.5px solid ${tone};border-radius:14px;padding:13px 16px;margin-bottom:14px">${body}</div>`;
+  if(!n) return box('<span style="color:var(--txt-dim);font-size:13.5px">⚪ القناة الحيّة غير قائمة — لا نعرف من يتصفّح الآن</span>', 'var(--line)');
+  const tabsNote = n.tabs > n.devices ? ` <span style="color:var(--txt-dim);font-size:11.5px">(${n.tabs} تبويباً)</span>` : '';
+  return box(`<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+      <span style="font-size:15px;font-weight:700">🟢 الآن</span>
+      <span style="font-size:22px;font-weight:700;color:var(--palm)">${n.devices}</span>
+      <span style="font-size:13.5px">جهازاً${tabsNote}</span>
+    </div>
+    <div style="font-size:13px;color:var(--txt-dim);margin-top:4px">
+      ${n.signed} بحساب · ${n.anon} بلا حساب
+    </div>`, 'var(--palm)');
+}
+
+/* يُحدَّث وحده ما دام تبويب الإحصائيات مفتوحاً، ويتوقّف إن أُغلق —
+   لا نترك مؤقّتاً يدور على عنصرٍ لم يعد في الصفحة. */
+let _liveTimer = null;
+function watchLive(){
+  clearInterval(_liveTimer);
+  _liveTimer = setInterval(() => {
+    const el = $('admLive');
+    if(!el || !el.isConnected || !el.offsetParent){ clearInterval(_liveTimer); _liveTimer = null; return; }
+    const fresh = liveBox();
+    const tmp = document.createElement('div');
+    tmp.innerHTML = fresh;
+    el.replaceWith(tmp.firstElementChild);
+  }, 5000);
+}
 
 export async function loadStats(){
   if(!isOwner()){
@@ -20,7 +58,7 @@ export async function loadStats(){
     <div style="font-size:22px">${ic}</div>
     <div style="font-size:24px;font-weight:700;color:var(--sand)">${n}</div>
     <div style="font-size:11px;color:var(--txt-dim)">${l}</div></div>`;
-  let html=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">
+  let html=liveBox()+`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">
     ${card(s.users,'مسجلين','👤')}${card(s.guests,'زوار','👀')}${card(s.photos,'صورة','📸')}
     ${card(s.ratings,'تقييم','⭐')}${card(s.comments,'تعليق','💬')}${card(s.badges,'صوت وسام','🗳️')}
     ${card(s.fb_new,'رسالة جديدة','📨')}${card(s.hidden,'مخفية','🙈')}${card(s.places,'مكان مضاف','📍')}
@@ -39,6 +77,7 @@ export async function loadStats(){
       </div>`).join(''))
     :'<div class="empty">ما فيه مسجلين بعد</div>';
   $('admSt').innerHTML=html;
+  watchLive();
 }
 
 /* صورة من بلدي — admin.js | نسخة المختبر م1 */
