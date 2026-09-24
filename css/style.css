@@ -1309,3 +1309,16 @@ body.dark .rs-st.on.open{background:#1B2A21}
    الهوامش بين الجسد وأوّل صفحة، فتنزاح الصفحة أربعة بكسل مع كل
    نموٍّ للمحتوى. */
 main#mainArea{display:contents}
+
+/* ═══ شريط مدى التاريخ ═══
+   خمس درجاتٍ لا حقل تاريخ: حركةُ إصبعٍ واحدة بدل تقويمين وحساب.
+   وارتفاع المسار ٦ بكسل ومقبضه ٢٢ — أصغر من ذلك لا تمسكه الإبهام
+   على الجوال، وهذا الدرج لا يُفتح إلا بالإبهام. */
+.fd-days-val{color:var(--sadu);font-weight:700;margin-inline-start:6px}
+.fd-range{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;
+  background:linear-gradient(to left,var(--sadu),var(--line));outline:none;margin:10px 0 4px}
+.fd-range::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  background:var(--card);border:2.5px solid var(--sadu);cursor:pointer;box-shadow:0 1px 4px rgba(36,31,28,.2)}
+.fd-range::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--card);
+  border:2.5px solid var(--sadu);cursor:pointer}
+.fd-range-ends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--txt-dim)}

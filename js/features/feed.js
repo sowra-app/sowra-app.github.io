@@ -326,6 +326,11 @@ export function filteredPhotos(){
     });
   }
   if(state.cat!=='all')list=list.filter(p=>(p.category||'other')===state.cat);
+  /* مدى التاريخ — 0 يعني الكل فلا نحسب شيئاً */
+  if(state.days>0){
+    const since = Date.now() - state.days*86400000;
+    list = list.filter(p => new Date(p.created_at).getTime() >= since);
+  }
 
   if(abroadView){
     list=list.filter(p=>!q||(p.title||'').includes(q)||(p.country||'').includes(q));

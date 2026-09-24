@@ -15,7 +15,13 @@ export const state = {
 
   /* الفلترة والعرض */
   cat: 'all',
-  sort: 'top',
+  /* ═══ الافتراضي «الأحدث» لا «الأعلى تقييماً» ═══
+     شكا المصوّرون أن صورهم الجديدة تُدفن تحت المتصدّرة القديمة،
+     فيظنّ الزائر أن المنصة مستودع صورٍ قديمة ولا يتحمّس للنشر.
+     والتصدّر بالنجوم باقٍ بضغطةٍ واحدة في درج الفلاتر. */
+  sort: 'new',
+  /* مدى التاريخ بالأيام · 0 = الكل */
+  days: 0,
   scope: 'home',
   viewMode: 'grid',   /* grid | map */
   tags: [],
@@ -44,7 +50,7 @@ export const state = {
   admTab: 'rep',
 
   /* مسوّدة الفلتر — قبل التطبيق */
-  draftCat: 'all', draftSort: 'top', draftScope: 'home',
+  draftCat: 'all', draftSort: 'new', draftScope: 'home', draftDays: 0,
 
   /* تقييمي للصورة المفتوحة · موسيقى المستخدم */
   myRating: 0, ownMusicFile: null, recFilter: 'none',    /* تبويب الإشراف */

@@ -213,10 +213,14 @@ const thumbOf = p => String(p || '').replace(/\.jpg$/i, '_t.jpg');
 export function firstCardUrl(rows){
   const shown = (rows || []).filter(p => p && p.image_path && p.media_type !== 'video');
   if(!shown.length) return null;
+  /* ═══ يتبع ترتيب الخلاصة الافتراضي ═══
+     التمهيد لا ينفع إلا إن كان لأوّل بطاقةٍ يراها الزائر. وكان
+     الافتراضي «الأعلى تقييماً» فرتّبنا بالنجوم؛ وصار «الأحدث»
+     فيجب أن يرتّب بالتاريخ — وإلا مهّدنا لصورةٍ ليست أوّل ما يُرى،
+     فيضيع المكسب ويُحمَّل ملفٌّ بلا فائدة.
+     ⚠️ من غيّر state.sort الافتراضي فليغيّر هذا معه. */
   const top = shown.slice().sort((a,b) =>
-      (Number(b.avg_stars||0) - Number(a.avg_stars||0))
-   || (Number(b.ratings_count||0) - Number(a.ratings_count||0))
-   || (new Date(b.created_at||0) - new Date(a.created_at||0)))[0];
+      (new Date(b.created_at||0) - new Date(a.created_at||0)))[0];
   return imgUrl(thumbOf(top.image_path));
 }
 

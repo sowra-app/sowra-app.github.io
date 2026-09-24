@@ -50,6 +50,8 @@ export function toggleFilter(){
   d.style.display=open?'block':'none';
   $('filterBtn').classList.toggle('active',open);
   if(open){
+    /* الشريط يطابق المطبَّق فعلاً لا آخر ما حرّكه ثم تركه */
+    try{ fdSyncDays(); }catch(e){}
     setTimeout(()=>{d.scrollIntoView({behavior:'smooth',block:'nearest'})},60);
     if(typeof lockFdScroll==='function')lockFdScroll();
   }
@@ -65,6 +67,35 @@ export function fdSetSort(el,s){
   document.querySelectorAll('.fd-chips .fd-chip[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
 }
 
+/* ═══ مدى التاريخ ═══
+   خمس درجاتٍ لا حقلُ تاريخٍ حرّ: من يبحث عن «صور الشتاء الماضي»
+   يحرّك إصبعه مرّةً، ولا يفتح تقويمين ويحسب. والصفر «الكل» أوّلها
+   لأنه الافتراضي — ومن لا يلمس الشريط يرى كل شيء. */
+export const DAY_STEPS = [
+  { d: 0,   t: 'كل الأوقات' },
+  { d: 365, t: 'آخر سنة' },
+  { d: 90,  t: 'آخر ٣ أشهر' },
+  { d: 30,  t: 'آخر شهر' },
+  { d: 7,   t: 'آخر أسبوع' }
+];
+
+export function fdSetDays(i){
+  const step = DAY_STEPS[Number(i) || 0] || DAY_STEPS[0];
+  state.draftDays = step.d;
+  const lb = document.getElementById('fdDaysLabel');
+  if(lb) lb.textContent = step.t;
+}
+
+/* يُنادى عند فتح الدرج ليطابق الشريط ما هو مطبَّقٌ فعلاً */
+export function fdSyncDays(){
+  const i = Math.max(0, DAY_STEPS.findIndex(s => s.d === state.days));
+  state.draftDays = state.days;
+  const r = document.getElementById('fdDays');
+  if(r) r.value = String(i);
+  const lb = document.getElementById('fdDaysLabel');
+  if(lb) lb.textContent = DAY_STEPS[i].t;
+}
+
 export function fdSetScope(el,sc){
   state.draftScope=sc;
   document.querySelectorAll('.fd-chip[data-sc]').forEach(b=>b.classList.toggle('on',b.dataset.sc===sc));
@@ -77,9 +108,10 @@ export function applyFilter(){
   state.cat=state.draftCat;
   state.sort=state.draftSort;
   state.scope=state.draftScope;
+  state.days=state.draftDays;
   $('filterDrawer').style.display='none';
   $('filterBtn').classList.remove('active');
-  const active=(state.cat!=='all')||(state.draftSort!=='top')||(state.draftScope!=='home')
+  const active=(state.cat!=='all')||(state.draftSort!=='new')||(state.draftDays>0)||(state.draftScope!=='home')
     ||(state.tags&&state.tags.length)||state.onlyClaims;
   $('filterBadge').style.display=active?'inline':'none';
   $('abroadHint').style.display=(state.draftScope==='abroad')?'block':'none';
@@ -98,15 +130,15 @@ export function clearFilter(){
   const _eb=document.getElementById('fdEcBtn');if(_eb)_eb.classList.remove('on');
   const _cb=document.getElementById("fdClaimBtn");if(_cb)_cb.classList.remove("on");
   if(typeof renderFdTags==="function")renderFdTags();
-  state.draftCat='all';state.draftSort='top';state.draftScope='home';
+  state.draftCat='all';state.draftSort='new';state.draftScope='home';state.draftDays=0;
   state.scope='home';
   document.querySelectorAll('.fd-chip[data-k]').forEach(b=>b.classList.toggle('on',b.dataset.k==='all'));
-  document.querySelectorAll('.fd-chip[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s==='top'));
+  document.querySelectorAll('.fd-chip[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s==='new'));
   document.querySelectorAll('.fd-chip[data-sc]').forEach(b=>b.classList.toggle('on',b.dataset.sc==='home'));
   const _ps=document.getElementById('fdPlaceSec');if(_ps)_ps.style.display='';
   const _fr=document.getElementById('fRegion');if(_fr)_fr.value='';
   const _fc=document.getElementById('fCity');if(_fc)_fc.value='';
-  state.cat='all';state.sort='top';
+  state.cat='all';state.sort='new';state.days=0;
   $('filterBadge').style.display='none';
   $('abroadHint').style.display='none';
   $('filterDrawer').style.display='none';
