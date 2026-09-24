@@ -152,6 +152,97 @@ export async function saveMyName(){
   try{await loadPhotos()}catch(e){}
 }
 
+/* ══════════════════════════════════════════════════════════════
+   سؤال الاسم بعد أول دخول
+
+   من يدخل بجوجل لا يُسأل عن اسمه أبداً: نأخذ بريده وننتهي. فيبقى
+   display_name فارغاً، ويظهر بلا اسمٍ تحت صوره وفي لوحة الإشراف.
+   ولا يكتشفه إلا من فتح «بياناتي» من نفسه — وقليلٌ من يفعل.
+
+   فنسأله مرّةً بعد الدخول، سؤالاً يُردّ بضغطة: «لاحقاً» تؤجّله
+   أسبوعاً لا للأبد — فمن أجّله اليوم قد يكتبه بعد أن ينشر صورةً
+   ويرى اسمه ناقصاً. ولا يُسأل المجهول: ليس له حسابٌ يحمل اسماً.  */
+const NAME_ASK_KEY = 'sowra_name_ask';
+const NAME_ASK_WAIT = 7 * 24 * 3600 * 1000;
+
+function nameAskDue(){
+  try{
+    const t = Number(localStorage.getItem(NAME_ASK_KEY) || 0);
+    return !t || (Date.now() - t) > NAME_ASK_WAIT;
+  }catch(e){ return true; }
+}
+function nameAskDone(){
+  try{ localStorage.setItem(NAME_ASK_KEY, String(Date.now())); }catch(e){}
+}
+
+export async function askMyName(){
+  if(!currentUser() || isAnon()) return;
+  if(!nameAskDue()) return;
+  if(document.getElementById('nameAsk')) return;
+
+  let cur = null;
+  try{
+    const r = await sb.from('profiles').select('display_name').eq('id', currentUser().id).maybeSingle();
+    cur = r.data && r.data.display_name;
+  }catch(e){ return; }          /* تعذّرت القراءة: لا نزعجه بسؤالٍ قد لا يلزم */
+  if(cur && String(cur).trim()) return;
+
+  const box = document.createElement('div');
+  box.id = 'nameAsk';
+  box.style.cssText = 'position:fixed;inset:0;background:rgba(36,31,28,.62);z-index:9995;display:flex;'
+    + 'align-items:center;justify-content:center;padding:22px;backdrop-filter:blur(3px)';
+  box.innerHTML = '<div style="background:var(--card);border:1.5px solid var(--line);border-radius:18px;'
+    + 'padding:20px 20px 16px;max-width:360px;width:100%;box-shadow:0 8px 28px rgba(0,0,0,.22)">'
+    + '<div style="font-family:\'Reem Kufi\',sans-serif;font-size:19px;color:var(--sand);margin-bottom:5px">وش نسمّيك؟ 👋</div>'
+    + '<div style="font-size:13.5px;color:var(--txt-dim);line-height:1.8;margin-bottom:13px">'
+    + 'هذا الاسم يظهر تحت صورك للناس. تقدر تغيّره وقت ما تبي من «حسابي ← بياناتي».</div>'
+    + '<input id="nameAskIn" maxlength="40" placeholder="أبو الذيابة" autocomplete="name" '
+    + 'style="width:100%;background:var(--card2);border:1.5px solid var(--line);border-radius:12px;'
+    + 'padding:12px 14px;font-family:\'Tajawal\';font-size:15px;color:var(--txt);outline:none;margin-bottom:12px">'
+    + '<div style="display:flex;gap:9px">'
+    + '<button id="nameAskGo" class="btn" style="flex:1;padding:12px">احفظ</button>'
+    + '<button id="nameAskLater" class="btn" style="flex:0 0 auto;padding:12px 16px;background:var(--card2);'
+    + 'border:1px solid var(--line);color:var(--txt)">لاحقاً</button>'
+    + '</div></div>';
+  document.body.appendChild(box);
+
+  const close = () => { nameAskDone(); try{ box.remove(); }catch(e){} };
+  const inp = box.querySelector('#nameAskIn');
+  try{ inp.focus(); }catch(e){}
+
+  box.querySelector('#nameAskLater').onclick = close;
+  box.addEventListener('click', e => { if(e.target === box) close(); });
+  inp.addEventListener('keydown', e => { if(e.key === 'Enter') box.querySelector('#nameAskGo').click(); });
+
+  box.querySelector('#nameAskGo').onclick = async () => {
+    const name = (inp.value || '').trim();
+    if(!name){ toast('اكتب اسم', true); return; }
+    if(typeof checkText === 'function' && checkText(name)){ toast('الاسم فيه كلمة غير لائقة', true); return; }
+    const btn = box.querySelector('#nameAskGo');
+    btn.disabled = true; btn.textContent = '...';
+    /* update وحدها تصمت إن لم تُطابق صفّاً — والصفّ قد لا يكون
+       أُنشئ بعد. فنسأل عن المُحدَّث: إن لم يرجع شيء أنشأناه. */
+    let saved = false;
+    try{
+      const u = await sb.from('profiles').update({ display_name: name })
+                        .eq('id', currentUser().id).select('id');
+      if(!u.error && u.data && u.data.length) saved = true;
+      if(!saved){
+        const i = await sb.from('profiles').insert({ id: currentUser().id, display_name: name }).select('id');
+        saved = !i.error && !!(i.data && i.data.length);
+        if(i.error) dbErr('حفظ الاسم', i.error, 'تعذر الحفظ');
+      }else if(u.error) dbErr('حفظ الاسم', u.error, 'تعذر الحفظ');
+    }catch(e){}
+    btn.disabled = false; btn.textContent = 'احفظ';
+    if(!saved){ toast('تعذر الحفظ — جرّب من حسابي ← بياناتي', true); return; }
+    close();
+    toast('تشرّفنا يا ' + name + ' ✅');
+    const hi = $('accHello'); if(hi) hi.textContent = 'هلا ' + name;
+    const en = $('accEditName'); if(en) en.value = name;
+    try{ await loadPhotos(); }catch(e){}
+  };
+}
+
 /* ═══ نسيت كلمة السر ═══
    لم يكن للمنصة بابٌ لاستعادتها إطلاقاً: من نسيها فقد حسابه وصوره
    معه، وليس أمامه إلا أن يفتح حساباً جديداً باسمٍ جديد — وتبقى صوره
