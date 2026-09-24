@@ -18,16 +18,37 @@ import { currentUser, isAnon, sb } from '../core/db.js';
 const BEAT = 60 * 1000;
 let _timer = null, _started = false;
 
+/* ═══ لا تُزعج الزائر، ولا تصمت عنّا ═══
+   كانت هذه الدالّة تبتلع الخطأ كلّه بحجّة أن حضوراً لم يُسجَّل لا
+   يستحقّ إزعاج زائر — وهذا صحيح. لكنها ابتلعت معه رسالة الرفض:
+   سياسة القراءة كانت للمشرف وحده، وupsert يحتاج قراءةً ليرى الصفّ
+   المتعارض، فكان كل من ليس مشرفاً يُرفض بصمت. ورأينا صفّاً واحداً
+   وظنناه ذاكرةً مخزّنة، وطاردناه طويلاً.
+
+   فالصمت للزائر، والسجلّ لنا. ولا نكرّر الشكوى: مرّةً واحدةً تكفي
+   لتعرف، وما بعدها ضجيجٌ يُغرق ما يهمّ. */
+let _warned = false;
+
 async function beat(){
   const u = currentUser();
   if(!u || !u.id) return;
   try{
-    await sb.from('presence').upsert({
+    const { error } = await sb.from('presence').upsert({
       user_id: u.id,
       last_seen: new Date().toISOString(),
       is_anon: isAnon()
     }, { onConflict: 'user_id' });
-  }catch(e){ /* صامتة: حضورٌ لم يُسجَّل لا يستحقّ إزعاج زائر */ }
+    if(error && !_warned){
+      _warned = true;
+      console.warn('[حضور] لم تُسجَّل النبضة —', error.message || error,
+                   '· الأرجح سياسةٌ في جدول presence');
+    }
+  }catch(e){
+    if(!_warned){
+      _warned = true;
+      console.warn('[حضور] استثناء —', (e && e.message) || e);
+    }
+  }
 }
 
 export function startPresence(){
