@@ -112,7 +112,10 @@ let _admLoaded = false;
 export async function loadAdminModule(){
   if(_admLoaded) return true;
   try{
-    const mods = await Promise.all([
+    /* allSettled لا all: وحدةٌ واحدةٌ تسقط كانت تُسقط اللوحة كلّها،
+       فيرى المشرف «تعذر تحميل لوحة الإشراف» ولا يدري أيّها سقط.
+       الآن تُحمّل الباقية، ويُسمّى الساقط في السجلّ. */
+    const results = await Promise.allSettled([
       import('./admin/cleanup.js'),
       import('./admin/contest.js'),
       import('./admin/curation.js'),
@@ -127,6 +130,16 @@ export async function loadAdminModule(){
       import('./admin/stats.js'),
       import('./admin/team.js')
     ]);
+    const NAMES = ['cleanup','contest','curation','index','misc','music',
+                   'news','places','quests','reports','settings','stats','team'];
+    const mods = [];
+    results.forEach((r, i) => {
+      if(r.status === 'fulfilled') mods.push(r.value);
+      else console.error('[admin] سقطت وحدة ' + NAMES[i] + ' —', (r.reason && r.reason.message) || r.reason);
+    });
+    if(!mods.length){ toast('تعذر تحميل لوحة الإشراف', true); return false; }
+    const dead = results.length - mods.length;
+    if(dead) toast(dead + ' من أقسام اللوحة لم تُحمّل — راجع السجلّ', true);
     const bag = Object.assign({}, ...mods);
     provide(bag);
     /* openAdmin يبقى غلافنا — لا نستبدله بالحقيقية وإلا فقدنا التحميل الكسول */
