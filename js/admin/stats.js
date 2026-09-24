@@ -43,7 +43,12 @@ function paintLive(){
 }
 
 async function pullLive(){
-  const rows = has('fetchOnline') ? await need('fetchOnline')(5) : null;
+  /* ═══ نافذة «الآن» ═══
+     النبضة كل دقيقة، فالنافذة دقيقتان: تحتمل نبضةً ضائعةً واحدة
+     (انقطاعٌ لحظيٌّ في الشبكة لا يُسقط من هو حاضر)، ولا تُبقي من
+     أغلق جهازه أكثر من دقيقتين.
+     أضيق منها يُسقط الحاضرين، وأوسع يُبقي الراحلين. */
+  const rows = has('fetchOnline') ? await need('fetchOnline')(2) : null;
   _live = rows ? { rows } : { err: true };
   paintLive();
 }
