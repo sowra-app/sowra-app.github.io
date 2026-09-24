@@ -2,7 +2,6 @@
    الشبكة والبطاقات */
 
 import { currentUser, isAnon, sb } from '../core/db.js';
-import { deviceId } from '../core/device.js';
 import { rankOf } from '../core/format.js';
 import { get, need } from '../core/hub.js';
 import { imgUrl, thumbUrl, vidUrl } from '../core/media.js';
@@ -209,21 +208,12 @@ export function watchPhotos(){
       clearTimeout(_burst);
       _burst = setTimeout(() => { refreshPhotos(); }, 3000);
     };
-    /* ═══ مفتاح الحضور هو الجهاز ═══
-       سوبابيز تجمع الحاضرين بمفتاحهم. فلو تركناه عشوائياً — وهو
-       الأصل — لصار لكل تبويبٍ مفتاحٌ وعُدّ من فتح الموقع في تبويبين
-       اثنين. وبجعله معرّف الجهاز تجتمع تبويباته تحت مفتاحٍ واحد،
-       فيصير العدّ للأجهزة كما ينبغي، والتبويبات تُعرف بعدد حمولاته.
-       ومن منعه متصفّحه من التخزين يأخذ مفتاحاً عابراً — يُعدّ مرّةً
-       ولا يُعطّل غيره. */
-    const key = deviceId() || ('t' + Math.random().toString(36).slice(2, 11));
-    _ch = sb.channel('sowra-photos', { config: { presence: { key } } })
+    _ch = sb.channel('sowra-photos')
       .on('postgres_changes', {event:'INSERT', schema:'public', table:'photos'}, hit)
       .on('postgres_changes', {event:'DELETE', schema:'public', table:'photos'}, hit)
       .subscribe(st => {
         if(st === 'SUBSCRIBED'){
           _fails = 0;
-          announce();
           console.info('[حيّ] القناة مفتوحة — الصور الجديدة تصل لحظتها');
         }else if(st === 'CHANNEL_ERROR' || st === 'TIMED_OUT'){
           if(++_fails >= GIVE_UP_AFTER) dropChannel(st);
@@ -233,39 +223,6 @@ export function watchPhotos(){
     console.warn('[حيّ] تعذّر الاشتراك — السؤال الدوري يغطّيها', e);
     _ch = null;
   }
-}
-
-/* ═══ أعلِن حضورك ═══
-   حمولةٌ صغيرةٌ على القناة القائمة — لا اتصال جديد ولا صفٌّ في
-   القاعدة. وتُعاد عند تبدّل الجلسة: من دخل بحسابه بعد أن كان
-   مجهولاً، حمولته الأولى تقول «مجهول» ولو لم نُحدّثها. */
-function announce(){
-  if(!_ch || typeof _ch.track !== 'function') return;
-  try{ _ch.track({ anon: isAnon(), at: Date.now() }); }catch(e){}
-}
-
-try{
-  if(sb && sb.auth && typeof sb.auth.onAuthStateChange === 'function')
-    sb.auth.onAuthStateChange(() => { announce(); });
-}catch(e){}
-
-/* ═══ من يتصفّح الآن ═══
-   تُقرأ من لوحة الإشراف. تُرجع null إن لم تكن القناة قائمةً — وهذا
-   جوابٌ صادق: «لا أعرف»، لا «صفر». والفرق بينهما مهمّ لمن يقرأ. */
-export function onlineNow(){
-  if(!_ch || typeof _ch.presenceState !== 'function') return null;
-  let st = null;
-  try{ st = _ch.presenceState(); }catch(e){ return null; }
-  if(!st) return null;
-  const keys = Object.keys(st);
-  let anon = 0, tabs = 0;
-  for(const k of keys){
-    const metas = st[k] || [];
-    tabs += metas.length || 1;
-    /* الجهاز «مسجَّل» إن قال أحد تبويباته إنه ليس مجهولاً */
-    if(!metas.some(m => m && m.anon === false)) anon++;
-  }
-  return { devices: keys.length, anon, signed: keys.length - anon, tabs };
 }
 
 function dropChannel(why){

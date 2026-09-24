@@ -50,6 +50,7 @@ const renderMyStats = need('renderMyStats');
 const renderVault = need('renderVault');
 const renderAccIn = need('renderAccIn');
 const askMyName = need('askMyName');
+const startPresence = need('startPresence');
 const loadMyMsgs = need('loadMyMsgs');
 const openAdminPanel = need('openAdminPanel');
 /* ═══ عبر الحاجز ═══
@@ -316,7 +317,7 @@ export async function boot(){
   try{ renderFdTags(); }catch(e){}
 
   const authP = ensureAuth()
-    .then(async () => { await checkAdmin(); loadFavs(); try{ askMyName() }catch(e){} })
+    .then(async () => { await checkAdmin(); loadFavs(); try{ askMyName() }catch(e){} try{ startPresence() }catch(e){} })
     .catch(() => {});
 
   /* ═══ الدخول ينتهي بالصفحة الرئيسية دائماً ═══

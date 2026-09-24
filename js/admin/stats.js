@@ -8,50 +8,57 @@ import { need, has } from '../core/hub.js';
 import { geo, COORDS, REGION_CENTER, nearestCity, loadPlaces, BASE_GEO } from '../data/places.js';
 
 /* ═══ من يتصفّح الآن ═══
-   يُقرأ من قناة الحضور التي يفتحها كل زائر — لا من جدول، فلا كتابة
-   ولا صفوف تتراكم. والعدّ للأجهزة لا للتبويبات: مفتاح الحضور هو
-   معرّف الجهاز، فتبويبات الجهاز الواحد تجتمع تحته.
+   يُقرأ من جدول presence — كلٌّ يكتب صفّه والمشرف وحده يقرأ.
+   «الآن» تعني: نبض خلال الخمس دقائق الماضية.
 
-   وإن كانت القناة غير قائمة (انقطعت أو صُرفت) نقول «لا نعرف» ولا
-   نكتب صفراً — الصفر كذبةٌ يصدّقها من يقرأها. */
+   وعبر الحاجز لا باستيرادٍ ثابت: استيرادٌ ساقطٌ يُسقط الوحدة كلّها
+   ومعها اللوحة — وقع هذا حين استوردنا onlineNow من feed.js. */
+let _live = null;      /* آخر ما وصل: null = لم نعرف بعد */
+
 function liveBox(){
-  /* ═══ عبر الحاجز لا باستيرادٍ ثابت ═══
-     كان: import { onlineNow } from '../features/feed.js'
-     فسقطت لوحة الإشراف كلّها. والسبب أن index.html وحده يحمل ?x=،
-     وما يستورده main.js يُجلب بلا نسخة ويُخزَّن عشر دقائق. فبعد كل
-     رفعةٍ توجد نافذةٌ يعمل فيها main.js الجديد مع وحداتٍ قديمة —
-     وحينها لا تجد stats.js اسم onlineNow في feed.js المخزّنة،
-     والاستيراد الثابت الساقط يُسقط الوحدة كلّها ومعها اللوحة.
-
-     والحاجز يُقرأ عند النداء لا عند الاستيراد: إن غاب الاسم قال
-     «لا نعرف» وبقيت اللوحة تعمل. وهذا سبب وجوده أصلاً. */
-  const n = has('onlineNow') ? need('onlineNow')() : null;
   const box = (body, tone) => `<div id="admLive" style="background:var(--card);border:1.5px solid ${tone};border-radius:14px;padding:13px 16px;margin-bottom:14px">${body}</div>`;
-  if(!n) return box('<span style="color:var(--txt-dim);font-size:13.5px">⚪ القناة الحيّة غير قائمة — لا نعرف من يتصفّح الآن</span>', 'var(--line)');
-  const tabsNote = n.tabs > n.devices ? ` <span style="color:var(--txt-dim);font-size:11.5px">(${n.tabs} تبويباً)</span>` : '';
+  if(!_live) return box('<span style="color:var(--txt-dim);font-size:13.5px">⏳ نقرأ الحضور…</span>', 'var(--line)');
+  if(_live.err) return box('<span style="color:var(--txt-dim);font-size:13.5px">⚪ تعذّرت قراءة الحضور — لا نعرف من يتصفّح الآن</span>', 'var(--line)');
+  const rows = _live.rows || [];
+  if(!rows.length) return box('<span style="font-size:14px">🟢 الآن — <b>ما فيه أحد</b></span>', 'var(--line)');
+  const named = rows.filter(r => !r.is_anon && r.display_name && String(r.display_name).trim());
+  const rest  = rows.length - named.length;
+  const chips = named.map(r => `<span style="background:var(--card2);border-radius:9px;padding:3px 9px;font-size:12.5px;display:inline-block;margin:3px 3px 0 0">${esc(r.display_name || "عضو")}</span>`).join('');
   return box(`<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
       <span style="font-size:15px;font-weight:700">🟢 الآن</span>
-      <span style="font-size:22px;font-weight:700;color:var(--palm)">${n.devices}</span>
-      <span style="font-size:13.5px">جهازاً${tabsNote}</span>
+      <span style="font-size:22px;font-weight:700;color:var(--palm)">${rows.length}</span>
+      <span style="font-size:13.5px">متصلاً</span>
     </div>
-    <div style="font-size:13px;color:var(--txt-dim);margin-top:4px">
-      ${n.signed} بحساب · ${n.anon} بلا حساب
-    </div>`, 'var(--palm)');
+    ${chips ? '<div style="margin-top:7px">' + chips + '</div>' : ''}
+    ${rest ? `<div style="font-size:12.5px;color:var(--txt-dim);margin-top:6px">و${rest} بلا حساب</div>` : ''}`,
+    'var(--palm)');
+}
+
+function paintLive(){
+  const el = $('admLive');
+  if(!el) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = liveBox();
+  el.replaceWith(tmp.firstElementChild);
+}
+
+async function pullLive(){
+  const rows = has('fetchOnline') ? await need('fetchOnline')(5) : null;
+  _live = rows ? { rows } : { err: true };
+  paintLive();
 }
 
 /* يُحدَّث وحده ما دام تبويب الإحصائيات مفتوحاً، ويتوقّف إن أُغلق —
-   لا نترك مؤقّتاً يدور على عنصرٍ لم يعد في الصفحة. */
+   لا نترك مؤقّتاً يسأل القاعدة عن عنصرٍ لم يعد في الصفحة. */
 let _liveTimer = null;
 function watchLive(){
   clearInterval(_liveTimer);
+  pullLive();
   _liveTimer = setInterval(() => {
     const el = $('admLive');
     if(!el || !el.isConnected || !el.offsetParent){ clearInterval(_liveTimer); _liveTimer = null; return; }
-    const fresh = liveBox();
-    const tmp = document.createElement('div');
-    tmp.innerHTML = fresh;
-    el.replaceWith(tmp.firstElementChild);
-  }, 5000);
+    pullLive();
+  }, 20000);
 }
 
 export async function loadStats(){

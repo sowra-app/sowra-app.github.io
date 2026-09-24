@@ -37,6 +37,7 @@ import * as features_map from './features/map.js';
 import * as features_messages from './features/messages.js';
 import * as features_music from './features/music.js';
 import * as features_notify from './features/notify.js';
+import * as features_presence from './features/presence.js';
 import * as features_profile from './features/profile.js';
 import * as features_promo from './features/promo.js';
 import * as features_quests from './features/quests.js';
@@ -79,6 +80,7 @@ const ALL = Object.assign({},
   features_messages,
   features_music,
   features_notify,
+  features_presence,
   features_profile,
   features_promo,
   features_quests,
