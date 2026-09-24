@@ -77,7 +77,7 @@ export async function loadStats(){
   html+=(us.data||[]).length
     ?(us.data.map(u=>`<div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px">
         <div style="min-width:0">
-          <b style="font-size:14px">${esc(u.display_name)}</b>
+          <b style="font-size:14px">${u.display_name ? esc(u.display_name) : '<span style="color:var(--txt-dim);font-weight:500">بلا اسم</span>'}</b>
           <div style="font-size:11.5px;color:var(--txt-dim);direction:ltr;text-align:right;overflow:hidden;text-overflow:ellipsis">${esc(u.email)}</div>
         </div>
         <div style="text-align:center;flex:0 0 auto">
