@@ -49,6 +49,7 @@ const renderNotifBox_ = need('renderNotifBox');
 const renderMyStats = need('renderMyStats');
 const renderVault = need('renderVault');
 const renderAccIn = need('renderAccIn');
+const askMyName = need('askMyName');
 const loadMyMsgs = need('loadMyMsgs');
 const openAdminPanel = need('openAdminPanel');
 /* ═══ عبر الحاجز ═══
@@ -315,7 +316,7 @@ export async function boot(){
   try{ renderFdTags(); }catch(e){}
 
   const authP = ensureAuth()
-    .then(async () => { await checkAdmin(); loadFavs(); })
+    .then(async () => { await checkAdmin(); loadFavs(); try{ askMyName() }catch(e){} })
     .catch(() => {});
 
   /* ═══ الدخول ينتهي بالصفحة الرئيسية دائماً ═══
