@@ -110,6 +110,22 @@ expose({ toast, $ });
    ٣) لوحة الإشراف — تحميل كسول
    ١٨٠٠ سطر لا تُحمّل إلا عند فتح الترس
    ═══════════════════════════════════════════ */
+/* ═══ وحدات اللوحة تحمل نسخة الصفحة ═══
+   index.html وحده يحمل ?x=، وما يستورده main.js يُجلب بلا نسخة
+   ويُخزَّن عشر دقائق. فبعد كل رفعةٍ توجد نافذةٌ يعمل فيها main.js
+   الجديد مع وحداتٍ قديمة — أسقطت اللوحة مرّةً، وأرت عدّاداً قديماً
+   مرّتين.
+
+   وimport.meta.url يحتفظ بالاستعلام الذي جاء به هذا الملف نفسه،
+   فنأخذه منه ونلحقه بكل استيرادٍ ديناميكي. فلا رقمَ مكتوبٌ بيدنا
+   يُنسى تحديثه: اللوحة تتبع نسخة index.html تلقائياً.
+
+   ⚠️ يبقى الاستيراد الثابت (٤٧ ملفاً) بلا نسخة — لا سبيل لتأريخه
+   بلا خطوة بناء. وهو مسجَّلٌ في الديون التقنية. */
+const VER = (() => {
+  try{ return new URL(import.meta.url).search || ''; }catch(e){ return ''; }
+})();
+
 let _admLoaded = false;
 export async function loadAdminModule(){
   if(_admLoaded) return true;
@@ -118,19 +134,19 @@ export async function loadAdminModule(){
        فيرى المشرف «تعذر تحميل لوحة الإشراف» ولا يدري أيّها سقط.
        الآن تُحمّل الباقية، ويُسمّى الساقط في السجلّ. */
     const results = await Promise.allSettled([
-      import('./admin/cleanup.js'),
-      import('./admin/contest.js'),
-      import('./admin/curation.js'),
-      import('./admin/index.js'),
-      import('./admin/misc.js'),
-      import('./admin/music.js'),
-      import('./admin/news.js'),
-      import('./admin/places.js'),
-      import('./admin/quests.js'),
-      import('./admin/reports.js'),
-      import('./admin/settings.js'),
-      import('./admin/stats.js'),
-      import('./admin/team.js')
+      import('./admin/cleanup.js' + VER),
+      import('./admin/contest.js' + VER),
+      import('./admin/curation.js' + VER),
+      import('./admin/index.js' + VER),
+      import('./admin/misc.js' + VER),
+      import('./admin/music.js' + VER),
+      import('./admin/news.js' + VER),
+      import('./admin/places.js' + VER),
+      import('./admin/quests.js' + VER),
+      import('./admin/reports.js' + VER),
+      import('./admin/settings.js' + VER),
+      import('./admin/stats.js' + VER),
+      import('./admin/team.js' + VER)
     ]);
     const NAMES = ['cleanup','contest','curation','index','misc','music',
                    'news','places','quests','reports','settings','stats','team'];
