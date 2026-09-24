@@ -4,7 +4,7 @@
 import { sb } from '../core/db.js';
 import { isOwner } from '../core/state.js';
 import { $, esc } from '../core/ui.js';
-import { onlineNow } from '../features/feed.js';
+import { need, has } from '../core/hub.js';
 import { geo, COORDS, REGION_CENTER, nearestCity, loadPlaces, BASE_GEO } from '../data/places.js';
 
 /* ═══ من يتصفّح الآن ═══
@@ -15,7 +15,17 @@ import { geo, COORDS, REGION_CENTER, nearestCity, loadPlaces, BASE_GEO } from '.
    وإن كانت القناة غير قائمة (انقطعت أو صُرفت) نقول «لا نعرف» ولا
    نكتب صفراً — الصفر كذبةٌ يصدّقها من يقرأها. */
 function liveBox(){
-  const n = onlineNow();
+  /* ═══ عبر الحاجز لا باستيرادٍ ثابت ═══
+     كان: import { onlineNow } from '../features/feed.js'
+     فسقطت لوحة الإشراف كلّها. والسبب أن index.html وحده يحمل ?x=،
+     وما يستورده main.js يُجلب بلا نسخة ويُخزَّن عشر دقائق. فبعد كل
+     رفعةٍ توجد نافذةٌ يعمل فيها main.js الجديد مع وحداتٍ قديمة —
+     وحينها لا تجد stats.js اسم onlineNow في feed.js المخزّنة،
+     والاستيراد الثابت الساقط يُسقط الوحدة كلّها ومعها اللوحة.
+
+     والحاجز يُقرأ عند النداء لا عند الاستيراد: إن غاب الاسم قال
+     «لا نعرف» وبقيت اللوحة تعمل. وهذا سبب وجوده أصلاً. */
+  const n = has('onlineNow') ? need('onlineNow')() : null;
   const box = (body, tone) => `<div id="admLive" style="background:var(--card);border:1.5px solid ${tone};border-radius:14px;padding:13px 16px;margin-bottom:14px">${body}</div>`;
   if(!n) return box('<span style="color:var(--txt-dim);font-size:13.5px">⚪ القناة الحيّة غير قائمة — لا نعرف من يتصفّح الآن</span>', 'var(--line)');
   const tabsNote = n.tabs > n.devices ? ` <span style="color:var(--txt-dim);font-size:11.5px">(${n.tabs} تبويباً)</span>` : '';
