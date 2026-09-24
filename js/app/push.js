@@ -112,31 +112,11 @@ export async function renderNotifBox(){
   btn.style.border=on?'1px solid var(--line)':'none';
 }
 
-/* ═══ هويّةُ الجهاز ═══
-   كان مفتاح التعارض في push_subs هو «العنوان» — وهو أكثر ما يتبدّل:
-   يتغيّر عند كل إعادة تفعيل، وعند مسح بيانات الموقع، وحين يجدّده
-   المتصفّح من نفسه. فكل تبدّلٍ يُضيف سطراً جديداً ولا يُلغي القديم،
-   والقديم يبقى حيّاً يستقبل — فيصير الجهاز الواحد عدّة مشتركين
-   ويُشعَر صاحبه مرّتين وثلاثاً. (بلغ الأمر خمسة اشتراكاتٍ لجهازٍ
-   واحدٍ عملياً.)
-
-   وحذفُ الميت لا يعالجه: الوظيفة تحذف ما يردّ بـ404/410، وهذه
-   الاشتراكات كلّها حيّةٌ صالحة.
-
-   فالمفتاح صار هويّةً ثابتةً تُولَّد مرّةً وتبقى: يتبدّل العنوان
-   فيُحدَّث نفس السطر بدل أن يُضاف غيره. جهازٌ واحد = سطرٌ واحد.
-   ولكل متصفّحٍ هويّته — وهذا صحيح: كروم وسفاري مشتركان مستقلّان. */
-export function deviceId(){
-  try{
-    let d = localStorage.getItem('sowra_device');
-    if(!d){
-      d = (crypto && crypto.randomUUID) ? crypto.randomUUID()
-        : 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
-      localStorage.setItem('sowra_device', d);
-    }
-    return d;
-  }catch(e){ return null; }
-}
+/* هويّة الجهاز انتقلت إلى core/device.js — يستعملها عدّاد
+   الحاضرين أيضاً، فلا تسكن ملف الإشعارات. وتُعاد التصدير هنا
+   لأن الجسر ينشرها للـHTML من هذا الملف منذ s3.1. */
+export { deviceId } from '../core/device.js';
+import { deviceId } from '../core/device.js';
 
 export async function toggleNotifs(){
   if(!notifSupported()){toast('جهازك ما يدعم الإشعارات',true);return}
