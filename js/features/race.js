@@ -22,14 +22,25 @@ export async function loadRace(){
   }catch(e){state.race=[]}
 }
 
+/* ═══ منطقتك من الجغرافيا لا من لافتة صورة ═══
+   كانت تُستنتج من «أقرب صورة لك»: تُرتَّب الصور بالمسافة وتُؤخذ
+   منطقةُ أقربها. فمن وقف في الرياض وكانت أقرب صورةٍ إليه موسومةً
+   بعسير خطأً — وعندنا تصنيفاتٌ خاطئةٌ مسجّلة — قيل له «أنت في
+   عسير». صورةٌ واحدةٌ مغلوطة تكذب على كل من حولها.
+
+   والجواب لا يحتاج الصور أصلاً: عندنا COORDS — إحداثيات مدن
+   المملكة — وnearestCity تردّ المدينة ومنطقتها والمسافة. فالموقع
+   يُسأل عن الجغرافيا، لا عمّا كتبه غيرُك على صورته.
+
+   و٢٠٠ كم حدٌّ للثقة: أبعد منها فأنت بين المدن أو خارج التغطية،
+   والصمت أصدق من تخمين. */
 export function detectMyRegion(){
-  // من موقع المستخدم: أقرب صورة له
-  if(!window.__USER_LAT||!state.photos.length)return '';
-  const d=p=>Math.hypot((p.lat-window.__USER_LAT)*111,(p.lng-window.__USER_LNG)*111*Math.cos(window.__USER_LAT*Math.PI/180));
-  const geoPts=state.photos.filter(p=>p.lat&&p.lng&&!p.abroad&&p.region);
-  if(!geoPts.length)return '';
-  const near=geoPts.slice().sort((a,b)=>d(a)-d(b))[0];
-  return (near&&d(near)<=120)?near.region:'';
+  if(!window.__USER_LAT || !window.__USER_LNG) return '';
+  try{
+    const n = nearestCity(window.__USER_LAT, window.__USER_LNG);
+    if(n && n.region && n.km <= 200) return n.region;
+  }catch(e){}
+  return '';
 }
 
 export async function openRace(){

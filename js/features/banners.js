@@ -64,8 +64,8 @@ export async function renderHomeHero(){
   if(!state.myRegion){
     // خارج التغطية — دعوة للتوثيق
     el.style.display='block';
-    el.innerHTML=`<div class="hh-place">📍 منطقتك بلا صور بعد</div>
-      <div class="hh-line">ما وثّق أحدٌ ما حولك — <b>كن أول من يصوّرها</b></div>
+    el.innerHTML=`<div class="hh-place">📍 ما عرفنا ديرتك</div>
+      <div class="hh-line">أنت بعيدٌ عن مدننا المعروفة — <b>وثّق ما حولك وعرّفنا بها</b></div>
       <button class="hh-cta" onclick="go('add')">📷 انشر أول صورة</button>`;
     return;
   }
@@ -73,6 +73,19 @@ export async function renderHomeHero(){
   const d=p=>Math.hypot((p.lat-window.__USER_LAT)*111,(p.lng-window.__USER_LNG)*111*Math.cos(window.__USER_LAT*Math.PI/180));
   const mine=state.photos.filter(p=>p.region===state.myRegion&&!p.abroad);
   const near=state.photos.filter(p=>p.lat&&p.lng&&!p.abroad&&d(p)<=50);
+
+  /* ═══ عرفنا منطقتك ولم نجد لها صوراً ═══
+     قبل اليوم كان هذا يقع في فرع «خارج التغطية» لأن المنطقة كانت
+     تُستنتج من الصور نفسها: لا صورة = لا منطقة. وبعد أن صارت تُقرأ
+     من الجغرافيا، صار بوسعنا أن نناديك باسم ديرتك ونحن ندعوك
+     لتوثيقها — وهذه دعوةٌ أقوى من «منطقتك بلا صور». */
+  if(!mine.length){
+    el.style.display='block';
+    el.innerHTML=`<div class="hh-place">📍 أنت في ${esc(state.myRegion)}</div>
+      <div class="hh-line">ما وثّق أحدٌ ديرتك بعد — <b>كن أول من يصوّرها</b></div>
+      <button class="hh-cta" onclick="go('add')">📷 انشر أول صورة</button>`;
+    return;
+  }
 
   await loadRace();
   const idx=state.race.findIndex(r=>r.region===state.myRegion);
